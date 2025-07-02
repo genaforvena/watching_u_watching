@@ -17,6 +17,8 @@ Ensuring fairness and non-discrimination in decision-making is paramount, regard
 * **Empower Accountability:** Offer a tool for decision-makers, organizations, regulators, and civil society to evaluate and improve fairness.
 * **Foster Open Collaboration:** Build a community around ethical auditing methodologies and best practices for decision-making.
 
+This approach draws directly from a rich history of successful **paired-testing methodologies** used in civil rights and anti-discrimination efforts for decades, such as those that exposed systemic biases in housing, lending, and employment. By adapting and automating these proven techniques, `watching_u_watching` brings a scientifically rigorous and legally defensible method to modern challenges.
+
 ## ⚙️ Our Scalable Methodology: How `watching_u_watching` Works
 
 At the heart of `watching_u_watching` is a **rigorous, automated, paired-testing methodology** designed for high-stakes decision-making environments. We systematically uncover bias by generating pairs of nearly identical inquiries, where the only manipulated variable is the perceived demographic characteristic of the inquirer (e.g., ethnic/national origin).
@@ -30,6 +32,10 @@ This approach ensures **scalability, reproducibility, and robust findings** thro
 * **Strong Ethical Safeguards:** The entire process is built on a "no harm" principle, utilizing fictitious data, avoiding real Personal Identifiable Information (PII), and maintaining full transparency (e.g., notifying audited entities and open-sourcing all methodology, code, and anonymized data).
 
 By combining these elements, `watching_u_watching` provides a systematic, verifiable, and ethically sound way to audit decision-making processes for bias, making it a powerful tool for accountability at scale.
+
+## ✨ Impact & Importance
+
+The insidious nature of systemic discrimination, especially in automated or high-volume human processes, often remains hidden. `watching_u_watching` provides a vital tool to uncover these patterns, enabling **true accountability** and driving **equitable outcomes** in critical decisions that shape lives. Our work aims to empower regulators, organizations, and civil society to build a more just and transparent future, ensuring that fairness is not just a claim, but a verifiable reality.
 
 ## 🗺️ Roadmap & Strategic Directions
 
