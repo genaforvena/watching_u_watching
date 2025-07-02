@@ -101,6 +101,45 @@ This is an open blueprint for anyone interested in exploring and understanding s
 
 **Let's build more analytical mirrors.**
 
+
+---
+
+### **Current Focus: NYC Local Law 144 - A Critical Pilot for Algorithmic Accountability**
+
+We are now pivoting `watching_u_watching`'s core methodology to address the urgent need for transparent, independent, and adversarial audits of Automated Employment Decision Tools (AEDTs) under **NYC Local Law 144 (LL144)**. This groundbreaking legislation, enforced since July 5, 2023, mandates bias audits for AI in hiring and promotion in New York City.
+
+`watching_u_watching` aims to fill critical gaps in existing proprietary compliance solutions by offering:
+* **Open-Source Transparency:** Our methods and code are public, allowing full scrutiny and verification of audit results.
+* **True Independence:** Designed as a public-interest tool, free from commercial conflicts of interest.
+* **Proactive Adversarial Testing:** Our automated paired-testing approach (conceptually detailed in our [German Visa Pilot methodology](#german-visa-pilot-a-methodological-blueprint)) actively probes for bias using synthetic data, going beyond reactive reporting.
+* **Cost Democratization:** Dramatically lowers the barrier for independent organizations to conduct rigorous audits.
+
+**We are actively seeking contributors to build out this vital NYC LL144 pilot!** See our [NYC LL144 Pilot Issue](https://github.com/genaforvena/watching_u_watching/issues/2) for details and how to get involved.
+
+---
+
+## German Visa Pilot: A Methodological Blueprint (Work in Progress)
+
+This pilot project outlines a **rigorously designed methodology** for an automated audit of systemic bias in visa information provision. While the **conceptual framework is fully developed and available for review**, its **implementation in code and actual field testing are currently a work in progress.**
+
+The principles and techniques detailed here serve as the foundational blueprint for `watching_u_watching`'s broader mission, including our current NYC LL144 initiative. We aim to demonstrate how automated paired testing can be applied ethically and effectively to expose systemic bias in bureaucratic information provision.
+
+**[View the German Visa Pilot Pull Request (Methodology Draft)](https://github.com/genaforvena/watching_u_watching/pull/1)**
+
+---
+
+## How to Contribute
+
+We're building this crucial tool to fight systemic bias, and we need your help! `watching_u_watching` is an open-source project, and contributions of all kinds are welcome.
+
+* **Ready to jump in?** Check out our **[CONTRIBUTING.md](CONTRIBUTING.md)** for detailed guidelines on how to get started, set up your development environment, and find tasks.
+* **Looking for a starting point?** Explore issues labeled `good first issue` or contribute directly to our [NYC LL144 Pilot Issue](https://github.com/genaforvena/watching_u_watching/issues/2).
+* **Not a coder?** We also need help with research, documentation, ethical and legal guidance, and community outreach!
+
+We're excited to have you join our mission for transparent and equitable systems.
+
+---
+
 Ilya Sergeevich Mozerov (Илья Сергеевич Мозеров)  
 Flughafenstraße 24, Berlin, 12053  
 https://github.com/genaforvena  
