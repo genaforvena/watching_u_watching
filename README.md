@@ -1,4 +1,4 @@
-# 👁️ watching_u_watching 🤖
+# 👁️ watching_u_watching 👁️
 
 **An open-source methodology for scaled, automated paired testing to detect bias in high-stakes decision-making processes.**
 
@@ -96,7 +96,10 @@ Let's build a more equitable future for decision-making together!
 
 ---
 
-Ilya Sergeevich Mozerov (Илья Сергеевич Мозеров)
+Ilya Sergeevich Mozerov 👁️ (Илья Сергеевич Мозеров) 👁️
+
 https://github.com/genaforvena
+
 [https://t.me/username\_that\_is\_available](https://t.me/username_that_is_available)
+
 +49-1525-2161220
