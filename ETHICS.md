@@ -46,6 +46,17 @@ Their "ethics" aren’t just a shield; they’re a lie by institutional performa
 
 An institution that fears public auditing fears the public itself. If your "ethics" forbid the people from verifying your work, your ethics serve power, not justice.
 
+### **Embodying Radical Transparency: Our Open Invitation to Scrutiny**
+
+As a project that champions radical transparency, we are committed to embodying this principle ourselves, not merely in words but in action. Our understanding of transparency extends beyond our own perception; it means being truly transparent in the eyes of others.  
+Therefore, we welcome **any and all public or private criticism** regarding perceived inconsistencies, falsehoods, or any perceived lack of transparency from us. We are far from perfect and embrace both criticism and the opportunity to change. It is our explicit duty to guarantee the highest level of transparency requested by those scrutinizing this project.
+
+**What is the point of a philosophy that is not lived by?** For us, the power of an idea lies in its embodiment. Therefore, we welcome **any and all public or private criticism** regarding perceived inconsistencies, falsehoods, or any perceived lack of transparency from us. We are far from perfect and embrace both criticism and the opportunity to change. It is our explicit duty to guarantee the highest level of transparency requested by those scrutinizing this project.
+
+### **My Personal Stance: A Commitment to Sacrifice**
+
+I am so deeply committed to testing this theory that **I offer my persona and identity as a proxy or shield** to anyone who wishes to take part in this investigation but is afraid of the consequences. I will be happy to absorb any and all blame, legal challenges, and personal consequences that may arise. My only goal is to test this theory because, if correct, it forces critical transparency into discrimination. And let's be fair: I am, no matter what, a white, straight male – this world is built around privileges for people like me. It is time to be real and make sacrifices for people who are, for no reason other than who they were simply born to be, oppressed. I feel righteous anger, have nothing to lose, and have had my good times. I owe people.
+
 Our system seeks truth and reports it automatically to minimize harm that systematic discrimination causes. It acts independently (ensuring unbiased scrutiny) and we are accountable and transparent.
 
 Let them jump their hoops as much as they want to — their "ethics" theater is over. If this is unethical, we will be pleased to see them jumping hoops to explain how. Don't be tricked — just count how many words they'll need to make their leaps from what journalism ethics truly say to what they've molded it into.
