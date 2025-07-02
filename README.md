@@ -17,7 +17,9 @@ Ensuring fairness and non-discrimination in decision-making is paramount, regard
 * **Empower Accountability:** Offer a tool for decision-makers, organizations, regulators, and civil society to evaluate and improve fairness.
 * **Foster Open Collaboration:** Build a community around ethical auditing methodologies and best practices for decision-making.
 
-This approach draws directly from a rich history of successful **paired-testing methodologies** used in civil rights and anti-discrimination efforts for decades, such as those that exposed systemic biases in housing, lending, and employment. By adapting and automating these proven techniques, `watching_u_watching` brings a scientifically rigorous and legally defensible method to modern challenges.
+This approach draws directly from a rich history of successful **paired-testing methodologies** used for decades to expose systemic discrimination. Notable historical studies, such as the **U.S. Department of Housing and Urban Development's (HUD) Housing Discrimination Studies**, utilized thousands of paired tests (e.g., the 2012 study conducted over **8,000 audits**) to provide undeniable evidence of bias in housing markets, directly supporting policy changes like the Fair Housing Amendments Act. Similarly, employment audit studies have used **tens of thousands of paired applications** to reveal pervasive biases in hiring across various industries and regions.
+
+`watching_u_watching` builds upon this proven foundation, but with a critical advancement: **full automation**. This allows us to execute paired tests at an unprecedented scale and speed—potentially **hundreds of thousands or even millions of inquiries**—far surpassing the logistical limitations of manual or semi-automated studies. This immense scale enables the detection of more subtle patterns of discrimination, real-time monitoring, and a level of accountability previously unattainable, transforming fairness from an aspirational goal into a verifiable reality.
 
 ## ⚙️ Our Scalable Methodology: How `watching_u_watching` Works
 
