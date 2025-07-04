@@ -1,0 +1,9 @@
+groq
+python-dotenv
+pandas
+textblob
+nltk
+fairlearn
+matplotlib
+seaborn
+scipy
