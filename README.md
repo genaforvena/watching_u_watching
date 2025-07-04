@@ -75,6 +75,11 @@ Our immediate prioritization for new development and community engagement is as 
 
 These represent our most immediate and impactful areas for applying `watching_u_watching` due to existing or emerging legal frameworks:
 
+0.  **👁️ Assessing Bias in Fairlearn: AI-Driven Fairness Assessment**
+    * **Focus:** Evaluating the Fairlearn library's capabilities as a bias detection tool, aligning with its goals and motivations to scrutinize fairness as a complex sociotechnical challenge.
+    * **Goal:** To critically assess Fairlearn's methodologies and limitations, starting with AI-driven fairness assessment to avoid the complexities and ethical risks associated with human-based decision-making processes.
+    * **[Join the discussion on Fairlearn bias assessment here.](https://github.com/genaforvena/watching_u_watching/issues/9)**
+
 1.  **👁️👁️👁️ Brazil's AI Act Alignment (for AEDTs)**
     * **Focus:** We are prioritizing development to align `watching_u_watching` with **Brazil's AI Act (Bill No. 2338/2023)**. This legislation specifically classifies AI systems in employment (AEDTs) as "high-risk" and mandates stringent requirements for bias mitigation, transparency, and Algorithmic Impact Assessments (AIAs).
     * **Goal:** To establish `watching_u_watching` as a crucial tool for organizations to demonstrate compliance in this well-defined regulatory context, serving as our primary, impactful initial case study for the broader methodology.
