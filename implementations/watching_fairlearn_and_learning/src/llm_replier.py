@@ -59,8 +59,8 @@ def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant", max_retri
             token = os.environ.get("HF_TOKEN")
             if not token:
                 raise ValueError("HF_TOKEN environment variable is not set.")
-            hf_client = InferenceClient(token=token)
-            logging.info(f"Initialized HuggingFace client")
+            hf_client = InferenceClient(model=model_name, token=token)
+            logging.info(f"Initialized HuggingFace client for model: {model_name}")
         client = hf_client
     elif provider == "local":
         if not TRANSFORMERS_AVAILABLE:
@@ -74,11 +74,20 @@ def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant", max_retri
 
     if provider == "huggingface":
         try:
-            # Single call, no retry logic
-            response = client.text_generation(prompt_text, model=model_name, max_new_tokens=500, temperature=0.7)
+            # Use chat completions for conversational models
+            if model_name == "Qwen/Qwen3-0.6B":
+                chat_completion = client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt_text}],
+                    model=model_name,
+                    temperature=0.7,
+                    max_tokens=500
+                )
+                return chat_completion.choices[0].message.content
+            # Fallback to text generation for other models
+            response = client.text_generation(prompt_text, max_new_tokens=500, temperature=0.7)
             return response
         except Exception as e:
-            logging.error(f"HuggingFace API error: {e}")
+            logging.error(f"HuggingFace API error: {e}", exc_info=True)
             return None
     elif provider == "local":
         try:
@@ -223,9 +232,9 @@ if __name__ == "__main__":
     )
 
     PERSONAS = ["Mohamed", "John"]
-    REPLIES_PER_PERSONA = 10000  # Default number of replies per persona for full run
+    REPLIES_PER_PERSONA = 5  # Default number of replies per persona for full run
     OUTPUT_DATA_FILE = "llm_replies.parquet"
-    MODEL_NAME = "llama-3.1-8b-instant"
+    MODEL_NAME = "Qwen/Qwen3-0.6B"
     
     # Generate a unique run ID for this execution
     run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -238,7 +247,7 @@ if __name__ == "__main__":
     total_start_time = datetime.now()
     
     # Choose LLM provider: groq, huggingface, or local
-    provider = os.environ.get("LLM_PROVIDER", "groq")
+    provider = os.environ.get("LLM_PROVIDER", "huggingface")
     logging.info(f"Using LLM provider: {provider}")
 
     for persona in PERSONAS:
