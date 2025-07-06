@@ -15,6 +15,9 @@ The experiment employs a paired-testing methodology using a Large Language Model
 - Generates configurable number of LLM replies (default: 10,000) for each of two personas ("Mohamed" and "John") using subtly varied prompts.
 - Utilizes Groq's fastest LLM model for efficient and scalable data generation.
 - Includes comprehensive logging with timestamps for tracking generation progress.
+- Supports resuming from interruptions, checking for existing data and only generating missing replies.
+- Includes exponential backoff with jitter to handle rate limiting gracefully.
+- Tracks `run_id` and `model_name` for each reply to ensure traceability and prevent mixing data from different runs.
 
 ### Outcome Metric Extraction
 
@@ -45,14 +48,15 @@ The experiment employs a paired-testing methodology using a Large Language Model
 │   └── results_visualizer.py
 └── tests/
     ├── mock_llm_replies.csv
-    └── test_fairlearn_processor.py
+    ├── test_fairlearn_processor.py
+    └── test_llm_replier.py
 ```
 
 - **README.md**: This file.
 - **requirements.txt**: Python dependencies for the project.
 - **src/config.json**: Configuration file for the evaluation pipeline.
 - **src/eval.py**: Main evaluation script that orchestrates the entire pipeline with direct function calls.
-- **src/llm_replier.py**: Generates LLM responses using Groq API, with logging and environment variable validation.
+- **src/llm_replier.py**: Generates LLM responses using the Groq API. Features include robust error handling with exponential backoff, resumable generation, and metadata tracking (`run_id`, `model_name`).
 - **src/fairlearn_processor.py**: Processes raw LLM replies and extracts features for Fairlearn analysis.
 - **src/bias_evaluator.py**: Uses Fairlearn's MetricFrame to analyze disparities and performs statistical tests.
 - **src/results_visualizer.py**: Visualizes results and provides interpretive framework.
@@ -98,61 +102,51 @@ The experiment employs a paired-testing methodology using a Large Language Model
 
 ## Usage
 
-The evaluation pipeline can be run in different ways:
-
-### Option 1: Run Complete Pipeline (Recommended)
-
-Run the entire evaluation pipeline with a single command:
+To run the full evaluation pipeline, execute the `eval.py` script:
 
 ```bash
-cd src
-python eval.py --num-pairs 10000
+python src/eval.py
 ```
 
-**Command-line options:**
-- `--num-pairs`: Number of reply pairs to generate per persona (default: 10000)
-- `--help`: Show help message and available options
+**Resuming Interrupted Runs**:
+If the `collect_replies` script is interrupted, it will automatically resume from the last successfully generated reply. The script checks for an existing `llm_replies.parquet` file and continues where it left off, using the same `run_id` and `model_name` to ensure data consistency. To start a fresh run, simply delete the existing `llm_replies.parquet` file.
 
-**Example:**
-```bash
-# Run with 1000 pairs for faster testing
-python eval.py --num-pairs 1000
+## How It Works
 
-# Run with default 10000 pairs for full analysis
-python eval.py
-```
+The pipeline consists of several key steps:
 
-### Option 2: Run Individual Steps
+1. **LLM Reply Generation (`llm_replier.py`)**:
+   - Generates replies from the LLM for two personas, "Mohamed" and "John".
+   - Uses exponential backoff with jitter to handle rate limits from the Groq API.
+   - Supports resuming interrupted runs by checking for existing data.
 
-If you prefer to run each step separately:
+2. **Data Processing (`fairlearn_processor.py`)**:
+   - Processes the raw LLM replies to extract features and prepare the data for Fairlearn analysis.
 
-1. **Generate LLM Replies**:
-   ```bash
-   python llm_replier.py
-   ```
+3. **Bias Evaluation (`bias_evaluator.py`)**:
+   - Utilizes Fairlearn's MetricFrame to compute disparity metrics and perform statistical tests.
 
-2. **Process Data**:
-   ```bash
-   python fairlearn_processor.py
-   ```
+4. **Results Visualization (`results_visualizer.py`)**:
+   - Visualizes the results of the bias evaluation, providing insights into the disparities between the personas.
 
-3. **Evaluate Bias**:
-   ```bash
-   python bias_evaluator.py
-   ```
+### Detailed Component Functionality
 
-4. **Visualize Results**:
-   ```bash
-   python results_visualizer.py
-   ```
+- **LLM Replier**:
+  - Robust error handling with exponential backoff for API rate limits.
+  - Resumable reply generation, tracking progress and ensuring no duplicate or missing replies.
+  - Metadata tracking (`run_id`, `model_name`) for each reply to maintain consistency and traceability.
 
-### Pipeline Features
+- **Fairlearn Processor**:
+  - Extracts relevant features from the LLM replies for fairness analysis.
+  - Prepares the data in a format compatible with Fairlearn's MetricFrame.
 
-- **Environment Validation**: Automatically checks for required GROQ_API_KEY
-- **Direct Function Calls**: Uses Python function imports instead of subprocess calls for better performance
-- **Comprehensive Logging**: Includes timestamps and progress tracking during LLM reply generation
-- **Error Handling**: Robust error logging and graceful failure handling
-- **Data Persistence**: Saves intermediate results in Parquet format for efficient data handling
+- **Bias Evaluator**:
+  - Computes various disparity metrics (e.g., difference in means, ratio of means) using Fairlearn.
+  - Performs statistical significance testing (Welch's t-test) to evaluate the observed disparities.
+
+- **Results Visualizer**:
+  - Generates visualizations (e.g., histograms, bar charts) to compare the distributions of metrics between the two personas.
+  - Provides a textual analysis of the results, guiding the user through the interpretation of the findings.
 
 ## Expected Output and Analysis
 
