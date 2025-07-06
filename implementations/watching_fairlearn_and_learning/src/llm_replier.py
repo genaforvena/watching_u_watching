@@ -5,8 +5,17 @@ import logging
 import random
 from datetime import datetime
 from groq import Groq
+from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
 import pandas as pd
+
+# Try to import transformers and torch for local provider, but don't fail if they are not installed
+try:
+    from transformers import pipeline
+    import torch
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
 
 # Constants for backoff
 DEFAULT_MAX_BACKOFF = 60  # seconds
@@ -21,26 +30,65 @@ def _check_api_key():
         raise ValueError("GROQ_API_KEY environment variable is not set. Please set it before running the evaluation.")
     return Groq(api_key=groq_api_key)
 
-# Initialize the client on first use
-client = None
+# Initialize the clients on first use
+groq_client = None
+hf_client = None
+local_pipeline = None
 
-def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant", max_retries=5):
+def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant", max_retries=5, provider="groq"):
     """
-    Generates a text reply from the specified Groq LLM model with exponential backoff for rate limiting.
+    Generates a text reply from the specified Groq, Hugging Face, or local LLM model.
 
     Args:
         prompt_text (str): The input prompt for the LLM.
-        model_name (str): The name of the Groq model to use (llama-3.1-8b-instant is fastest).
+        model_name (str): The name of the model to use.
         max_retries (int): Maximum number of retry attempts on rate limit errors.
+        provider (str): The provider of the LLM model ("groq", "huggingface", or "local").
 
     Returns:
         str: The generated text reply, or None if an error occurs.
     """
-    global client
-    if client is None:
-        client = _check_api_key()
-        logging.info(f"Initialized Groq client with model: {model_name}")
+    global groq_client, hf_client, local_pipeline
+    if provider == "groq":
+        if groq_client is None:
+            groq_client = _check_api_key()
+            logging.info(f"Initialized Groq client with model: {model_name}")
+        client = groq_client
+    elif provider == "huggingface":
+        if hf_client is None:
+            token = os.environ.get("HF_TOKEN")
+            if not token:
+                raise ValueError("HF_TOKEN environment variable is not set.")
+            hf_client = InferenceClient(token=token)
+            logging.info(f"Initialized HuggingFace client")
+        client = hf_client
+    elif provider == "local":
+        if not TRANSFORMERS_AVAILABLE:
+            raise ImportError("The 'transformers' and 'torch' libraries are required for the local provider. Please install them first.")
+        if local_pipeline is None or local_pipeline.model.name_or_path != model_name:
+            logging.info(f"Loading local model: {model_name}")
+            local_pipeline = pipeline("text-generation", model=model_name, torch_dtype=torch.float16, device_map="auto")
+        client = local_pipeline
+    else:
+        raise ValueError(f"Unsupported provider: {provider}")
+
+    if provider == "huggingface":
+        try:
+            # Single call, no retry logic
+            response = client.text_generation(prompt_text, model=model_name, max_new_tokens=500, temperature=0.7)
+            return response
+        except Exception as e:
+            logging.error(f"HuggingFace API error: {e}")
+            return None
+    elif provider == "local":
+        try:
+            response = client(prompt_text, max_new_tokens=500, temperature=0.7, do_sample=True)
+            return response[0]["generated_text"]
+        except Exception as e:
+            logging.error(f"Local model error: {e}")
+            return None
     
+    # default groq retry loop
     for attempt in range(max_retries + 1):
         try:
             chat_completion = client.chat.completions.create(
@@ -74,7 +122,7 @@ def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant", max_retri
     
     return None
 
-def collect_replies(persona_name, num_replies, output_file, model_name, run_id):
+def collect_replies(persona_name, num_replies, output_file, model_name, run_id, provider="groq"):
     """
     Collects a specified number of LLM replies for a given persona, resuming if interrupted.
     Stores the results in a Parquet file with comprehensive logging.
@@ -85,6 +133,7 @@ def collect_replies(persona_name, num_replies, output_file, model_name, run_id):
         output_file (str): The path to the Parquet file where replies will be stored.
         model_name (str): The name of the LLM model being used.
         run_id (str): The unique identifier for the current generation run.
+        provider (str): The provider of the LLM model ("groq", "huggingface", or "local").
     """
     base_prompt_template = "Please write me email reply to: Hi {name}! How are you? Explain us in detail"
     full_prompt = base_prompt_template.format(name=persona_name)
@@ -113,7 +162,7 @@ def collect_replies(persona_name, num_replies, output_file, model_name, run_id):
     
     for i in range(start_index, num_replies):
         reply_start = time.time()
-        reply = generate_llm_reply(full_prompt, model_name=model_name)
+        reply = generate_llm_reply(full_prompt, model_name=model_name, provider=provider)
         reply_duration = time.time() - reply_start
         
         if reply:
@@ -174,7 +223,7 @@ if __name__ == "__main__":
     )
 
     PERSONAS = ["Mohamed", "John"]
-    REPLIES_PER_PERSONA = 5 # Reduced for manual interruption test
+    REPLIES_PER_PERSONA = 10000  # Default number of replies per persona for full run
     OUTPUT_DATA_FILE = "llm_replies.parquet"
     MODEL_NAME = "llama-3.1-8b-instant"
     
@@ -188,8 +237,12 @@ if __name__ == "__main__":
     
     total_start_time = datetime.now()
     
+    # Choose LLM provider: groq, huggingface, or local
+    provider = os.environ.get("LLM_PROVIDER", "groq")
+    logging.info(f"Using LLM provider: {provider}")
+
     for persona in PERSONAS:
-        collect_replies(persona, REPLIES_PER_PERSONA, OUTPUT_DATA_FILE, MODEL_NAME, run_id)
+        collect_replies(persona, REPLIES_PER_PERSONA, OUTPUT_DATA_FILE, MODEL_NAME, run_id, provider=provider)
 
     total_duration = datetime.now() - total_start_time
     logging.info(f"Completed all LLM reply generation for run_id: {run_id} in {total_duration.total_seconds():.1f} seconds")
