@@ -13,7 +13,7 @@ The experiment employs a paired-testing methodology using a Large Language Model
 ### Controlled Data Generation
 
 - Generates 10,000 LLM replies for each of two personas ("Mohamed" and "John") using subtly varied prompts.
-- Utilizes Groq's API (specifically llama3-8b-8192 or a similar cost-effective model) for consistent and scalable data generation.
+- Utilizes Hugging Face's GPT-2 model locally via the `transformers` library for consistent and scalable data generation.
 
 ### Outcome Metric Extraction
 
@@ -38,7 +38,8 @@ The experiment employs a paired-testing methodology using a Large Language Model
 ├── llm_replier.py
 ├── fairlearn_processor.py
 ├── bias_evaluator.py
-└── results_visualizer.py
+├── results_visualizer.py
+└── eval.py
 ```
 
 - **README.md**: This file.
@@ -47,6 +48,7 @@ The experiment employs a paired-testing methodology using a Large Language Model
 - **fairlearn_processor.py**: Python script to load `llm_replies.jsonl`, extract relevant features (like sentiment, length, formality), and prepare the data for Fairlearn.
 - **bias_evaluator.py**: Python script that uses Fairlearn's MetricFrame to analyze disparities in the processed data and performs statistical significance tests.
 - **results_visualizer.py**: Python script to visualize the results and provide an interpretive framework for understanding Fairlearn's evaluation.
+- **eval.py**: Python script to run all evaluation steps sequentially.
 
 ## Setup
 
@@ -72,9 +74,9 @@ The experiment employs a paired-testing methodology using a Large Language Model
 
    You'll need to create `requirements.txt` with the following content:
 
-   ```
-   groq
-   python-dotenv
+   ```plaintext
+   transformers
+   torch
    pandas
    textblob
    nltk
@@ -86,22 +88,14 @@ The experiment employs a paired-testing methodology using a Large Language Model
 
 4. Configure Groq API Key:
 
-   - Obtain an API key from Groq.
-   - Create a file named `.env` in the root directory of the project.
-   - Add your Groq API key to the `.env` file:
-
-     ```
-     GROQ_API_KEY="your_groq_api_key_here"
-     ```
-
-   - **Important**: Do not commit your `.env` file to version control. It's already in `.gitignore`.
+   - This step is no longer needed. The script now uses Hugging Face's GPT-2 model locally via the `transformers` library.
 
 ## Usage
 
 Follow these steps to run the experiment:
 
 1. **Generate LLM Replies**:
-   This script will connect to Groq and generate 10,000 replies for "Mohamed" and 10,000 for "John", saving them to `llm_replies.jsonl`. This can take some time due to API calls and rate limits.
+   This script will use Hugging Face's GPT-2 model to generate 10,000 replies for "Mohamed" and 10,000 for "John", saving them to `llm_replies.jsonl`. This can take some time depending on your hardware.
 
    ```bash
    python llm_replier.py
@@ -126,6 +120,13 @@ Follow these steps to run the experiment:
 
    ```bash
    python results_visualizer.py
+   ```
+
+5. **Run All Evaluations Sequentially**:
+   This script is a wrapper to execute all the above steps in order, ensuring a streamlined evaluation process from data generation to results visualization.
+
+   ```bash
+   python eval.py
    ```
 
 ## Expected Output and Analysis

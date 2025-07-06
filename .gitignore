@@ -43,3 +43,6 @@ build/
 *.bak
 *.swp
 *.tmp
+
+# Parquet files
+*.parquet

@@ -9,11 +9,11 @@ from nltk.tokenize import word_tokenize
 # Ensure necessary NLTK data is downloaded
 try:
     nltk.data.find('corpora/stopwords')
-except nltk.downloader.DownloadError:
+except LookupError:
     nltk.download('stopwords')
 try:
     nltk.data.find('tokenizers/punkt')
-except nltk.downloader.DownloadError:
+except LookupError:
     nltk.download('punkt')
 
 def calculate_formality_score(text):
@@ -60,9 +60,13 @@ def process_llm_data(input_file="llm_replies.jsonl"):
     data = []
     # Read each line from the JSON Lines file and parse it as a JSON object
     with open(input_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            data.append(json.loads(line))
-            
+        try:
+            for line in f:
+                data.append(json.loads(line))
+        except FileNotFoundError:
+            print(f"Error: Input file '{input_file}' not found.")
+            return pd.DataFrame()
+
     # Convert the list of dictionaries into a pandas DataFrame
     df = pd.DataFrame(data)
 
