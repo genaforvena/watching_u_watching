@@ -1,0 +1,20 @@
+# Requirements for AI Agents Framework
+# Basic dependencies for the watching_u_watching AI agents
+
+# Core Python packages (standard library used primarily)
+# No external dependencies required for basic functionality
+
+# Optional packages for enhanced functionality:
+# - requests>=2.25.0  # For external API integration in production
+# - pandas>=1.3.0     # For data analysis in monitoring agent
+# - numpy>=1.21.0     # For statistical calculations
+# - python-dateutil>=2.8.0  # For advanced date handling
+
+# Development and testing:
+# - pytest>=6.0.0     # For unit testing
+# - black>=21.0.0     # For code formatting
+# - mypy>=0.900       # For type checking
+
+# Note: This framework is designed to work with Python standard library
+# to minimize dependencies and maintain security. External packages
+# should only be added with careful security review.

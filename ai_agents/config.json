@@ -1,0 +1,72 @@
+{
+  "ai_agents": {
+    "global_settings": {
+      "max_operations_per_hour": 10,
+      "require_human_approval": true,
+      "audit_all_operations": true,
+      "ethical_override_enabled": true
+    },
+    "agents": {
+      "research_agent": {
+        "agent_id": "research_001",
+        "max_operations_per_hour": 20,
+        "allowed_risk_levels": ["low", "medium"],
+        "research_domains": [
+          "ai_ethics",
+          "bias_detection", 
+          "algorithmic_auditing",
+          "nyc_ll144",
+          "brazil_ai_act",
+          "gdpr_ai",
+          "fairness_metrics"
+        ],
+        "auto_generate_issues": false
+      },
+      "compliance_agent": {
+        "agent_id": "compliance_001", 
+        "max_operations_per_hour": 15,
+        "allowed_risk_levels": ["low", "medium"],
+        "regulatory_frameworks": [
+          "NYC_LL144",
+          "Brazil_AI_Act", 
+          "GDPR"
+        ],
+        "strict_no_harm_enforcement": true
+      },
+      "monitoring_agent": {
+        "agent_id": "monitoring_001",
+        "max_operations_per_hour": 30,
+        "allowed_risk_levels": ["low", "medium"],
+        "monitoring_frequency": "hourly",
+        "alert_thresholds": {
+          "demographic_parity_threshold": 0.1,
+          "response_rate_threshold": 0.15,
+          "critical_alert_threshold": 0.3
+        }
+      }
+    }
+  },
+  "ethical_guidelines": {
+    "no_harm_principle": {
+      "description": "Absolute priority to prevent any form of harm",
+      "enforcement_level": "strict",
+      "human_oversight_required": true
+    },
+    "transparency_requirement": {
+      "description": "All AI agent operations must be transparent and auditable",
+      "audit_logging": true,
+      "public_documentation": true
+    },
+    "accountability_framework": {
+      "description": "Clear responsibility chains for all AI agent actions",
+      "human_approval_required_for": ["high_risk", "critical_risk"],
+      "oversight_review_frequency": "weekly"
+    }
+  },
+  "security": {
+    "operation_logging": true,
+    "rate_limiting": true,
+    "ethical_guardian_enabled": true,
+    "human_approval_workflows": true
+  }
+}
