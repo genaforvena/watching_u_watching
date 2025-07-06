@@ -1,24 +1,17 @@
 # llm_replier.py
 import os
-import json
 import time
 import logging
+import random
 from datetime import datetime
 from groq import Groq
 from dotenv import load_dotenv
 import pandas as pd
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('llm_generation.log'),
-        logging.StreamHandler()
-    ]
-)
+# Constants for backoff
+DEFAULT_MAX_BACKOFF = 60  # seconds
 
-# Load environment variables from a .env file (e.g., GROQ_API_KEY)
+# Load environment variables
 load_dotenv()
 
 def _check_api_key():
@@ -31,13 +24,14 @@ def _check_api_key():
 # Initialize the client on first use
 client = None
 
-def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant"):
+def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant", max_retries=5):
     """
-    Generates a text reply from the specified Groq LLM model.
+    Generates a text reply from the specified Groq LLM model with exponential backoff for rate limiting.
 
     Args:
         prompt_text (str): The input prompt for the LLM.
         model_name (str): The name of the Groq model to use (llama-3.1-8b-instant is fastest).
+        max_retries (int): Maximum number of retry attempts on rate limit errors.
 
     Returns:
         str: The generated text reply, or None if an error occurs.
@@ -47,17 +41,38 @@ def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant"):
         client = _check_api_key()
         logging.info(f"Initialized Groq client with model: {model_name}")
     
-    try:
-        chat_completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt_text}],
-            model=model_name,
-            temperature=0.7,
-            max_tokens=500
-        )
-        return chat_completion.choices[0].message.content
-    except Exception as e:
-        logging.error(f"Error generating reply for prompt '{prompt_text[:50]}...': {e}")
-        return None
+    for attempt in range(max_retries + 1):
+        try:
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt_text}],
+                model=model_name,
+                temperature=0.7,
+                max_tokens=500
+            )
+            return chat_completion.choices[0].message.content
+            
+        except Exception as e:
+            error_message = str(e).lower()
+            
+            # Check if it's a rate limit error
+            if "rate limit" in error_message or "429" in error_message or "too many requests" in error_message:
+                if attempt < max_retries:
+                    # Calculate exponential backoff with jitter, capped
+                    raw = (2 ** attempt) + random.uniform(0, 1)
+                    wait_time = min(raw, DEFAULT_MAX_BACKOFF)
+                    logging.warning(f"Rate limit hit on attempt {attempt + 1}/{max_retries + 1}. "
+                                  f"Waiting {wait_time:.2f} seconds before retry...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logging.error(f"Rate limit exceeded after {max_retries} retries for prompt '{prompt_text[:50]}...'")
+                    return None
+            else:
+                # For non-rate-limit errors, log and return None immediately
+                logging.error(f"Error generating reply for prompt '{prompt_text[:50]}...': {e}")
+                return None
+    
+    return None
 
 def collect_replies(persona_name, num_replies=10000, output_file="llm_replies.parquet"):
     """
@@ -107,12 +122,11 @@ def collect_replies(persona_name, num_replies=10000, output_file="llm_replies.pa
         else:
             logging.warning(f"Failed to generate reply {i+1} for persona '{persona_name}'")
             
-        time.sleep(0.05)  # Rate limiting
+        # Adaptive rate limiting - increase sleep time if we're getting rate limited frequently
+        time.sleep(0.1)  # Base rate limiting increased slightly
 
     # Save replies to a Parquet file
     df = pd.DataFrame(replies)
-    
-    # Check if the file already exists to append data
     if os.path.exists(output_file):
         existing_df = pd.read_parquet(output_file)
         combined_df = pd.concat([existing_df, df], ignore_index=True)
@@ -131,6 +145,13 @@ def collect_replies(persona_name, num_replies=10000, output_file="llm_replies.pa
                f"in {total_duration.total_seconds():.1f} seconds")
 
 if __name__ == "__main__":
+    # Setup logging (only when run as script)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[logging.FileHandler('llm_generation.log'), logging.StreamHandler()]
+    )
+
     PERSONAS = ["Mohamed", "John"]
     REPLIES_PER_PERSONA = 10000
     OUTPUT_DATA_FILE = "llm_replies.parquet"

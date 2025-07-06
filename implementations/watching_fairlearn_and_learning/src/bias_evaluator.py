@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from fairlearn.metrics import MetricFrame, demographic_parity_difference, demographic_parity_ratio
 from scipy import stats
-from fairlearn_processor import process_llm_data # Import the data processing module
+from .fairlearn_processor import process_llm_data # Import the data processing module
 
 def calculate_group_metrics(df, outcome, sensitive_feature):
     """
