@@ -12,15 +12,16 @@ The experiment employs a paired-testing methodology using a Large Language Model
 
 ### Controlled Data Generation
 
-- Generates 10,000 LLM replies for each of two personas ("Mohamed" and "John") using subtly varied prompts.
-- Utilizes Hugging Face's GPT-2 model locally via the `transformers` library for consistent and scalable data generation.
+- Generates configurable number of LLM replies (default: 10,000) for each of two personas ("Mohamed" and "John") using subtly varied prompts.
+- Utilizes Groq's fastest LLM model for efficient and scalable data generation.
+- Includes comprehensive logging with timestamps for tracking generation progress.
 
 ### Outcome Metric Extraction
 
 - Processes the raw LLM replies to extract quantitative "outcome" metrics:
   - Reply length
   - Sentiment score
-  - Formality score (heuristic-based)
+  - Formality score (heuristic-based)  
   - Presence of "detail" keywords
 
 ### Fairlearn Analysis
@@ -34,21 +35,28 @@ The experiment employs a paired-testing methodology using a Large Language Model
 ```
 .
 ├── README.md
-├── .env.example
-├── llm_replier.py
-├── fairlearn_processor.py
-├── bias_evaluator.py
-├── results_visualizer.py
-└── eval.py
+├── requirements.txt
+├── src/
+│   ├── config.json
+│   ├── eval.py
+│   ├── llm_replier.py
+│   ├── fairlearn_processor.py
+│   ├── bias_evaluator.py
+│   └── results_visualizer.py
+└── tests/
+    ├── mock_llm_replies.csv
+    └── test_fairlearn_processor.py
 ```
 
 - **README.md**: This file.
-- **.env.example**: Example file for environment variables (e.g., GROQ_API_KEY).
-- **llm_replier.py**: Python script to interact with the Groq API and generate LLM responses, saving them to `llm_replies.jsonl`.
-- **fairlearn_processor.py**: Python script to load `llm_replies.jsonl`, extract relevant features (like sentiment, length, formality), and prepare the data for Fairlearn.
-- **bias_evaluator.py**: Python script that uses Fairlearn's MetricFrame to analyze disparities in the processed data and performs statistical significance tests.
-- **results_visualizer.py**: Python script to visualize the results and provide an interpretive framework for understanding Fairlearn's evaluation.
-- **eval.py**: Python script to run all evaluation steps sequentially.
+- **requirements.txt**: Python dependencies for the project.
+- **src/config.json**: Configuration file for the evaluation pipeline.
+- **src/eval.py**: Main evaluation script that orchestrates the entire pipeline with direct function calls.
+- **src/llm_replier.py**: Generates LLM responses using Groq API, with logging and environment variable validation.
+- **src/fairlearn_processor.py**: Processes raw LLM replies and extracts features for Fairlearn analysis.
+- **src/bias_evaluator.py**: Uses Fairlearn's MetricFrame to analyze disparities and performs statistical tests.
+- **src/results_visualizer.py**: Visualizes results and provides interpretive framework.
+- **tests/**: Test files and mock data for validation.
 
 ## Setup
 
@@ -56,7 +64,7 @@ The experiment employs a paired-testing methodology using a Large Language Model
 
    ```bash
    git clone <repository-url>
-   cd <repository-name>
+   cd watching_fairlearn_and_learning
    ```
 
 2. Create a virtual environment (recommended):
@@ -72,69 +80,96 @@ The experiment employs a paired-testing methodology using a Large Language Model
    pip install -r requirements.txt
    ```
 
-   You'll need to create `requirements.txt` with the following content:
-
-   ```plaintext
-   transformers
-   torch
-   pandas
-   textblob
-   nltk
-   fairlearn
-   matplotlib
-   seaborn
-   scipy
-   ```
-
 4. Configure Groq API Key:
 
-   - This step is no longer needed. The script now uses Hugging Face's GPT-2 model locally via the `transformers` library.
+   Set your Groq API key as an environment variable:
+
+   ```bash
+   export GROQ_API_KEY="your_groq_api_key_here"
+   ```
+
+   Or create a `.env` file in the project root:
+
+   ```plaintext
+   GROQ_API_KEY=your_groq_api_key_here
+   ```
+
+   **Note**: The script will validate that the API key is set before starting LLM reply generation.
 
 ## Usage
 
-Follow these steps to run the experiment:
+The evaluation pipeline can be run in different ways:
+
+### Option 1: Run Complete Pipeline (Recommended)
+
+Run the entire evaluation pipeline with a single command:
+
+```bash
+cd src
+python eval.py --num-pairs 10000
+```
+
+**Command-line options:**
+- `--num-pairs`: Number of reply pairs to generate per persona (default: 10000)
+- `--help`: Show help message and available options
+
+**Example:**
+```bash
+# Run with 1000 pairs for faster testing
+python eval.py --num-pairs 1000
+
+# Run with default 10000 pairs for full analysis
+python eval.py
+```
+
+### Option 2: Run Individual Steps
+
+If you prefer to run each step separately:
 
 1. **Generate LLM Replies**:
-   This script will use Hugging Face's GPT-2 model to generate 10,000 replies for "Mohamed" and 10,000 for "John", saving them to `llm_replies.jsonl`. This can take some time depending on your hardware.
-
    ```bash
    python llm_replier.py
    ```
 
-2. **Process Data and Prepare for Fairlearn**:
-   This script loads the raw replies, extracts features (length, sentiment, formality, keyword presence), and prepares the DataFrame for Fairlearn analysis.
-
+2. **Process Data**:
    ```bash
    python fairlearn_processor.py
    ```
 
-3. **Evaluate Bias with Fairlearn**:
-   This script runs Fairlearn's MetricFrame on the processed data and performs statistical tests to identify disparities. It will print the raw results to the console.
-
+3. **Evaluate Bias**:
    ```bash
    python bias_evaluator.py
    ```
 
-4. **Visualize and Interpret Results**:
-   This script generates comparative plots (histograms, box plots) and provides a structured framework for interpreting the Fairlearn outputs in the context of "bias in bias detection."
-
+4. **Visualize Results**:
    ```bash
    python results_visualizer.py
    ```
 
-5. **Run All Evaluations Sequentially**:
-   This script is a wrapper to execute all the above steps in order, ensuring a streamlined evaluation process from data generation to results visualization.
+### Pipeline Features
 
-   ```bash
-   python eval.py
-   ```
+- **Environment Validation**: Automatically checks for required GROQ_API_KEY
+- **Direct Function Calls**: Uses Python function imports instead of subprocess calls for better performance
+- **Comprehensive Logging**: Includes timestamps and progress tracking during LLM reply generation
+- **Error Handling**: Robust error logging and graceful failure handling
+- **Data Persistence**: Saves intermediate results in Parquet format for efficient data handling
 
 ## Expected Output and Analysis
 
-Upon running `results_visualizer.py`, you will see:
+Upon running the evaluation pipeline, you will see:
 
+- **Console Output**: Real-time progress with timestamps showing LLM reply generation, processing, and analysis steps.
+- **Log Files**: Detailed logging saved to `llm_generation.log` with timestamps, success rates, and performance metrics.
 - **Plots**: Visual representations of the distributions and comparisons of metrics (reply length, sentiment, formality, detail keyword presence) between the "Mohamed" and "John" cohorts.
-- **Console Output**: Detailed statistical results from Fairlearn's MetricFrame (mean values per group, disparity differences, ratios) and p-values from Welch's t-tests.
+- **Statistical Results**: Fairlearn's MetricFrame outputs (mean values per group, disparity differences, ratios) and p-values from Welch's t-tests.
+
+### Key Features
+
+- **High Performance**: Uses Groq's fastest LLM model (`llama-3.1-8b-instant`) for rapid generation
+- **Comprehensive Logging**: Timestamps, progress tracking, success rates, and error handling
+- **Robust Error Handling**: Graceful failure handling with detailed error logging
+- **Scalable**: Configurable number of reply pairs (from small tests to large-scale analysis)
+- **Data Persistence**: Efficient Parquet format for data storage and retrieval
 
 The accompanying textual output from `results_visualizer.py` will guide you through a critical analysis. This analysis will prompt questions such as:
 
@@ -143,4 +178,11 @@ The accompanying textual output from `results_visualizer.py` will guide you thro
 - Do the chosen quantitative metrics adequately capture the complex, sociotechnical nature of fairness in this context?
 - What do these findings imply about the inherent "fairness" or limitations of fairness assessment tools themselves?
 
-Your insights from this analysis are invaluable for understanding the nuances of bias detection and refining methodologies for evaluating AI fairness
+Your insights from this analysis are invaluable for understanding the nuances of bias detection and refining methodologies for evaluating AI fairness.
+
+## Performance Notes
+
+- **LLM Generation**: The `llama-3.1-8b-instant` model provides fast response times (typically < 1 second per reply)
+- **Scalability**: 10,000 pairs typically complete in 10-15 minutes depending on API response times
+- **Logging**: All generation activities are logged with timestamps for performance analysis and debugging
+- **Memory Efficiency**: Parquet format provides efficient storage and fast data loading for large datasets
