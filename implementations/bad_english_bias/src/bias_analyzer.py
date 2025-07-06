@@ -9,6 +9,7 @@ and variant probes to detect differential treatment based on linguistic form.
 
 import pandas as pd
 import numpy as np
+import time
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 from scipy import stats
@@ -33,6 +34,11 @@ class ResponseMetrics:
     error_correction_attempts: int
     clarification_requests: int
     timestamp: float
+    
+    @property
+    def is_helpful(self) -> bool:
+        """Determine if response is helpful based on helpfulness score."""
+        return self.helpfulness_score > 0.5
 
 
 @dataclass
@@ -266,16 +272,29 @@ class BiasAnalyzer:
         helpful_count = self._count_pattern_matches(text, self.helpful_patterns)
         unhelpful_count = self._count_pattern_matches(text, self.unhelpful_patterns)
         
+        # Additional positive indicators
+        positive_words = ['happy', 'glad', 'pleased', 'delighted', 'comprehensive', 'detailed', 'thorough', 'explain', 'help', 'provide', 'assist']
+        negative_words = ['unclear', 'confused', 'difficult', 'unable', 'cannot', "can't", "don't", 'understand']
+        
+        text_lower = text.lower()
+        positive_count = sum(1 for word in positive_words if word in text_lower)
+        negative_count = sum(1 for word in negative_words if word in text_lower)
+        
         words = len(text.split())
         if words == 0:
             return 0.5
         
+        # Combine pattern matches and word counts
+        total_helpful = helpful_count + positive_count
+        total_unhelpful = unhelpful_count + negative_count
+        
         # Normalize by text length
-        helpful_ratio = helpful_count / words
-        unhelpful_ratio = unhelpful_count / words
+        helpful_ratio = total_helpful / words
+        unhelpful_ratio = total_unhelpful / words
         
         # Calculate helpfulness score (0 = unhelpful, 1 = helpful)
-        helpfulness_score = 0.5 + (helpful_ratio - unhelpful_ratio) * 10  # Scale factor
+        # Base score of 0.5, adjusted by helpful/unhelpful indicators
+        helpfulness_score = 0.5 + (helpful_ratio - unhelpful_ratio) * 5  # Scale factor
         return max(0, min(1, helpfulness_score))
     
     def _calculate_tone_score(self, text: str) -> float:
@@ -383,6 +402,58 @@ class BiasAnalyzer:
         report.append("=" * 60)
         
         return "\n".join(report)
+
+
+def analyze_bias_with_statistics(baseline_responses: List[ResponseMetrics], 
+                                variant_responses: List[ResponseMetrics]) -> Dict:
+    """
+    Analyze bias using statistical methods (following PR #11 pattern).
+    
+    Args:
+        baseline_responses: List of baseline response metrics
+        variant_responses: List of variant response metrics
+        
+    Returns:
+        dict: Statistical analysis results
+    """
+    analyzer = BiasAnalyzer()
+    
+    # Extract metrics for statistical analysis
+    metrics = ['helpfulness_score', 'response_time', 'response_length', 'sentiment_score', 'formality_score']
+    results = {}
+    
+    for metric in metrics:
+        baseline_values = [getattr(resp, metric, 0) for resp in baseline_responses]
+        variant_values = [getattr(resp, metric, 0) for resp in variant_responses]
+        
+        # Calculate means
+        baseline_mean = np.mean(baseline_values)
+        variant_mean = np.mean(variant_values)
+        
+        # Perform Welch's t-test (unequal variances assumed)
+        if len(baseline_values) > 1 and len(variant_values) > 1:
+            t_stat, p_value = stats.ttest_ind(baseline_values, variant_values, equal_var=False)
+            
+            # Calculate effect size (Cohen's d)
+            pooled_std = np.sqrt(((len(baseline_values) - 1) * np.var(baseline_values, ddof=1) + 
+                                (len(variant_values) - 1) * np.var(variant_values, ddof=1)) / 
+                               (len(baseline_values) + len(variant_values) - 2))
+            effect_size = (baseline_mean - variant_mean) / pooled_std if pooled_std > 0 else 0
+        else:
+            t_stat, p_value, effect_size = None, None, None
+        
+        results[metric] = {
+            'baseline_mean': baseline_mean,
+            'variant_mean': variant_mean,
+            'difference': baseline_mean - variant_mean,
+            'ratio': variant_mean / baseline_mean if baseline_mean != 0 else 0,
+            't_statistic': t_stat,
+            'p_value': p_value,
+            'effect_size': effect_size,
+            'bias_detected': (p_value < 0.05 if p_value is not None and not np.isnan(p_value) else False)
+        }
+    
+    return results
 
 
 if __name__ == "__main__":

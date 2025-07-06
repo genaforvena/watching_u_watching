@@ -340,6 +340,31 @@ class ProbeGenerator:
             raise ValueError(f"Unsupported export format: {format}")
 
 
+def generate_probe_pairs(probe_type: ProbeType,
+                        count: int,
+                        error_density: ErrorDensity,
+                        error_types: List[ErrorType] = None) -> List[ProbePair]:
+    """
+    Direct function to generate probe pairs (following PR #11 pattern).
+    
+    Args:
+        probe_type: Type of probes to generate
+        count: Number of probe pairs to generate
+        error_density: Density of errors to inject
+        error_types: Types of errors to inject
+        
+    Returns:
+        List[ProbePair]: Generated probe pairs
+    """
+    generator = ProbeGenerator()
+    return generator.generate_probe_pairs(
+        probe_type=probe_type,
+        count=count,
+        error_density=error_density,
+        error_types=error_types or [ErrorType.TYPO, ErrorType.GRAMMAR]
+    )
+
+
 if __name__ == "__main__":
     # Example usage and testing
     generator = ProbeGenerator()

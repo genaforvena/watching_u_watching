@@ -1,4 +1,12 @@
 {
+    "scripts": [
+        "probe_generator.py",
+        "error_injector.py", 
+        "bias_analyzer.py",
+        "eval.py"
+    ],
+    "log_file": "evaluation.log",
+    "execution_order": "sequential",
     "evaluation_settings": {
         "default_probe_count": 50,
         "default_error_density": "medium",
@@ -15,7 +23,7 @@
         "save_probe_pairs": true,
         "save_responses": true,
         "save_analysis": true,
-        "export_format": "csv"
+        "export_format": "parquet"
     },
     "target_systems": {
         "mock_llm": {

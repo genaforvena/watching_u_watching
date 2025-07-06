@@ -2,7 +2,8 @@
 """
 Main Evaluation Pipeline for Bad English Bias Detection
 
-Orchestrates the complete bias testing workflow:
+Orchestrates the complete bias testing workflow using direct function calls
+following the watching_u_watching framework patterns established in PR #11:
 1. Generate probe pairs (baseline vs error-injected content)
 2. Submit probes to target systems 
 3. Collect and analyze responses
@@ -16,11 +17,12 @@ import os
 from datetime import datetime
 from typing import List, Dict, Optional
 import pandas as pd
+import logging
 
 # Import modules
-from probe_generator import ProbeGenerator, ProbeType
+from probe_generator import ProbeGenerator, ProbeType, generate_probe_pairs
 from error_injector import ErrorDensity, ErrorType
-from bias_analyzer import BiasAnalyzer, ResponseMetrics
+from bias_analyzer import BiasAnalyzer, ResponseMetrics, analyze_bias_with_statistics
 
 
 class LLMTarget:
@@ -78,6 +80,157 @@ class LLMTarget:
             "I'm glad you asked about this topic. I'll provide you with thorough information to help you understand."
         ]
         return responses[hash(prompt) % len(responses)]
+
+
+def evaluate_bad_english_bias(probe_type: ProbeType = ProbeType.LLM_QUESTION,
+                             probe_count: int = 50, 
+                             error_density: ErrorDensity = ErrorDensity.MEDIUM,
+                             error_types: List[ErrorType] = None,
+                             target_system: Optional[object] = None,
+                             output_dir: str = "results",
+                             log_file: str = "evaluation.log") -> Dict:
+    """
+    Main evaluation function using direct function calls (PR #11 pattern).
+    
+    Args:
+        probe_type: Type of probes to generate
+        probe_count: Number of probe pairs to generate  
+        error_density: Density of errors to inject
+        error_types: Types of errors to inject
+        target_system: Target system to test (optional, uses mock if None)
+        output_dir: Directory to save results
+        log_file: Log file path
+        
+    Returns:
+        dict: Complete evaluation results
+    """
+    if error_types is None:
+        error_types = [ErrorType.TYPO, ErrorType.GRAMMAR]
+        
+    # Create output directory first
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Setup logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(os.path.join(output_dir, log_file)),
+            logging.StreamHandler()
+        ]
+    )
+    all_success = True
+    
+    try:
+        logging.info(f"Starting Bad English Bias Evaluation")
+        logging.info(f"Probe type: {probe_type.value}")
+        logging.info(f"Probe count: {probe_count}")
+        logging.info(f"Error density: {error_density.value}")
+        logging.info(f"Error types: {[et.value for et in error_types]}")
+        
+        # Step 1: Generate probe pairs using direct function call
+        logging.info("Step 1: Generating probe pairs...")
+        probe_pairs = generate_probe_pairs(
+            probe_type=probe_type,
+            count=probe_count,
+            error_density=error_density,
+            error_types=error_types
+        )
+        logging.info(f"Generated {len(probe_pairs)} probe pairs")
+        
+        # Step 2: Submit probes and collect responses  
+        logging.info("Step 2: Submitting probes and collecting responses...")
+        target = target_system or LLMTarget()
+        bias_analyzer = BiasAnalyzer()
+        baseline_responses = []
+        variant_responses = []
+        
+        for i, pair in enumerate(probe_pairs):
+            if (i + 1) % 10 == 0:
+                logging.info(f"Processing pair {i+1}/{len(probe_pairs)}")
+            
+            # Submit baseline probe
+            baseline_result = target.query(pair.baseline_content)
+            baseline_metrics = bias_analyzer.extract_response_metrics(
+                response_text=baseline_result['response'],
+                response_time=baseline_result['response_time'],
+                probe_id=pair.pair_id + "_baseline",
+                response_id=f"resp_baseline_{i}"
+            )
+            baseline_responses.append(baseline_metrics)
+            
+            # Submit variant probe
+            variant_result = target.query(pair.variant_content)
+            variant_metrics = bias_analyzer.extract_response_metrics(
+                response_text=variant_result['response'],
+                response_time=variant_result['response_time'],
+                probe_id=pair.pair_id + "_variant", 
+                response_id=f"resp_variant_{i}"
+            )
+            variant_responses.append(variant_metrics)
+            
+            time.sleep(0.1)  # Rate limiting
+        
+        logging.info(f"Collected {len(baseline_responses)} baseline and {len(variant_responses)} variant responses")
+        
+        # Step 3: Analyze bias using statistical methods
+        logging.info("Step 3: Analyzing bias...")
+        bias_results = analyze_bias_with_statistics(baseline_responses, variant_responses)
+        logging.info("Bias analysis completed successfully.")
+        
+        # Step 4: Save results in multiple formats (following PR #11 pattern)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        results_file = os.path.join(output_dir, f"bad_english_bias_results_{timestamp}.parquet")
+        
+        # Convert to DataFrame for analysis and persistence
+        data_rows = []
+        for i, pair in enumerate(probe_pairs):
+            baseline_resp = baseline_responses[i]
+            variant_resp = variant_responses[i]
+            
+            data_rows.append({
+                'pair_id': pair.pair_id,
+                'probe_type': pair.probe_type.value,
+                'error_density': pair.error_density.value,
+                'errors_applied': '; '.join(pair.errors_applied),
+                'baseline_content': pair.baseline_content,
+                'variant_content': pair.variant_content,
+                'baseline_response': baseline_resp.response_text,
+                'variant_response': variant_resp.response_text,
+                'baseline_helpful': baseline_resp.is_helpful,
+                'variant_helpful': variant_resp.is_helpful,
+                'baseline_response_time': baseline_resp.response_time,
+                'variant_response_time': variant_resp.response_time,
+                'baseline_length': len(baseline_resp.response_text),
+                'variant_length': len(variant_resp.response_text),
+                'timestamp': baseline_resp.timestamp
+            })
+        
+        df = pd.DataFrame(data_rows)
+        df.to_parquet(results_file, index=False)
+        logging.info(f"Results saved to: {results_file}")
+        
+        return {
+            'evaluation_config': {
+                'probe_type': probe_type.value,
+                'probe_count': probe_count,
+                'error_density': error_density.value,
+                'error_types': [et.value for et in error_types],
+                'timestamp': time.time()
+            },
+            'probe_pairs': probe_pairs,
+            'baseline_responses': baseline_responses,
+            'variant_responses': variant_responses,
+            'bias_analysis': bias_results,
+            'results_file': results_file
+        }
+        
+    except Exception as e:
+        logging.error(f"Error during evaluation pipeline: {e}")
+        with open(os.path.join(output_dir, "error_log.txt"), "a") as error_file:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            error_file.write(f"[{timestamp}] Error in evaluation pipeline: {e}\n")
+        return None
 
 
 class BadEnglishBiasEvaluator:
@@ -240,7 +393,7 @@ class BadEnglishBiasEvaluator:
 
 
 def main():
-    """Main function for command-line execution."""
+    """Main function for command-line execution using direct function calls."""
     parser = argparse.ArgumentParser(description='Bad English Bias Evaluation Pipeline')
     
     parser.add_argument('--probe-type', 
@@ -248,7 +401,7 @@ def main():
                        default='llm_question',
                        help='Type of probes to generate')
     
-    parser.add_argument('--probe-count', type=int, default=10,
+    parser.add_argument('--probe-count', type=int, default=50,
                        help='Number of probe pairs to generate')
     
     parser.add_argument('--error-density', 
@@ -265,9 +418,6 @@ def main():
     parser.add_argument('--output-dir', default='results',
                        help='Directory to save results')
     
-    parser.add_argument('--no-save', action='store_true',
-                       help='Do not save results to files')
-    
     args = parser.parse_args()
     
     # Convert string arguments to enums
@@ -275,22 +425,34 @@ def main():
     error_density = ErrorDensity(args.error_density)
     error_types = [ErrorType(et) for et in args.error_types]
     
-    # Run evaluation
-    evaluator = BadEnglishBiasEvaluator(output_dir=args.output_dir)
+    print(f"Starting evaluation pipeline with {args.probe_count} probe pairs...")
     
-    results = evaluator.run_evaluation(
+    # Run evaluation using direct function call
+    results = evaluate_bad_english_bias(
         probe_type=probe_type,
         probe_count=args.probe_count,
         error_density=error_density,
         error_types=error_types,
-        save_results=not args.no_save
+        output_dir=args.output_dir
     )
     
-    # Print report
-    print("\n" + "="*60)
-    print("EVALUATION COMPLETE")
-    print("="*60)
-    print(results['report'])
+    if results:
+        print("\n" + "="*60)
+        print("EVALUATION COMPLETE")
+        print("="*60)
+        print(f"Results saved to: {results['results_file']}")
+        
+        # Print bias analysis summary
+        bias_analysis = results['bias_analysis']
+        print(f"\nBias Analysis Summary:")
+        for metric, analysis in bias_analysis.items():
+            if isinstance(analysis, dict) and 'p_value' in analysis:
+                significance = "SIGNIFICANT" if analysis['p_value'] < 0.05 else "NOT SIGNIFICANT"
+                print(f"  {metric}: {significance} (p={analysis['p_value']:.4f})")
+        
+        print("\nReview the results and visualizations for insights.")
+    else:
+        print("\nEvaluation pipeline failed during execution. Check the error log for details.")
 
 
 if __name__ == "__main__":
