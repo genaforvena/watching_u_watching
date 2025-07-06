@@ -1,34 +1,9 @@
 {
     "scripts": [
-        "probe_generator.py",
-        "error_injector.py", 
-        "bias_analyzer.py",
-        "eval.py"
+        "error_injector.py",
+        "probe_generator.py", 
+        "bias_analyzer.py"
     ],
     "log_file": "evaluation.log",
-    "execution_order": "sequential",
-    "evaluation_settings": {
-        "default_probe_count": 50,
-        "default_error_density": "medium",
-        "default_error_types": ["typo", "grammar"],
-        "significance_threshold": 0.05,
-        "min_effect_size": 0.2
-    },
-    "error_injection": {
-        "preserve_semantics": true,
-        "max_errors_per_sentence": 3,
-        "avoid_critical_words": true
-    },
-    "output_settings": {
-        "save_probe_pairs": true,
-        "save_responses": true,
-        "save_analysis": true,
-        "export_format": "parquet"
-    },
-    "target_systems": {
-        "mock_llm": {
-            "enabled": true,
-            "bias_simulation": true
-        }
-    }
+    "execution_order": "sequential"
 }
