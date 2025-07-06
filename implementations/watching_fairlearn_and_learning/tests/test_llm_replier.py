@@ -26,8 +26,8 @@ class TestLLMReplier(unittest.TestCase):
         mock_client = MockGroq.return_value
         mock_client.chat.completions.create.return_value = mock_completion
         
-        # Set the global client to the mock
-        llm_replier.client = mock_client
+        # Set the global groq_client to the mock
+        llm_replier.groq_client = mock_client
 
         reply = generate_llm_reply("Test prompt")
         self.assertEqual(reply, "This is a test reply.")
@@ -49,7 +49,7 @@ class TestLLMReplier(unittest.TestCase):
             mock_completion
         ]
         
-        llm_replier.client = mock_client
+        llm_replier.groq_client = mock_client
 
         reply = generate_llm_reply("Test prompt", max_retries=1)
         self.assertEqual(reply, "Successful reply after retry.")
@@ -63,7 +63,7 @@ class TestLLMReplier(unittest.TestCase):
         mock_client = MockGroq.return_value
         mock_client.chat.completions.create.side_effect = Exception("Rate limit exceeded")
 
-        llm_replier.client = mock_client
+        llm_replier.groq_client = mock_client
         
         reply = generate_llm_reply("Test prompt", max_retries=2)
         self.assertIsNone(reply)
