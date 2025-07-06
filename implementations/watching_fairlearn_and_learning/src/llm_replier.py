@@ -35,7 +35,7 @@ def generate_llm_reply(prompt_text, model_name="llama3-8b-8192"):
         print(f"Error generating reply for prompt '{prompt_text[:50]}...': {e}")
         return None
 
-def collect_replies(persona_name, num_replies=10000, output_file="llm_replies.parquet"):
+def collect_replies(persona_name, num_replies=10000, output_file="llm_replies.jsonl"):
     """
     Collects a specified number of LLM replies for a given persona.
     Stores the results in a Parquet file.

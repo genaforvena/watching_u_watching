@@ -38,6 +38,7 @@ build/
 
 # Logs
 *.log
+implementations/watching_fairlearn_and_learning/src/error_log.txt
 
 # Other
 *.bak

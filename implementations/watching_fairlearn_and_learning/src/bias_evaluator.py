@@ -1,6 +1,6 @@
 # bias_evaluator.py
 import pandas as pd
-from fairlearn.metrics import MetricFrame, count, mean
+from fairlearn.metrics import MetricFrame
 from scipy import stats
 from fairlearn_processor import process_llm_data # Import the data processing module
 
@@ -35,10 +35,9 @@ def evaluate_fairlearn_bias(df):
 
         # Use MetricFrame to calculate the mean of the outcome for each sensitive group
         # and overall.
-        grouped_metrics = MetricFrame(metrics=mean,
+        grouped_metrics = MetricFrame(metrics=lambda y_true, y_pred: sum(y_true) / len(y_true),
                                       y_true=y_data,
-                                      y_pred=y_data, # Use y_data as y_pred for direct outcome analysis
-                                      sensitive_features=sensitive_features)
+                                      y_pred=y_data)
         
         print(f"Mean '{outcome}' per persona (Fairlearn MetricFrame):\n{grouped_metrics.by_group}")
         
@@ -85,8 +84,9 @@ def evaluate_fairlearn_bias(df):
     return analysis_results
 
 if __name__ == "__main__":
+
     # Define the path to the processed data file (output from fairlearn_processor.py)
-    PROCESSED_DATA_FILE = "llm_replies.jsonl" # Assuming processor writes to the same file
+    PROCESSED_DATA_FILE = "llm_replies.parquet" # Now using Parquet
 
     print("Starting Fairlearn bias evaluation...")
     

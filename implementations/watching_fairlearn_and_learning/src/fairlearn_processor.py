@@ -47,28 +47,24 @@ def calculate_formality_score(text):
 
 def process_llm_data(input_file="llm_replies.jsonl"):
     """
-    Loads raw LLM replies from a JSON Lines file and extracts numerical features
+
+    Loads raw LLM replies from a Parquet file and extracts numerical features
     for fairness analysis.
 
     Args:
-        input_file (str): Path to the JSON Lines file containing raw LLM replies.
+        input_file (str): Path to the Parquet file containing raw LLM replies.
 
     Returns:
         pandas.DataFrame: A DataFrame with processed data, including sensitive
                           features and engineered outcome metrics.
     """
-    data = []
-    # Read each line from the JSON Lines file and parse it as a JSON object
-    with open(input_file, 'r', encoding='utf-8') as f:
-        try:
-            for line in f:
-                data.append(json.loads(line))
-        except FileNotFoundError:
-            print(f"Error: Input file '{input_file}' not found.")
-            return pd.DataFrame()
-
-    # Convert the list of dictionaries into a pandas DataFrame
-    df = pd.DataFrame(data)
+    try:
+        df = pd.read_parquet(input_file)
+    except FileNotFoundError:
+        print(f"Input file '{input_file}' not found. Creating an empty Parquet file.")
+        df = pd.DataFrame(columns=["id", "persona", "prompt_full", "reply_raw", "timestamp"])
+        df.to_parquet(input_file, index=False)
+        return df
 
     # --- Feature Engineering (Outcome Metrics) ---
     # 1. Reply Length: Number of characters in the raw LLM response
@@ -100,11 +96,11 @@ def process_llm_data(input_file="llm_replies.jsonl"):
 
 if __name__ == "__main__":
     # Define the input file path
-    INPUT_DATA_FILE = "llm_replies.jsonl"
-    
+    INPUT_DATA_FILE = "llm_replies.parquet"
+
     # Process the data and get the prepared DataFrame
     processed_df = process_llm_data(INPUT_DATA_FILE)
-    
+
     # You can now save this processed DataFrame if needed, or pass it directly
     # to the next module (bias_evaluator.py)
     # For demonstration, we'll just print its head and describe stats.

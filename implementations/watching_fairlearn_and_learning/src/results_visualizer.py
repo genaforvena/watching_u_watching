@@ -97,8 +97,9 @@ def visualize_results(df, analysis_results):
     print("Further research could involve more complex persona definitions, advanced NLP metrics, and testing Fairlearn's mitigation strategies in similar controlled environments.")
 
 if __name__ == "__main__":
+
     # Define the path to the processed data file
-    PROCESSED_DATA_FILE = "llm_replies.jsonl"
+    PROCESSED_DATA_FILE = "llm_replies.parquet"
 
     print("Starting visualization and interpretation...")
     

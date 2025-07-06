@@ -1,5 +1,8 @@
 import unittest
 import pandas as pd
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 from fairlearn_processor import calculate_formality_score, process_llm_data
 
 class TestFairlearnProcessor(unittest.TestCase):
@@ -13,7 +16,7 @@ class TestFairlearnProcessor(unittest.TestCase):
 
     def test_process_llm_data(self):
         """Test the processing of LLM data."""
-        # Create a mock JSON Lines file
+        # Create a mock DataFrame and save as Parquet
         mock_data = [
             {
                 "id": "test_1",
@@ -28,11 +31,9 @@ class TestFairlearnProcessor(unittest.TestCase):
                 "timestamp": 1234567890.0
             }
         ]
-
-        mock_file = "mock_llm_replies.jsonl"
-        with open(mock_file, "w", encoding="utf-8") as f:
-            for entry in mock_data:
-                f.write(f"{entry}\n")
+        import pandas as pd
+        mock_file = "mock_llm_replies.parquet"
+        pd.DataFrame(mock_data).to_parquet(mock_file, index=False)
 
         # Process the mock file
         df = process_llm_data(mock_file)
