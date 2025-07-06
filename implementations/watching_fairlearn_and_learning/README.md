@@ -162,7 +162,7 @@ Upon running the evaluation pipeline, you will see:
 - **High Performance**: Uses Groq's fastest LLM model (`llama-3.1-8b-instant`) for rapid generation
 - **Comprehensive Logging**: Timestamps, progress tracking, success rates, and error handling
 - **Robust Error Handling**: Graceful failure handling with detailed error logging
-- **Scalable**: Configurable number of reply pairs (from small tests to large-scale analysis)
+- **Scalable**: Configurable number of reply pairs (from small tests to large-scale analysis). Default is 1,000 replies per persona (~2,000 total replies).
 - **Data Persistence**: Efficient Parquet format for data storage and retrieval
 
 The accompanying textual output from `results_visualizer.py` will guide you through a critical analysis. This analysis will prompt questions such as:
@@ -180,3 +180,4 @@ Your insights from this analysis are invaluable for understanding the nuances of
 - **Scalability**: 10,000 pairs typically complete in 10-15 minutes depending on API response times
 - **Logging**: All generation activities are logged with timestamps for performance analysis and debugging
 - **Memory Efficiency**: Parquet format provides efficient storage and fast data loading for large datasets
+- **Example Run (1,000 replies/persona)**: Approximately 4.5 hours per persona (~9 hours total) depending on API latency and throughput

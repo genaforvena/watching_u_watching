@@ -232,7 +232,7 @@ if __name__ == "__main__":
     )
 
     PERSONAS = ["Mohamed", "John"]
-    REPLIES_PER_PERSONA = 5  # Default number of replies per persona for full run
+    REPLIES_PER_PERSONA = 1000  # Default number of replies per persona for full run
     OUTPUT_DATA_FILE = "llm_replies.parquet"
     MODEL_NAME = "Qwen/Qwen3-0.6B"
     
