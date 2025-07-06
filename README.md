@@ -17,6 +17,20 @@ Ensuring fairness and non-discrimination in decision-making is paramount, regard
 * **Empower Accountability:** Offer a tool for decision-makers, organizations, regulators, and civil society to evaluate and improve fairness.
 * **Foster Open Collaboration:** Build a community around ethical auditing methodologies and best practices for decision-making.
 
+### New: Bad English Bias Detection
+
+We have now extended our methodology to detect **linguistic bias** - discrimination against non-standard English, grammatical errors, and language patterns common to non-native speakers. This addresses a critical form of bias that disproportionately affects vulnerable populations and perpetuates linguistic prejudices.
+
+The new **Bad English Bias Detection Framework** systematically injects controlled linguistic errors while preserving semantic meaning to isolate the impact of linguistic form on system outputs. This allows us to detect when systems treat content differently based solely on language quality rather than content substance.
+
+**Key Features:**
+- **Semantic Preservation:** Rigorous validation that errors don't impact core meaning
+- **Controlled Error Injection:** Typos, grammar mistakes, and non-standard phrasing patterns
+- **Statistical Analysis:** Robust comparison of response quality, accuracy, tone, and latency
+- **Target System Flexibility:** Adaptable to LLMs, application systems, and email responses
+
+**[Explore the Bad English Bias Implementation →](implementations/bad_english_bias/)**
+
 This approach draws directly from a rich history of successful **paired-testing methodologies** used for decades to expose systemic discrimination. Notable historical studies, such as the **U.S. Department of Housing and Urban Development's (HUD) Housing Discrimination Studies**, utilized thousands of paired tests (e.g., the 2012 study conducted over **8,000 audits**) to provide undeniable evidence of bias in housing markets, directly supporting policy changes like the Fair Housing Amendments Act. Similarly, employment audit studies have used **tens of thousands of paired applications** to reveal pervasive biases in hiring across various industries and regions.
 
 `watching_u_watching` builds upon this proven foundation, but with a critical advancement: **full automation**. This allows us to execute paired tests at an unprecedented scale and speed—potentially **hundreds of thousands or even millions of inquiries**—far surpassing the logistical limitations of manual or semi-automated studies. This immense scale enables the detection of more subtle patterns of discrimination, real-time monitoring, and a level of accountability previously unattainable, transforming fairness from an aspirational goal into a verifiable reality.
@@ -70,6 +84,14 @@ In the landscape of accountability for high-stakes decisions, `watching_u_watchi
 `watching_u_watching` is committed to fostering a more transparent and equitable ecosystem for decision-making. As we grow, our strategic focus is on maximizing impact and relevance within the evolving landscape of ethics and regulation.
 
 Our immediate prioritization for new development and community engagement is as follows, with the goal of demonstrating a successful case and expanding our methodology's application:
+
+### Current Implementations
+
+* **🔍 Bad English Bias Detection Framework**
+    * **Focus:** Investigating and quantifying "Bad English Bias" in decision-making systems through systematic linguistic error injection while preserving semantic meaning.
+    * **Goal:** To provide empirical evidence of linguistic discrimination and support the development of fairer AI systems and inclusive technology policies.
+    * **Status:** ✅ Complete implementation with demonstration, testing, and documentation
+    * **[View Implementation →](implementations/bad_english_bias/)**
 
 ### Core Regulatory & Compliance Focus (Top Priority Cases)
 
