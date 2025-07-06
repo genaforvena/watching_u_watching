@@ -43,6 +43,29 @@
           "response_rate_threshold": 0.15,
           "critical_alert_threshold": 0.3
         }
+      },
+      "issue_management_agent": {
+        "agent_id": "issue_mgmt_001",
+        "max_operations_per_hour": 15,
+        "allowed_risk_levels": ["low", "medium"],
+        "auto_create_issues": false,
+        "require_human_approval_for_creation": true,
+        "issue_creation_thresholds": {
+          "bias_alert_threshold": 0.8,
+          "research_relevance_threshold": 0.7,
+          "compliance_risk_threshold": 0.9
+        }
+      },
+      "code_generation_agent": {
+        "agent_id": "codegen_001",
+        "max_operations_per_hour": 10,
+        "allowed_risk_levels": ["low", "medium"],
+        "require_human_review": true,
+        "safety_restrictions": {
+          "no_external_communications": true,
+          "no_data_modifications_without_review": true,
+          "synthetic_data_only": true
+        }
       }
     }
   },

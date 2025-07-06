@@ -18,10 +18,14 @@ from .core import EthicalAIAgent
 from .research import ResearchAgent
 from .compliance import ComplianceAgent
 from .monitoring import BiasMonitoringAgent
+from .issue_management import IssueManagementAgent
+from .code_generation import CodeGenerationAgent
 
 __all__ = [
     "EthicalAIAgent",
     "ResearchAgent", 
     "ComplianceAgent",
-    "BiasMonitoringAgent"
+    "BiasMonitoringAgent",
+    "IssueManagementAgent",
+    "CodeGenerationAgent"
 ]
