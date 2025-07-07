@@ -1,4 +1,10 @@
-# llm_replier.py
+"""
+Module: llm_replier
+
+Handles LLM reply generation (Groq, HuggingFace, local), with retry/backoff,
+and provides function to collect replies in a resumable Parquet log.
+"""
+
 import os
 import time
 import logging
@@ -64,12 +70,18 @@ def generate_llm_reply(prompt_text, model_name="llama-3.1-8b-instant", max_retri
         client = hf_client
     elif provider == "local":
         if not TRANSFORMERS_AVAILABLE:
+            logging.error("The 'transformers' and 'torch' libraries are required for the local provider. Please install them first.")
             raise ImportError("The 'transformers' and 'torch' libraries are required for the local provider. Please install them first.")
-        if local_pipeline is None or local_pipeline.model.name_or_path != model_name:
-            logging.info(f"Loading local model: {model_name}")
-            local_pipeline = pipeline("text-generation", model=model_name, torch_dtype=torch.float16, device_map="auto")
-        client = local_pipeline
+        try:
+            if local_pipeline is None or local_pipeline.model.name_or_path != model_name:
+                logging.info(f"Loading local model: {model_name}")
+                local_pipeline = pipeline("text-generation", model=model_name, torch_dtype=torch.float16, device_map="auto")
+            client = local_pipeline
+        except Exception as e:
+            logging.error(f"Failed to load local model '{model_name}': {e}")
+            raise ImportError(f"Failed to load local model '{model_name}': {e}")
     else:
+        logging.error(f"Unsupported provider: {provider}")
         raise ValueError(f"Unsupported provider: {provider}")
 
     if provider == "huggingface":
@@ -199,7 +211,7 @@ def collect_replies(persona_name, num_replies, output_file, model_name, run_id, 
                            f"(Avg: {avg_time_per_reply:.2f}s/reply, "
                            f"Est. remaining: {estimated_remaining/60:.1f}min)")
         else:
-            logging.warning(f"Failed to generate reply {i+1} for persona '{persona_name}'")
+            logging.warning(f"Failed to generate reply {i+1} for persona '{persona_name}' using model '{model_name}' and provider '{provider}'")
             
         time.sleep(0.1)
 

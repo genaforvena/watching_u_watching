@@ -46,6 +46,7 @@ The experiment employs a paired-testing methodology using a Large Language Model
 │   ├── fairlearn_processor.py
 │   ├── bias_evaluator.py
 │   └── results_visualizer.py
+├── experiment_results_100_pairs.md
 └── tests/
     ├── mock_llm_replies.csv
     ├── test_fairlearn_processor.py
@@ -60,6 +61,7 @@ The experiment employs a paired-testing methodology using a Large Language Model
 - **src/fairlearn_processor.py**: Processes raw LLM replies and extracts features for Fairlearn analysis.
 - **src/bias_evaluator.py**: Uses Fairlearn's MetricFrame to analyze disparities and performs statistical tests.
 - **src/results_visualizer.py**: Visualizes results and provides interpretive framework.
+- **experiment_results_100_pairs.md**: Document containing the results of the experiment with 100 reply pairs per persona.
 - **tests/**: Test files and mock data for validation.
 
 ## Setup

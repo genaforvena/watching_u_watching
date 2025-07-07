@@ -1,4 +1,10 @@
-# fairlearn_processor.py
+"""
+Module: fairlearn_processor
+
+Loads LLM replies from Parquet and extracts engineered features for fairness analysis:
+reply length, sentiment score, formality score, and detail keyword presence.
+"""
+
 import pandas as pd
 import json
 from textblob import TextBlob

@@ -1,9 +1,16 @@
-# results_visualizer.py
+"""
+Module: results_visualizer
+
+Generates plots to compare outcome metrics across sensitive groups and
+provides interpretive text for Fairlearn analysis results.
+"""
+
+# Standard imports for plotting and processing
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from fairlearn_processor import process_llm_data # Import the data processing module
-from bias_evaluator import evaluate_fairlearn_bias # Import the bias evaluation module
+from fairlearn_processor import process_llm_data
+from bias_evaluator import evaluate_fairlearn_bias
 
 def visualize_results(df, analysis_results):
     """
