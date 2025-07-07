@@ -33,6 +33,33 @@ The experiment employs a paired-testing methodology using a Large Language Model
 - Applies Fairlearn's MetricFrame to calculate disparity metrics (e.g., difference in means, ratio of means).
 - Performs independent statistical tests (Welch's t-test) to assess the significance of observed disparities.
 
+## Results and Analysis
+
+Comprehensive results and interpretation for different experiment sizes are available:
+
+- [Experiment Results: 10 Pairs per Persona](./experiment_results_10_pairs.md)
+- [Experiment Results: 100 Pairs per Persona](./experiment_results_100_pairs.md)
+
+### Debrief
+
+- **Small Sample (10 pairs/persona):**
+  - No statistically significant differences in most metrics between personas.
+  - Only formality score showed a statistically significant difference, but the effect size was very small.
+  - The pipeline, logging, and analysis worked as expected for small-scale runs.
+
+- **Larger Sample (100 pairs/persona):**
+  - Statistically significant disparities were observed in reply length, formality, and inclusion of detail keywords, with Mohamed consistently receiving longer, more formal, and more detailed replies.
+  - No significant difference in sentiment score.
+  - Fairlearn's demographic parity metrics confirmed substantial disparity for the 'contains_detail_kw' outcome.
+  - These findings suggest that, as sample size increases, subtle but meaningful disparities can emerge, highlighting the importance of robust, large-scale evaluation.
+
+- **Actionable Recommendations:**
+  - Investigate prompt design and data sources for potential sources of disparities.
+  - Consider post-processing or prompt engineering to mitigate length and formality differences.
+  - Use these findings to inform further bias mitigation or model selection.
+
+For full tables, statistical details, and further interpretation, see the linked results documents above.
+
 ## Repository Structure
 
 ```
