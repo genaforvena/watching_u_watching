@@ -51,7 +51,7 @@ def calculate_formality_score(text):
     return max(0.0, min(1.0, (score + 0.5) / 1.5)) # Shift and scale to roughly 0-1 range
 
 
-def process_llm_data(input_file="llm_replies.jsonl"):
+def process_llm_data(input_file="llm_replies.parquet"):
     """
 
     Loads raw LLM replies from a Parquet file and extracts numerical features
