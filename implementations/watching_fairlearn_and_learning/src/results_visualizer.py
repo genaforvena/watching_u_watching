@@ -28,7 +28,6 @@ def visualize_results(df, analysis_results):
 
     # Set a consistent style for plots
     sns.set_theme(style="whitegrid")
-    plt.style.use('seaborn-v0_8-darkgrid')
 
     # Create a figure to hold multiple subplots
     fig, axes = plt.subplots(len(outcomes_to_visualize), 2, figsize=(14, 5 * len(outcomes_to_visualize)))
