@@ -1,9 +1,20 @@
-# bias_evaluator.py
+"""
+Module: bias_evaluator
+
+This module provides functions to compute fairness metrics using Fairlearn's MetricFrame
+and statistical tests (Welch's t-test) to assess disparities between groups.
+
+Notes:
+- Avoids relative imports to ensure compatibility regardless of package structure.
+- Uses absolute import for `fairlearn_processor` (ensure `src` has `__init__.py` or is in PYTHONPATH).
+- Designed for use in a pipeline where processed data is saved and loaded as needed.
+"""
+
 import pandas as pd
 import numpy as np
-from fairlearn.metrics import MetricFrame, demographic_parity_difference, demographic_parity_ratio
 from scipy import stats
-from .fairlearn_processor import process_llm_data # Import the data processing module
+from implementations.watching_fairlearn_and_learning.src.fairlearn_processor import process_llm_data
+from fairlearn.metrics import demographic_parity_difference, demographic_parity_ratio
 
 def calculate_group_metrics(df, outcome, sensitive_feature):
     """
