@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+*.egg
+*.egg-info/
+dist/
+build/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+.coverage
+*.cover
+*.py,cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments
+.env
+.env.*
+
+# IDEs
+.idea/
+.vscode/
+
+# Logs
+*.log
+implementations/watching_fairlearn_and_learning/src/error_log.txt
+
+# Other
+*.bak
+*.swp
+*.tmp
+
+# Parquet files
+*.parquet
