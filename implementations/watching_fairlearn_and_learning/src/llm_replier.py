@@ -213,7 +213,7 @@ def collect_replies(persona_name, num_replies, output_file, model_name, run_id, 
         else:
             logging.warning(f"Failed to generate reply {i+1} for persona '{persona_name}' using model '{model_name}' and provider '{provider}'")
             
-        time.sleep(0.1)
+        time.sleep(reply_delay)
 
     if not new_replies:
         logging.info(f"No new replies were generated for '{persona_name}'.")
