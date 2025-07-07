@@ -1,19 +1,26 @@
+"""
+Module: eval
+
+Orchestrates the full evaluation pipeline: LLM reply generation, data processing,
+and bias evaluation.
+"""
+
 import os
 import json
 from datetime import datetime
+import pandas as pd
 
-# Import the main functions from each module
+# Import core pipeline functions
 from llm_replier import collect_replies
 from fairlearn_processor import process_llm_data
 from bias_evaluator import evaluate_fairlearn_bias
 
-# Renamed the function from eval_script to eval
-def eval(num_pairs=10000, log_file="error_log.txt"):
+def eval(num_pairs=10, log_file="error_log.txt"):
     """
     Runs the evaluation pipeline by calling Python functions directly.
 
     Args:
-        num_pairs (int): Number of reply pairs to generate (default: 10000).
+        num_pairs (int): Number of reply pairs to generate (default: 10).
         log_file (str): The path to the log file for error logging.
 
     Returns:
@@ -22,13 +29,40 @@ def eval(num_pairs=10000, log_file="error_log.txt"):
     personas = ["Mohamed", "John"]
     output_file = "llm_replies.parquet"
     
+    # Always use the correct available Groq model
+    model_name = "llama3-8b-8192"
+    run_id = None
+    default_model = "llama3-8b-8192"
+
+    # Only try to extract run_id from existing data if present
+    if os.path.exists(output_file):
+        try:
+            df = pd.read_parquet(output_file)
+            if not df.empty and "run_id" in df.columns and pd.notnull(df["run_id"].iloc[0]):
+                run_id = df["run_id"].iloc[0]
+        except Exception as e:
+            print(f"Warning: Could not read {output_file} to extract run_id: {e}")
+            model_name = default_model
+    else:
+        model_name = default_model
+
+    if run_id is None:
+        run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
     all_success = True
-    
+
     try:
         # Step 1: Generate LLM replies
-        print("Step 1: Generating LLM replies...")
+        print(f"Step 1: Generating LLM replies with model: {model_name} and run_id: {run_id} ...")
         for persona in personas:
-            collect_replies(persona, num_pairs, output_file)
+            try:
+                collect_replies(persona, num_pairs, output_file, model_name, run_id, provider="groq")
+            except Exception as e:
+                print(f"[Groq ERROR] Failed to collect replies for persona '{persona}' with model '{model_name}': {e}")
+                with open(log_file, "a") as error_file:
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    error_file.write(f"[{timestamp}] [Groq ERROR] Persona: {persona}, Model: {model_name}, Error: {e}\n")
+                all_success = False
         print("LLM reply generation completed successfully.")
         
         # Step 2: Process the data
@@ -55,8 +89,8 @@ if __name__ == "__main__":
     
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Run bias evaluation pipeline")
-    parser.add_argument("--num-pairs", type=int, default=10000, 
-                        help="Number of reply pairs to generate (default: 10000)")
+    parser.add_argument("--num-pairs", type=int, default=10, 
+                        help="Number of reply pairs to generate (default: 10)")
     args = parser.parse_args()
     
     log_file = os.path.join(os.path.dirname(__file__), "error_log.txt")
