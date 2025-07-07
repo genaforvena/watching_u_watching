@@ -65,6 +65,23 @@ In the landscape of accountability for high-stakes decisions, `watching_u_watchi
 
 ---
 
+## Case Study: Fairlearn Bias Assessment (LLM Pipeline)
+
+A major subproject of `watching_u_watching` is a reproducible, open-source pipeline for evaluating bias in LLM-generated replies using Fairlearn. This pipeline demonstrates the methodology's scalability and transparency, and provides a template for future paired-testing experiments.
+
+- **Repository:** [`implementations/watching_fairlearn_and_learning`](./implementations/watching_fairlearn_and_learning)
+- **Experiment Results:**
+  - [10 Pairs per Persona](./implementations/watching_fairlearn_and_learning/experiment_results_10_pairs.md)
+  - [100 Pairs per Persona](./implementations/watching_fairlearn_and_learning/experiment_results_100_pairs.md)
+- **Debrief:**
+  - Small sample runs show little to no statistically significant bias.
+  - Larger runs reveal disparities in reply length, formality, and detail keyword inclusion, with no significant sentiment bias.
+  - See linked results for full tables, interpretation, and recommendations.
+
+This case study is a living demonstration of the project's core principles: scalable, automated, and transparent paired testing for bias detection in high-stakes decision-making.
+
+---
+
 ## Roadmap & Strategic Directions
 
 `watching_u_watching` is committed to fostering a more transparent and equitable ecosystem for decision-making. As we grow, our strategic focus is on maximizing impact and relevance within the evolving landscape of ethics and regulation.
