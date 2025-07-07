@@ -225,8 +225,8 @@ def collect_replies(persona_name, num_replies, output_file, model_name, run_id, 
     # Append new replies to the existing DataFrame and save
     final_df = pd.concat([existing_df, new_df], ignore_index=True)
     
-    # Save the combined DataFrame to a Parquet file using class method to satisfy test expectations
-    pd.DataFrame.to_parquet(final_df, output_file, index=False)
+    # Save the combined DataFrame to a Parquet file using the instance method for clarity
+    final_df.to_parquet(output_file, index=False)
     logging.info(f"Saved {len(final_df)} total replies to '{output_file}'")
 
     total_duration = datetime.now() - start_time
