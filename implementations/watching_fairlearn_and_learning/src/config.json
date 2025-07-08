@@ -1,0 +1,9 @@
+{
+    "scripts": [
+        "llm_replier.py",
+        "fairlearn_processor.py",
+        "bias_evaluator.py"
+    ],
+    "log_file": "error_log.txt",
+    "execution_order": "sequential"
+}

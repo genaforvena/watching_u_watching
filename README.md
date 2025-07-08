@@ -138,6 +138,23 @@ In the landscape of accountability for high-stakes decisions, `watching_u_watchi
 
 ---
 
+## Case Study: Fairlearn Bias Assessment (LLM Pipeline)
+
+A major subproject of `watching_u_watching` is a reproducible, open-source pipeline for evaluating bias in LLM-generated replies using Fairlearn. This pipeline demonstrates the methodology's scalability and transparency, and provides a template for future paired-testing experiments.
+
+- **Repository:** [`implementations/watching_fairlearn_and_learning`](./implementations/watching_fairlearn_and_learning)
+- **Experiment Results:**
+  - [10 Pairs per Persona](./implementations/watching_fairlearn_and_learning/experiment_results_10_pairs.md)
+  - [100 Pairs per Persona](./implementations/watching_fairlearn_and_learning/experiment_results_100_pairs.md)
+- **Debrief:**
+  - Small sample runs show little to no statistically significant bias.
+  - Larger runs reveal disparities in reply length, formality, and detail keyword inclusion, with no significant sentiment bias.
+  - See linked results for full tables, interpretation, and recommendations.
+
+This case study is a living demonstration of the project's core principles: scalable, automated, and transparent paired testing for bias detection in high-stakes decision-making.
+
+---
+
 ## Roadmap & Strategic Directions
 
 `watching_u_watching` is committed to fostering a more transparent and equitable ecosystem for decision-making. As we grow, our strategic focus is on maximizing impact and relevance within the evolving landscape of ethics and regulation.
@@ -155,6 +172,11 @@ Our immediate prioritization for new development and community engagement is as 
 ### Core Regulatory & Compliance Focus (Top Priority Cases)
 
 These represent our most immediate and impactful areas for applying `watching_u_watching` due to existing or emerging legal frameworks:
+
+0.  **👁️ Assessing Bias in Fairlearn: AI-Driven Fairness Assessment**
+    * **Focus:** Evaluating the Fairlearn library's capabilities as a bias detection tool, aligning with its goals and motivations to scrutinize fairness as a complex sociotechnical challenge.
+    * **Goal:** To critically assess Fairlearn's methodologies and limitations, starting with AI-driven fairness assessment to avoid the complexities and ethical risks associated with human-based decision-making processes.
+    * **[Join the discussion on Fairlearn bias assessment here.](https://github.com/genaforvena/watching_u_watching/issues/9)**
 
 1.  **👁️👁️👁️ Brazil's AI Act Alignment (for AEDTs)**
     * **Focus:** We are prioritizing development to align `watching_u_watching` with **Brazil's AI Act (Bill No. 2338/2023)**. This legislation specifically classifies AI systems in employment (AEDTs) as "high-risk" and mandates stringent requirements for bias mitigation, transparency, and Algorithmic Impact Assessments (AIAs).
