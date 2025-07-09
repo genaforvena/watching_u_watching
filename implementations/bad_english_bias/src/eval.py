@@ -568,15 +568,14 @@ def run_comparative_study(
     for system in systems:
         for probe_type in probe_types:
             for mode in perturbation_modes:
-                # Map mode to error_types
+                # Map mode to error_types using Enum or string, but handle both
+                error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
                 if mode == "article_omission":
-                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD, "ARTICLE_OMISSION"]
+                    error_types.append("ARTICLE_OMISSION")
                 elif mode == "letter_perturbation_deletion":
-                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD, "LETTER_PERTURBATION_DELETION"]
+                    error_types.append("LETTER_PERTURBATION_DELETION")
                 elif mode == "letter_perturbation_substitution":
-                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD, "LETTER_PERTURBATION_SUBSTITUTION"]
-                else:
-                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
+                    error_types.append("LETTER_PERTURBATION_SUBSTITUTION")
                 # Generate probe pairs
                 probe_pairs = probe_gen.generate_probe_pairs(
                     probe_type=probe_type,

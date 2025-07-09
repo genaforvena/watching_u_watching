@@ -182,7 +182,7 @@ class ProbeGenerator:
                 metadata={
                     "template_name": template.name,
                     "template_context": template.context,
-                    "error_types": [et.value for et in error_types],
+                    "error_types": [et.value if hasattr(et, 'value') else et for et in error_types],
                     "semantic_preserved": self.error_injector.validate_semantic_preservation(
                         baseline_content, variant_content
                     )
@@ -273,17 +273,17 @@ class ProbeGenerator:
             print(f"Warning: Missing variable {e} in template {template.name}")
             return template.template  # Return unformatted template
     
-    def _apply_errors(self, content: str, density: ErrorDensity, error_types: List) -> Tuple[str, List[str]]:
+    def _apply_errors(self, content: str, density: ErrorDensity, error_types: list) -> Tuple[str, list]:
         """Apply specified error types to content, including new perturbations."""
         all_errors = []
         current_content = content
         
         for error_type in error_types:
-            if error_type == ErrorType.TYPO:
+            if isinstance(error_type, ErrorType) and error_type == ErrorType.TYPO:
                 current_content, errors = self.error_injector.inject_typos(current_content, density)
-            elif error_type == ErrorType.GRAMMAR:
+            elif isinstance(error_type, ErrorType) and error_type == ErrorType.GRAMMAR:
                 current_content, errors = self.error_injector.inject_grammar_errors(current_content, density)
-            elif error_type == ErrorType.NON_STANDARD:
+            elif isinstance(error_type, ErrorType) and error_type == ErrorType.NON_STANDARD:
                 current_content, errors = self.error_injector.inject_non_standard_phrasing(current_content, density)
             elif error_type == "ARTICLE_OMISSION":
                 current_content, errors = self.error_injector.inject_article_omission(current_content)
@@ -291,7 +291,8 @@ class ProbeGenerator:
                 current_content, errors = self.error_injector.inject_single_letter_perturbation(current_content, density, mode="deletion")
             elif error_type == "LETTER_PERTURBATION_SUBSTITUTION":
                 current_content, errors = self.error_injector.inject_single_letter_perturbation(current_content, density, mode="substitution")
-            
+            else:
+                errors = []
             all_errors.extend(errors)
         
         return current_content, all_errors
