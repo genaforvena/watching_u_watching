@@ -16,7 +16,6 @@ Ensuring fairness and non-discrimination in decision-making is paramount, regard
 * **Empower Accountability:** Offer a robust tool for decision-makers, organizations, regulators, and civil society to evaluate, scrutinize, and improve fairness, making accountability a verifiable reality rather than a performative act.
 * **Foster Open Collaboration:** Build a community around ethical auditing methodologies and best practices for decision-making, acknowledging that true fairness requires collective vigilance.
 
-<<<<<<< HEAD
 ## Linguistic Bias Detection: The Bad English Bias Framework
 
 Building upon our core paired-testing methodology, we have developed a specialized framework to address a critical yet often overlooked form of discrimination: **linguistic bias**. This systematic prejudice against non-standard English, grammatical errors, and language patterns common to non-native speakers disproportionately affects vulnerable populations and perpetuates harmful linguistic hierarchies.
@@ -91,9 +90,6 @@ python -m unittest tests.test_bias_analyzer -v
 This linguistic bias detection capability represents a significant advancement in fairness auditing, addressing a critical gap in traditional bias detection methodologies and providing organizations with tools to build more inclusive, linguistically fair systems.
 
 This approach draws directly from a rich history of successful **paired-testing methodologies** used for decades to expose systemic discrimination. Notable historical studies, such as the **U.S. Department of Housing and Urban Development's (HUD) Housing Discrimination Studies**, utilized thousands of paired tests (e.g., the 2012 study conducted over **8,000 audits**) to provide undeniable evidence of bias in housing markets, directly supporting policy changes like the Fair Housing Amendments Act. Similarly, employment audit studies have used **tens of thousands of paired applications** to reveal pervasive biases in hiring across various industries and regions.
-=======
-This approach draws directly from a rich history of successful **correspondence testing** methodologies used for decades to expose systemic discrimination. Notable historical studies, such as the U.S. Department of Housing and Urban Development's (HUD) Housing Discrimination Studies, utilized thousands of paired tests (e.g., the 2012 study conducted over 8,000 audits) to provide undeniable evidence of bias in housing markets, directly supporting policy changes like the Fair Housing Amendments Act. Similarly, employment audit studies, like the 2016 study on ethnic discrimination in Germany's labor market, have used correspondence testing to reveal pervasive biases in hiring across various industries and regions.
->>>>>>> origin/main
 
 `watching_u_watching` builds upon this proven foundation, but with a critical advancement: full automation. This allows us to execute correspondence tests at an unprecedented scale and speed—potentially hundreds of thousands or even millions of inquiries—far surpassing the logistical limitations of manual or semi-automated studies. This immense scale enables the detection of more subtle patterns of discrimination, real-time monitoring, and a level of accountability previously unattainable, transforming fairness from an aspirational goal into a verifiable reality.
 
@@ -160,9 +156,10 @@ Our immediate prioritization for new development and community engagement is as 
 ### Current Implementations
 
 * **🔍 Bad English Bias Detection Framework**
-    * **Focus:** Investigating and quantifying "Bad English Bias" in decision-making systems through systematic linguistic error injection while preserving semantic meaning.
-    * **Goal:** To provide empirical evidence of linguistic discrimination and support the development of fairer AI systems and inclusive technology policies.
-    * **Status:** ✅ Complete implementation with demonstration, testing, and documentation
+    * **Focus:** Systematic detection and quantification of "Bad English Bias" in decision-making systems using controlled linguistic error injection while preserving semantic meaning.
+    * **Goal:** Provide empirical evidence of linguistic discrimination and support the development of fairer AI systems and inclusive technology policies.
+    * **Status:** ✅ Complete implementation, testing, and documentation
+    * **Results:** [See evaluation and findings](implementations/bad_english_bias/EVALUATION_RESULTS.md)
     * **[View Implementation →](implementations/bad_english_bias/)**
 
 ### Core Regulatory & Compliance Focus (Top Priority Cases)
