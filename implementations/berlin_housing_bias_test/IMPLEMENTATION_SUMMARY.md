@@ -10,7 +10,7 @@ A comprehensive system that automates the process of:
 1. **Monitoring** Immobilienscout24.de for new rental properties
 2. **Generating** applications using predefined German templates for two personas
 3. **Submitting** paired applications with controlled variables
-4. **Collecting** and redacting responses for privacy protection
+4. **Collecting** and processing responses in memory to extract minimal metadata (no content or PII is ever stored)
 5. **Analyzing** patterns to detect potential discrimination
 
 ## Key Requirements Met
@@ -21,11 +21,11 @@ A comprehensive system that automates the process of:
 - Franz Müller template with smart property detail insertion
 - No AI-generated content whatsoever
 
-### ✅ Strict PII Redaction
-- All received email content transformed into random symbols
-- Word length strictly preserved for analysis
-- No personally identifiable information ever stored
-- Verification system ensures complete redaction
+### ✅ Strict PII Handling
+- All received email content is processed in memory to extract minimal, non-identifiable metadata
+- All content (raw or partially processed) is immediately discarded after in-memory processing
+- No personally identifiable information or content (raw or redacted) is ever stored
+- Only essential, non-identifiable response metadata is persisted
 
 ### ✅ Automated Paired Testing
 - Systematic variation of only the applicant name
@@ -71,10 +71,10 @@ berlin_housing_bias_test/
 ## Core Components
 
 ### 1. PII Redactor (`pii_redactor.py`)
-- **Purpose**: Transform all text into random symbols while preserving structure
-- **Method**: Character-by-character replacement with configurable symbol pool
-- **Verification**: Ensures no original characters remain
-- **Compliance**: GDPR-ready with impossible PII reconstruction
+- **Purpose**: In-memory processing of raw response content to extract minimal, non-identifiable metadata (e.g., response type, reply received, timestamp)
+- **Method**: Performs classification and checks for PII in memory; all content is immediately discarded after processing
+- **Demonstration**: May include symbolic transformation logic for demonstration/testing, but no such transformed data is ever persisted
+- **Compliance**: Ensures no PII or content (raw or redacted) is ever stored; aligns with strict privacy-by-design
 
 ### 2. Application Generator (`application_generator.py`)
 - **Purpose**: Generate applications from predefined templates
@@ -94,29 +94,37 @@ berlin_housing_bias_test/
 - **Safeguards**: Daily limits, minimum delays between submissions
 - **Error Handling**: Comprehensive logging and recovery
 
+
 ### 5. Data Storage (`data_storage.py`)
-- **Purpose**: Store all data with privacy protection
+
+- **Purpose**: Store only essential, non-identifiable metadata required for aggregate analysis
 - **Database**: SQLite with normalized schema
 - **Features**: Automatic cleanup, backup system, statistics
-- **Privacy**: All stored responses are pre-redacted
+- **Privacy**: Only essential, non-identifiable metadata is stored (e.g., probe_id, reply_received, response_timestamp, response_type_category, landlord_category, etc.)
+
 
 ### 6. Analysis Tools (`analyze_responses.py`)
+
 - **Purpose**: Detect bias patterns in collected data
 - **Metrics**: Response rates, timing analysis, bias indicators, breakdown by landlord category (top 5 vs. other)
 - **Reporting**: Text and JSON output formats
 - **Statistics**: Statistical significance testing
 
+
 ## Demonstration Results
 
 The `demo.py` script successfully demonstrates:
 
-### PII Redaction
+### PII Handling (Demonstration Only)
+
 ```
 Original:  "Re: Bewerbung um die Wohnung in Berlin-Mitte"
 Redacted:  ")<] +:#|}<$$$ (& ;(, ;^;%:=% ,- @%}=*;],.]-"
 Length:    44 → 44 characters (preserved)
 Valid:     True (no original characters remain)
 ```
+
+*Note: This example demonstrates in-memory processing logic only. No raw or redacted content is ever persisted to storage; all such data is immediately discarded after extracting minimal metadata.*
 
 ### Application Generation
 - Mohammed's application: Uses exact template from issue
@@ -213,10 +221,9 @@ python src/analyze_responses.py --format json --output report.json
 - ✅ Systemic focus
 
 ### Platform Terms of Service
-- ✅ Standard application process
-- ✅ Rate limiting respect
+- ✅ Designed to strive for compliance with platform Terms of Service through legitimate-appearing application processes and strict rate limiting
 - ✅ No automated account creation
-- ✅ Legitimate user behavior
+- ✅ Implements measures to promote compliance, but acknowledges the ongoing challenge of automated systems interacting with dynamic platform rules
 
 ## Conclusion
 
