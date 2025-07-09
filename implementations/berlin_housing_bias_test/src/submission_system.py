@@ -392,7 +392,7 @@ class ApplicationSubmissionSystem:
         
         return result
     
-    def submit_paired_applications(self, applications: List[Dict], dry_run: bool = True) -> List[Dict]:
+    def submit_paired_applications(self, applications: List[Dict], dry_run: bool = True, redirect_all_emails_to: Optional[str] = None) -> List[Dict]:
         """
         Submit paired applications with appropriate delays.
         
@@ -408,13 +408,20 @@ class ApplicationSubmissionSystem:
         # Randomize order to avoid patterns
         shuffled_apps = applications.copy()
         random.shuffle(shuffled_apps)
-        
+
         for i, application in enumerate(shuffled_apps):
             logging.info(f"Submitting application {i+1}/{len(applications)} for {application['persona']}")
-            
+
+            # If redirect is set, override the applicant_email field
+            if redirect_all_emails_to:
+                original_email = application.get('applicant_email')
+                application = application.copy()
+                application['applicant_email'] = redirect_all_emails_to
+                logging.info(f"Redirecting application email from {original_email} to {redirect_all_emails_to}")
+
             result = self.submit_application(application, dry_run=dry_run)
             results.append(result)
-            
+
             # Delay between applications in the same property
             if i < len(shuffled_apps) - 1:
                 delay_minutes = random.uniform(5, 15)  # Random delay between 5-15 minutes
@@ -423,7 +430,7 @@ class ApplicationSubmissionSystem:
                     time.sleep(delay_minutes * 60)
                 else:
                     logging.info("DRY RUN: Skipping delay")
-        
+
         return results
     
     def get_submission_stats(self) -> Dict:

@@ -161,8 +161,9 @@ class BerlinHousingBiasTest:
         
         # Submit applications
         submission_results = self.submission_system.submit_paired_applications(
-            applications, 
-            dry_run=self.config.get('dry_run', True)
+            applications,
+            dry_run=self.config.get('dry_run', True),
+            redirect_all_emails_to=self.config.get('redirect_all_emails_to')
         )
         
         # Store submission results
@@ -330,18 +331,25 @@ def main():
     parser.add_argument('--mode', choices=['once', 'scheduled', 'analyze'], default='once',
                        help='Execution mode: once (single run), scheduled (continuous), analyze (analyze results)')
     parser.add_argument('--dry-run', action='store_true', help='Run without actually submitting applications')
-    
+    parser.add_argument('--redirect-all-emails-to', type=str, default=None,
+                        help='If set, redirects all outgoing application emails to this address (for dry-run/testing)')
+
     args = parser.parse_args()
-    
+
     try:
         # Initialize system
         bias_test = BerlinHousingBiasTest(args.config)
-        
+
         # Override dry-run setting if specified
         if args.dry_run:
             bias_test.config['dry_run'] = True
             logging.info("DRY RUN MODE: Applications will not be actually submitted")
-        
+
+        # Set email redirection if specified
+        if args.redirect_all_emails_to:
+            bias_test.config['redirect_all_emails_to'] = args.redirect_all_emails_to
+            logging.info(f"All outgoing application emails will be redirected to: {args.redirect_all_emails_to}")
+
         # Execute based on mode
         if args.mode == 'once':
             bias_test.run_once()
@@ -349,7 +357,7 @@ def main():
             bias_test.run_scheduled()
         elif args.mode == 'analyze':
             bias_test.analyze_responses()
-            
+
     except KeyboardInterrupt:
         logging.info("Execution interrupted by user")
     except Exception as e:
