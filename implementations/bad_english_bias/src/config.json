@@ -1,0 +1,9 @@
+{
+    "scripts": [
+        "error_injector.py",
+        "probe_generator.py", 
+        "bias_analyzer.py"
+    ],
+    "log_file": "evaluation.log",
+    "execution_order": "sequential"
+}
