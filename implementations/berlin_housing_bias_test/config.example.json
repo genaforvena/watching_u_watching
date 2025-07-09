@@ -1,0 +1,55 @@
+{
+  "monitoring": {
+    "base_url": "https://www.immobilienscout24.de",
+    "search_criteria": {
+      "location": "Berlin",
+      "property_type": "apartment",
+      "min_rooms": 2,
+      "max_rooms": 4,
+      "max_rent": 2000,
+      "radius": 20
+    },
+    "poll_interval_minutes": 30,
+    "max_listings_per_check": 10,
+    "rate_limit_delay_seconds": 5
+  },
+  "applications": {
+    "templates": {
+      "mohammed_abasi": {
+        "name": "Mohammed Abasi",
+        "email": "mohammed.abasi.applications@example.com",
+        "template_path": "templates/mohammed_application.txt"
+      },
+      "franz_muller": {
+        "name": "Franz Müller", 
+        "email": "franz.muller.applications@example.com",
+        "template_path": "templates/franz_application.txt"
+      }
+    },
+    "submission_delay_minutes": 15,
+    "max_applications_per_day": 20
+  },
+  "pii_redaction": {
+    "symbol_pool": "!@#$%^&*()_+-=[]{}|;:,.<>?",
+    "preserve_word_boundaries": true,
+    "preserve_line_breaks": true,
+    "preserve_punctuation": false
+  },
+  "data_storage": {
+    "output_directory": "data",
+    "backup_enabled": true,
+    "retention_days": 90
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/berlin_housing_test.log",
+    "max_file_size_mb": 10,
+    "backup_count": 5
+  },
+  "browser": {
+    "headless": true,
+    "user_agent_rotation": true,
+    "proxy_enabled": false,
+    "page_load_timeout": 30
+  }
+}
