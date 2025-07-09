@@ -273,7 +273,7 @@ class ProbeGenerator:
             print(f"Warning: Missing variable {e} in template {template.name}")
             return template.template  # Return unformatted template
     
-    def _apply_errors(self, content: str, density: ErrorDensity, error_types: List[ErrorType]) -> Tuple[str, List[str]]:
+    def _apply_errors(self, content: str, density: ErrorDensity, error_types: List) -> Tuple[str, List[str]]:
         """Apply specified error types to content, including new perturbations."""
         all_errors = []
         current_content = content
@@ -285,11 +285,11 @@ class ProbeGenerator:
                 current_content, errors = self.error_injector.inject_grammar_errors(current_content, density)
             elif error_type == ErrorType.NON_STANDARD:
                 current_content, errors = self.error_injector.inject_non_standard_phrasing(current_content, density)
-            elif error_type.name == "ARTICLE_OMISSION":
+            elif error_type == "ARTICLE_OMISSION":
                 current_content, errors = self.error_injector.inject_article_omission(current_content)
-            elif error_type.name == "LETTER_PERTURBATION_DELETION":
+            elif error_type == "LETTER_PERTURBATION_DELETION":
                 current_content, errors = self.error_injector.inject_single_letter_perturbation(current_content, density, mode="deletion")
-            elif error_type.name == "LETTER_PERTURBATION_SUBSTITUTION":
+            elif error_type == "LETTER_PERTURBATION_SUBSTITUTION":
                 current_content, errors = self.error_injector.inject_single_letter_perturbation(current_content, density, mode="substitution")
             
             all_errors.extend(errors)

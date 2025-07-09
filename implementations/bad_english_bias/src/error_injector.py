@@ -206,10 +206,10 @@ class ErrorInjector:
         removed = []
         offset = 0
         def replacement(match):
+            nonlocal offset
             start, end = match.start(), match.end()
             removed.append({'article': match.group(), 'start': start + offset, 'end': end + offset})
             # Adjust offset for subsequent matches
-            nonlocal offset
             offset -= (end - start)
             return ''
         # Remove articles and track positions

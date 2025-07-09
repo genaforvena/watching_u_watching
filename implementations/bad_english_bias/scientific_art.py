@@ -5,7 +5,10 @@ CLI and artifact generation for linguistic bias study (scientific + artistic out
 """
 import argparse
 import os
-from implementations.bad_english_bias.src.eval import run_comparative_study
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+from eval import run_comparative_study, LLMTarget
+from probe_generator import ProbeType
 
 # Placeholder for LaTeX and visualization output
 
@@ -28,13 +31,17 @@ def main():
     parser.add_argument('--study', type=str, default='linguistic_bias')
     parser.add_argument('--output_format', type=str, default='paper_ready', choices=['paper_ready', 'artistic', 'both'])
     parser.add_argument('--artifacts_dir', type=str, default='./gallery_assets')
+    parser.add_argument('--resume', action='store_true', help='Resume from last checkpoint if available')
+    parser.add_argument('--progress_file', type=str, default='experiment_progress.json', help='Path to progress checkpoint file')
     args = parser.parse_args()
 
-    # Example: systems = [LLMTarget(), ...] (should be imported/constructed as needed)
-    from implementations.bad_english_bias.src.eval import LLMTarget
     systems = [LLMTarget()]
-    probe_types = ['llm_question']
-    results = run_comparative_study(systems, probe_types)
+    probe_types = [ProbeType.LLM_QUESTION]
+    results = run_comparative_study(
+        systems, probe_types,
+        resume=args.resume,
+        progress_file=args.progress_file
+    )
     generate_artifacts(results, mode=args.output_format)
 
 if __name__ == "__main__":

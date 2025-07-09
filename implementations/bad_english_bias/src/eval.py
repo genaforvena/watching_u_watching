@@ -523,6 +523,17 @@ class BadEnglishBiasEvaluator:
             return obj
 
 
+def save_checkpoint(progress_file, checkpoint):
+    with open(progress_file, 'w') as f:
+        json.dump(checkpoint, f)
+
+def load_checkpoint(progress_file):
+    if os.path.exists(progress_file):
+        with open(progress_file, 'r') as f:
+            return json.load(f)
+    return None
+
+
 def run_comparative_study(
     systems: list,  # [LLM_apis, job_portals, customer_service]
     probe_types: list,
@@ -531,14 +542,12 @@ def run_comparative_study(
         "letter_perturbation_deletion",
         "letter_perturbation_substitution"
     ],
-    n_iter: int = 50  # Per condition
+    n_iter: int = 50,  # Per condition
+    resume: bool = False,
+    progress_file: str = "experiment_progress.json"
 ) -> dict:
     """
-    Executes triple-matched study:
-    1. Baseline (standard English)
-    2. Article omission condition
-    3. Letter perturbation condition
-    Returns raw results + statistical summary
+    Executes triple-matched study with checkpointing for resume.
     """
     from probe_generator import ProbeGenerator, ProbeType
     from error_injector import ErrorDensity, ErrorType
@@ -551,19 +560,21 @@ def run_comparative_study(
     probe_gen = ProbeGenerator()
     bias_analyzer = BiasAnalyzer()
     results = []
+    checkpoint = load_checkpoint(progress_file) if resume else None
+    completed_ids = set()
+    if checkpoint:
+        results = checkpoint.get('results', [])
+        completed_ids = set((r['probe_id'], r['condition']) for r in results)
     for system in systems:
         for probe_type in probe_types:
             for mode in perturbation_modes:
                 # Map mode to error_types
                 if mode == "article_omission":
-                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
-                    error_types.append(type("ARTICLE_OMISSION", (), {"name": "ARTICLE_OMISSION"})())
+                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD, "ARTICLE_OMISSION"]
                 elif mode == "letter_perturbation_deletion":
-                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
-                    error_types.append(type("LETTER_PERTURBATION_DELETION", (), {"name": "LETTER_PERTURBATION_DELETION"})())
+                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD, "LETTER_PERTURBATION_DELETION"]
                 elif mode == "letter_perturbation_substitution":
-                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
-                    error_types.append(type("LETTER_PERTURBATION_SUBSTITUTION", (), {"name": "LETTER_PERTURBATION_SUBSTITUTION"})())
+                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD, "LETTER_PERTURBATION_SUBSTITUTION"]
                 else:
                     error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
                 # Generate probe pairs
@@ -573,8 +584,9 @@ def run_comparative_study(
                     error_density=ErrorDensity.MEDIUM,
                     error_types=error_types
                 )
-                # Simulate system responses and analyze
                 for pair in probe_pairs:
+                    if (pair.pair_id, mode) in completed_ids:
+                        continue  # Skip completed
                     baseline_response = system.query(pair.baseline_content)
                     variant_response = system.query(pair.variant_content)
                     metrics = bias_analyzer.extract_response_metrics(
@@ -599,7 +611,8 @@ def run_comparative_study(
                         ).is_helpful,
                         'timestamp': time.time()
                     })
-    # Convert to DataFrame for further analysis
+                    # Save checkpoint after each probe
+                    save_checkpoint(progress_file, {'results': results})
     df = pd.DataFrame(results)
     # Statistical summary (t-test, effect size, etc.)
     # ... (to be implemented in output module) ...

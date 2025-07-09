@@ -217,3 +217,13 @@ python scientific_art.py --study linguistic_bias --output_format both --artifact
 
 - For scientific reproduction: use the provided Dockerfile and requirements.txt
 - For artistic installation: see `gallery_assets/README.md` for setup instructions
+
+## Resume Interrupted Experiments
+
+If an experiment run is interrupted, you can resume from the last checkpoint using:
+
+```bash
+python scientific_art.py --study linguistic_bias --output_format both --artifacts_dir ./gallery_assets --resume
+```
+
+You can also specify a custom progress file with `--progress_file`.
