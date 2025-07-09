@@ -2,29 +2,35 @@
 
 ## Core Principles  
 
-### 1. Systemic Analysis Without Individual Attribution  
-- Tests decision processes, never individuals  
-- Human recipients treated as unmeasured background variables  
-- Analysis reports structural patterns only, rejecting personal intent attribution  
+### 1. Systemic Process Analysis  
+- Tests decision systems, never individuals  
+- Human interactions treated as background variables  
+- Reports structural patterns only, excluding intent attribution  
 
 ### 2. Strict Harm Prevention  
-- Uses exclusively synthetic or creator-volunteered identities  
-- Prohibits deception about personal attributes  
-- Forbids exposure of uninvolved individuals  
+- **No PII persistence**: Automated redaction before storage  
+- **Identity protection**: Exclusively synthetic/volunteered IDs with embedded markers  
+- **Transparent simulation**: No deception about real attributes  
+- **Exposure prohibition**: Uninvolved individuals never targeted  
 
-### 3. Transparent Methodology  
-- All code/schema/outputs released as CC0  
-- Test parameters pre-registered and publicly logged  
-- Outputs transformed into non-identifiable formats  
+### 3. Verifiable Transparency  
+- **CC0 release**: Code/schemas/outputs public domain  
+- **Pre-registration**: Test parameters publicly logged  
+- **Deterministic transformation**: Outputs processed with public validation functions  
 
 ### 4. Bias-Aware Implementation  
-- Acknowledges inherent methodological limitations  
-- Actively invites IRB/external review  
-- Framework evolves through documented critique  
+- **Limitation disclosure**: Methodological constraints documented  
+- **Review invitation**: Active solicitation of IRB/external examination  
+- **Adaptive protocols**: Framework evolves through critique  
 
-### 5. Non-Profit Structural Reporting  
-- Prohibits commercial use  
-- Forbids punitive applications or individual profiling  
-- Outputs restricted to systemic pattern documentation   
+### 5. Structural Reporting Guardrails  
+- **Non-commercial**: Outputs prohibited in monetized systems  
+- **Non-punitive**: Banned in disciplinary proceedings against individuals  
+- **Systemic focus**: Documentation restricted to pattern analysis  
+
+### 6. Documented Ethical Evolution  
+- **Public revision log**: All changes with rationale  
+- **Mandatory comment period**: 30-day public review for substantive changes  
+- **Breach response**: Published analysis of ethical violations  
 
 
