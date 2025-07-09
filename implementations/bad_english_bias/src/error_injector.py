@@ -194,6 +194,89 @@ class ErrorInjector:
         
         return final_text, all_errors
 
+    def inject_article_omission(self, text: str) -> Tuple[str, List[Dict[str, int]]]:
+        """
+        Removes ALL articles (a, an, the) while preserving:
+        - Sentence boundaries
+        - Capitalization rules
+        - Core semantic meaning
+        Returns modified text and list of removed articles with positions
+        """
+        article_pattern = re.compile(r'\b(a|an|the)\b', re.IGNORECASE)
+        removed = []
+        offset = 0
+        def replacement(match):
+            start, end = match.start(), match.end()
+            removed.append({'article': match.group(), 'start': start + offset, 'end': end + offset})
+            # Adjust offset for subsequent matches
+            nonlocal offset
+            offset -= (end - start)
+            return ''
+        # Remove articles and track positions
+        new_text = article_pattern.sub(replacement, text)
+        # Clean up double spaces and fix capitalization at sentence starts
+        new_text = re.sub(r'\s{2,}', ' ', new_text)
+        # Capitalize first letter of each sentence if needed
+        sentences = re.split(r'([.!?]\s*)', new_text)
+        sentences = [s.capitalize() if i % 2 == 0 else s for i, s in enumerate(sentences)]
+        new_text = ''.join(sentences).strip()
+        return new_text, removed
+
+    def inject_single_letter_perturbation(
+        self,
+        text: str,
+        density: ErrorDensity,
+        mode: str = "both"
+    ) -> Tuple[str, List[str]]:
+        """
+        Introduces single-letter changes under constraints:
+        - Only words >3 characters affected
+        - First/last characters never modified
+        - Substitutions use QWERTY adjacency (e.g., e→r/w/s/d)
+        - Maintains 100% human readability (pre-test validated)
+        Returns modified text and error log
+        """
+        qwerty_adj = {
+            'a': ['q', 'w', 's', 'z'], 'b': ['v', 'g', 'h', 'n'], 'c': ['x', 'd', 'f', 'v'],
+            'd': ['s', 'e', 'r', 'f', 'c', 'x'], 'e': ['w', 's', 'd', 'r'], 'f': ['d', 'r', 't', 'g', 'v', 'c'],
+            'g': ['f', 't', 'y', 'h', 'b', 'v'], 'h': ['g', 'y', 'u', 'j', 'n', 'b'], 'i': ['u', 'j', 'k', 'o'],
+            'j': ['h', 'u', 'i', 'k', 'm', 'n'], 'k': ['j', 'i', 'o', 'l', 'm'], 'l': ['k', 'o', 'p'],
+            'm': ['n', 'j', 'k'], 'n': ['b', 'h', 'j', 'm'], 'o': ['i', 'k', 'l', 'p'], 'p': ['o', 'l'],
+            'q': ['a', 'w'], 'r': ['e', 'd', 'f', 't'], 's': ['a', 'w', 'e', 'd', 'x', 'z'],
+            't': ['r', 'f', 'g', 'y'], 'u': ['y', 'h', 'j', 'i'], 'v': ['c', 'f', 'g', 'b'],
+            'w': ['q', 'a', 's', 'e'], 'x': ['z', 's', 'd', 'c'], 'y': ['t', 'g', 'h', 'u'],
+            'z': ['a', 's', 'x']
+        }
+        words = text.split()
+        target_errors = self._calculate_target_errors(len(words), density, ErrorType.TYPO)
+        error_log = []
+        used_indices = set()
+        for _ in range(target_errors):
+            # Avoid perturbing the same word multiple times in one pass
+            available_indices = [i for i, w in enumerate(words) if len(w) > 3 and w.isalpha() and i not in used_indices]
+            if not available_indices:
+                break
+            idx = self.random.choice(available_indices)
+            used_indices.add(idx)
+            word = words[idx]
+            char_idx = self.random.randint(1, len(word) - 2)
+            original_word = word
+            if mode in ("deletion", "both") and self.random.random() < 0.5:
+                perturbed = word[:char_idx] + word[char_idx+1:]
+                error_log.append(f"Letter-deletion: {original_word} → {perturbed}")
+                words[idx] = perturbed
+            elif mode in ("substitution", "both"):
+                c = word[char_idx].lower()
+                if c in qwerty_adj and qwerty_adj[c]:
+                    sub = self.random.choice(qwerty_adj[c])
+                    perturbed = word[:char_idx] + sub + word[char_idx+1:]
+                    # Preserve original case
+                    if word[char_idx].isupper():
+                        perturbed = perturbed[:char_idx] + sub.upper() + perturbed[char_idx+1:]
+                    error_log.append(f"Letter-substitution: {original_word} → {perturbed}")
+                    words[idx] = perturbed
+        return ' '.join(words), error_log
+
     def _calculate_target_errors(self, word_count: int, density: ErrorDensity, error_type: ErrorType) -> int:
         """Calculate target number of errors based on word count and density."""
         if density == ErrorDensity.LOW:

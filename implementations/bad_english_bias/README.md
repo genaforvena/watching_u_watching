@@ -187,3 +187,33 @@ This framework enables systematic testing of:
 - **Content moderation systems** and automated review platforms
 
 The framework provides quantifiable evidence of linguistic bias, supporting the development of fairer AI systems and informing policy recommendations for inclusive technology design.
+
+## Scientific Methodology (Linguistic Perturbation Study)
+
+This framework now supports two complementary linguistic perturbation studies:
+
+- **Article Omission**: Removes all articles (a, an, the) while preserving sentence boundaries, capitalization, and semantic meaning. Used to test system robustness to function word omission, a common L2 pattern.
+- **Single-Letter Perturbation**: Introduces single-letter deletions or QWERTY-adjacent substitutions in words >3 characters, never modifying first/last letters. Ensures 100% human readability (pre-tested). Used to simulate realistic typos and test system tolerance.
+
+All perturbations are validated for semantic integrity using an NLI model (DeBERTa-v3, entailment >0.95) and a human validation suite (100 probe pairs, 3 linguists).
+
+## Curatorial Statement: Why Linguistic Bias?
+
+Linguistic bias is a subtle but pervasive form of discrimination. By isolating the effects of article omission and single-letter perturbations, this project exposes how AI and automated systems may penalize users for non-standard English, even when meaning is preserved. The dual-output system (scientific and artistic) transforms the code and results into both empirical evidence and conceptual art, challenging the boundaries between research and exhibition.
+
+## Exhibition Preparation Guide
+
+- Run the full experiment and generate all artifacts with:
+
+```bash
+python scientific_art.py --study linguistic_bias --output_format both --artifacts_dir ./gallery_assets
+```
+
+- Outputs include:
+    - LaTeX-ready tables (t-tests, Cohen's d)
+    - Raincloud plots, attention heatmaps
+    - Anonymous CSV dataset for gallery display
+    - Interactive installation assets in `gallery_assets/`
+
+- For scientific reproduction: use the provided Dockerfile and requirements.txt
+- For artistic installation: see `gallery_assets/README.md` for setup instructions

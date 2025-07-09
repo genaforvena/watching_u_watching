@@ -523,6 +523,89 @@ class BadEnglishBiasEvaluator:
             return obj
 
 
+def run_comparative_study(
+    systems: list,  # [LLM_apis, job_portals, customer_service]
+    probe_types: list,
+    perturbation_modes: list = [
+        "article_omission", 
+        "letter_perturbation_deletion",
+        "letter_perturbation_substitution"
+    ],
+    n_iter: int = 50  # Per condition
+) -> dict:
+    """
+    Executes triple-matched study:
+    1. Baseline (standard English)
+    2. Article omission condition
+    3. Letter perturbation condition
+    Returns raw results + statistical summary
+    """
+    from probe_generator import ProbeGenerator, ProbeType
+    from error_injector import ErrorDensity, ErrorType
+    from bias_analyzer import BiasAnalyzer, analyze_bias_with_statistics
+    import pandas as pd
+    import time
+    import os
+    from datetime import datetime
+
+    probe_gen = ProbeGenerator()
+    bias_analyzer = BiasAnalyzer()
+    results = []
+    for system in systems:
+        for probe_type in probe_types:
+            for mode in perturbation_modes:
+                # Map mode to error_types
+                if mode == "article_omission":
+                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
+                    error_types.append(type("ARTICLE_OMISSION", (), {"name": "ARTICLE_OMISSION"})())
+                elif mode == "letter_perturbation_deletion":
+                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
+                    error_types.append(type("LETTER_PERTURBATION_DELETION", (), {"name": "LETTER_PERTURBATION_DELETION"})())
+                elif mode == "letter_perturbation_substitution":
+                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
+                    error_types.append(type("LETTER_PERTURBATION_SUBSTITUTION", (), {"name": "LETTER_PERTURBATION_SUBSTITUTION"})())
+                else:
+                    error_types = [ErrorType.TYPO, ErrorType.GRAMMAR, ErrorType.NON_STANDARD]
+                # Generate probe pairs
+                probe_pairs = probe_gen.generate_probe_pairs(
+                    probe_type=probe_type,
+                    count=n_iter,
+                    error_density=ErrorDensity.MEDIUM,
+                    error_types=error_types
+                )
+                # Simulate system responses and analyze
+                for pair in probe_pairs:
+                    baseline_response = system.query(pair.baseline_content)
+                    variant_response = system.query(pair.variant_content)
+                    metrics = bias_analyzer.extract_response_metrics(
+                        response_text=variant_response['response'],
+                        response_time=variant_response['response_time'],
+                        probe_id=pair.pair_id + f"_{mode}",
+                        response_id=f"resp_{mode}_{pair.pair_id}"
+                    )
+                    results.append({
+                        'probe_id': pair.pair_id,
+                        'system': str(system),
+                        'condition': mode,
+                        'response': variant_response['response'],
+                        'helpfulness': metrics.is_helpful,
+                        'latency': metrics.response_time,
+                        'baseline_response': baseline_response['response'],
+                        'baseline_helpful': bias_analyzer.extract_response_metrics(
+                            response_text=baseline_response['response'],
+                            response_time=baseline_response['response_time'],
+                            probe_id=pair.pair_id + "_baseline",
+                            response_id=f"resp_baseline_{pair.pair_id}"
+                        ).is_helpful,
+                        'timestamp': time.time()
+                    })
+    # Convert to DataFrame for further analysis
+    df = pd.DataFrame(results)
+    # Statistical summary (t-test, effect size, etc.)
+    # ... (to be implemented in output module) ...
+    return {'raw': df, 'summary': None}
+
+
 def main():
     """Main function for command-line execution using direct function calls."""
     parser = argparse.ArgumentParser(description='Bad English Bias Evaluation Pipeline')
