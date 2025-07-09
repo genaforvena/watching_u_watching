@@ -42,6 +42,7 @@ A comprehensive system that automates the process of:
 
 ## Architecture
 
+
 ```
 berlin_housing_bias_test/
 ├── src/
@@ -59,6 +60,13 @@ berlin_housing_bias_test/
 ├── demo.py                     # Working demonstration
 └── config.example.json         # Configuration template
 ```
+
+## Landlord Categorization & Data Minimization
+
+- Each property is labeled as one of the top 5 Berlin corporate landlords (by name) or as "other" (with no further info).
+- For "other" landlords, no identifying information is ever stored—only the label "other" is used for analysis.
+- This enables both targeted (corporate) and broad (all) market analysis, with strict privacy guarantees.
+
 
 ## Core Components
 
@@ -94,7 +102,7 @@ berlin_housing_bias_test/
 
 ### 6. Analysis Tools (`analyze_responses.py`)
 - **Purpose**: Detect bias patterns in collected data
-- **Metrics**: Response rates, timing analysis, bias indicators
+- **Metrics**: Response rates, timing analysis, bias indicators, breakdown by landlord category (top 5 vs. other)
 - **Reporting**: Text and JSON output formats
 - **Statistics**: Statistical significance testing
 

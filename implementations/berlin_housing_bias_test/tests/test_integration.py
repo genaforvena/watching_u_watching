@@ -147,12 +147,14 @@ Franz Müller"""
             
             stored_responses = data_storage.get_responses('test_property_123')
             self.assertEqual(len(stored_responses), 1)
-            
-            # 6. Verify PII redaction in stored response
+            # 6. Verify only minimal metadata is stored (no content fields)
             response = stored_responses[0]
-            self.assertNotEqual(response['redacted_subject'], test_email['subject'])
-            self.assertNotEqual(response['redacted_body'], test_email['body'])
-            self.assertEqual(len(response['redacted_subject']), len(test_email['subject']))
+            self.assertIn('reply_received', response)
+            self.assertIn('is_positive_response', response)
+            self.assertIn('response_timestamp', response)
+            self.assertIn('response_type_category', response)
+            self.assertNotIn('redacted_subject', response)
+            self.assertNotIn('redacted_body', response)
             
             # 7. Test bias analysis data retrieval
             analysis_data = data_storage.get_bias_analysis_data()
@@ -187,19 +189,9 @@ Franz Müller"""
         
         for email in test_emails:
             redacted = pii_redactor.redact_email_content(email)
-            
-            # Verify redaction
-            self.assertNotEqual(redacted['subject'], email['subject'])
-            self.assertNotEqual(redacted['body'], email['body'])
-            self.assertNotEqual(redacted['sender_name'], email['sender_name'])
-            
-            # Verify length preservation
-            self.assertEqual(len(redacted['subject']), len(email['subject']))
-            self.assertEqual(len(redacted['body']), len(email['body']))
-            
-            # Verify no PII remains
-            self.assertTrue(pii_redactor.verify_redaction(email['subject'], redacted['subject']))
-            self.assertTrue(pii_redactor.verify_redaction(email['body'], redacted['body']))
+            # All fields should be None (deprecated behavior)
+            for v in redacted.values():
+                self.assertIsNone(v)
 
 
 if __name__ == '__main__':

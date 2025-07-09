@@ -25,6 +25,49 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 
 class PropertyMonitor:
+    # List of top Berlin housing corporations and their known domains
+    CORPORATE_LANDLORDS = [
+        {
+            'name': 'Deutsche Wohnen',
+            'domains': ['deutsche-wohnen.com', 'deuwo.com'],
+        },
+        {
+            'name': 'Vonovia',
+            'domains': ['vonovia.de'],
+        },
+        {
+            'name': 'Adler Group',
+            'domains': ['adler-group.com', 'adler-wohnen.de'],
+        },
+        {
+            'name': 'Covivio Immobilien',
+            'domains': ['covivio.immo', 'covivio.de'],
+        },
+        {
+            'name': 'Grand City Properties',
+            'domains': ['grandcityproperty.de', 'grandcityproperties.com'],
+        },
+    ]
+
+    def _get_landlord_category(self, property_data: Dict) -> str:
+        """
+        Return the name of the corporate landlord if matched, else 'other'.
+        """
+        text = (property_data.get('title', '') + ' ' + property_data.get('description', '')).lower()
+        for corp in self.CORPORATE_LANDLORDS:
+            if corp['name'].lower() in text:
+                return corp['name']
+        url = property_data.get('url', '').lower()
+        for corp in self.CORPORATE_LANDLORDS:
+            for domain in corp['domains']:
+                if domain in url:
+                    return corp['name']
+        email = property_data.get('contact_email', '').lower()
+        for corp in self.CORPORATE_LANDLORDS:
+            for domain in corp['domains']:
+                if domain in email:
+                    return corp['name']
+        return 'other'
     """
     Monitors Immobilienscout24.de for new rental property listings.
     """
@@ -319,24 +362,20 @@ class PropertyMonitor:
             return []
         
         new_properties = []
-        
         for element in property_elements[:self.max_listings_per_check]:
             property_data = self._extract_property_data(element)
-            
             if property_data:
                 property_id = property_data['id']
                 property_url = property_data['url']
-                
+                landlord_category = self._get_landlord_category(property_data)
+                property_data['landlord_category'] = landlord_category
                 # Check if we've seen this property before
                 if property_id not in self.seen_property_ids and property_url not in self.seen_urls:
                     new_properties.append(property_data)
                     self.seen_property_ids.add(property_id)
                     self.seen_urls.add(property_url)
-                    logging.info(f"Found new property: {property_id} - {property_data['title']}")
-            
-            # Rate limiting
+                    logging.info(f"Found new property: {property_id} - {property_data['title']} (landlord: {landlord_category})")
             time.sleep(self.rate_limit_delay)
-        
         logging.info(f"Found {len(new_properties)} new properties")
         return new_properties
     

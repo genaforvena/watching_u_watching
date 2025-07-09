@@ -1,5 +1,21 @@
 # Automated Paired Testing for Systemic Bias in the Berlin Housing Market
 
+## Landlord Categorization & Data Minimization
+
+This system automatically categorizes each property as belonging to one of the **top 5 Berlin corporate landlords** (Deutsche Wohnen, Vonovia, Adler Group, Covivio, Grand City Properties) or as **"other"**. For "other" landlords, no identifying information is stored—only the label "other" is used for analysis. This ensures:
+
+- **Maximum impact**: Systemic bias can be detected at the largest institutions.
+- **Full privacy**: No PII or identifying info is ever stored for any individual or non-corporate landlord.
+- **Broad coverage**: All listings are processed, but only the top 5 are named; all others are anonymized.
+
+## Data Minimization & Privacy-by-Design
+
+- **No email content or PII is ever stored**—not even in redacted form. Only minimal metadata (reply received, is positive response, timestamp, response type) is extracted in-memory and persisted.
+- **Landlord category** is the only property-level label: one of the top 5 by name, or "other".
+
+This approach exceeds GDPR and research ethics requirements, and is aligned with the "NO HARM is above all" principle.
+
+
 This implementation provides automated monitoring and application submission for rental properties on Immobilienscout24.de to detect systemic bias through paired testing methodology.
 
 ## Overview
@@ -62,10 +78,12 @@ python src/analyze_responses.py
 
 ## Ethical Considerations
 
+
 This implementation strictly adheres to ethical research principles:
 
 - **Fictitious Personas**: Uses only fictional identities with no real PII
-- **Privacy Protection**: All received content is immediately transformed to prevent PII storage
+- **Privacy Protection**: All received content is immediately discarded after extracting minimal metadata; no PII or content is ever stored
+- **Landlord Anonymization**: For all but the top 5, only the label "other" is stored—no identifying info
 - **Transparency**: Open-source methodology allowing independent verification
 - **Research Purpose**: Legitimate academic/policy research into systemic bias
 - **No Harm Principle**: Designed to detect and expose discrimination, not cause harm

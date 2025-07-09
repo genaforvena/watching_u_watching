@@ -15,7 +15,7 @@ import logging
 import hashlib
 from pathlib import Path
 
-from .pii_redactor import PIIRedactor
+from pii_redactor import PIIRedactor
 
 
 class DataStorage:
@@ -101,7 +101,7 @@ class DataStorage:
                 )
             ''')
             
-            # Responses table (all PII redacted)
+            # Responses table (data minimization: only minimal metadata, no content)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS responses (
                     id TEXT PRIMARY KEY,
@@ -109,13 +109,10 @@ class DataStorage:
                     application_id TEXT,
                     property_id TEXT,
                     persona TEXT,
-                    redacted_subject TEXT,
-                    redacted_sender_name TEXT,
-                    redacted_sender_email TEXT,
-                    redacted_body TEXT,
-                    original_timestamp TEXT,
-                    response_received_at TEXT,
-                    response_type TEXT,
+                    reply_received BOOLEAN,
+                    is_positive_response BOOLEAN,
+                    response_timestamp TEXT,
+                    response_type_category TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (submission_id) REFERENCES submissions (id),
                     FOREIGN KEY (application_id) REFERENCES applications (id),
@@ -239,6 +236,12 @@ class DataStorage:
                 
                 application = submission_result.get('application', {})
                 
+                # Handle both string and datetime for timestamp
+                ts = submission_result.get('timestamp')
+                if hasattr(ts, 'isoformat'):
+                    ts_str = ts.isoformat()
+                else:
+                    ts_str = str(ts) if ts is not None else None
                 cursor.execute('''
                     INSERT INTO submissions 
                     (id, application_id, property_id, persona, success, error_message, 
@@ -251,7 +254,7 @@ class DataStorage:
                     application.get('persona'),
                     submission_result.get('success'),
                     submission_result.get('error'),
-                    submission_result.get('timestamp').isoformat() if submission_result.get('timestamp') else None,
+                    ts_str,
                     submission_result.get('dry_run')
                 ))
                 
@@ -265,62 +268,72 @@ class DataStorage:
     
     def store_response(self, email_data: Dict, submission_id: str) -> bool:
         """
-        Store email response with PII redaction.
-        
+        Store only minimal metadata from email response (no content or PII).
         Args:
-            email_data: Raw email data dictionary
+            email_data: Raw email data dictionary (processed in-memory only)
             submission_id: Associated submission ID
-            
         Returns:
             True if stored successfully
         """
         try:
-            # Redact all PII before storage
-            redacted_email = self.pii_redactor.redact_email_content(email_data)
-            
+            # Extract minimal metadata
+            def extract_minimal_metadata(email_data: Dict) -> Dict:
+                # Helper to check for date and address in body (very simple heuristics)
+                import re
+                body = email_data.get('body', '')
+                # Date: look for dd.mm.yyyy or yyyy-mm-dd or similar
+                date_found = bool(re.search(r'(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}-\d{2}-\d{2})', body))
+                # Address: look for street name + number (e.g., "Straße 12")
+                address_found = bool(re.search(r'\b\w+\s+\d+[a-zA-Z]?\b', body))
+                is_positive = date_found and address_found
+                # Response type category: simple mapping
+                if is_positive:
+                    response_type_category = 'positive_invite'
+                elif 'abgelehnt' in body.lower() or 'leider' in body.lower():
+                    response_type_category = 'rejection'
+                elif 'auto-reply' in body.lower() or 'abwesenheit' in body.lower():
+                    response_type_category = 'auto_reply'
+                else:
+                    response_type_category = 'other'
+                return {
+                    'reply_received': True,
+                    'is_positive_response': is_positive,
+                    'response_timestamp': email_data.get('timestamp', datetime.now().isoformat()),
+                    'response_type_category': response_type_category
+                }
+            minimal = extract_minimal_metadata(email_data)
             # Generate response ID
             response_id = f"resp_{hashlib.md5(f'{submission_id}_{datetime.now().isoformat()}'.encode()).hexdigest()[:12]}"
-            
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                
                 # Get submission details
                 cursor.execute('SELECT application_id, property_id, persona FROM submissions WHERE id = ?', (submission_id,))
                 submission_info = cursor.fetchone()
-                
                 if not submission_info:
                     logging.error(f"Submission {submission_id} not found")
                     return False
-                
                 application_id, property_id, persona = submission_info
-                
                 cursor.execute('''
                     INSERT INTO responses 
                     (id, submission_id, application_id, property_id, persona,
-                     redacted_subject, redacted_sender_name, redacted_sender_email,
-                     redacted_body, original_timestamp, response_received_at, response_type)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     reply_received, is_positive_response, response_timestamp, response_type_category)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     response_id,
                     submission_id,
                     application_id,
                     property_id,
                     persona,
-                    redacted_email.get('subject'),
-                    redacted_email.get('sender_name'),
-                    redacted_email.get('sender_email'),
-                    redacted_email.get('body'),
-                    email_data.get('timestamp'),
-                    datetime.now().isoformat(),
-                    email_data.get('response_type', 'email')
+                    minimal['reply_received'],
+                    minimal['is_positive_response'],
+                    minimal['response_timestamp'],
+                    minimal['response_type_category']
                 ))
-                
                 conn.commit()
-                logging.info(f"Stored redacted response: {response_id}")
+                logging.info(f"Stored minimal response metadata: {response_id}")
                 return True
-                
         except Exception as e:
-            logging.error(f"Error storing response: {e}")
+            logging.error(f"Error storing minimal response: {e}")
             return False
     
     def get_properties(self, limit: Optional[int] = None) -> List[Dict]:

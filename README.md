@@ -162,6 +162,15 @@ Our immediate prioritization for new development and community engagement is as 
     * **Results:** [See evaluation and findings](implementations/bad_english_bias/EVALUATION_RESULTS.md)
     * **[View Implementation →](implementations/bad_english_bias/)**
 
+### Berlin Housing Bias Test (Systemic Correspondence Testing)
+
+* **Focus:** Automated, privacy-by-design detection of systemic bias in Berlin's rental housing market, targeting both the largest corporate landlords and the broader market.
+* **Goal:** Provide empirical, large-scale evidence of discrimination in rental application responses, with maximum impact and minimal risk by focusing on top 5 corporate landlords (Deutsche Wohnen, Vonovia, Adler Group, Covivio, Grand City Properties) and anonymizing all others as "other".
+* **Status:** ✅ Complete implementation, testing, and documentation
+* **Privacy:** No email content or PII is ever stored; only minimal metadata and landlord category (top 5 by name, all others as "other") are retained for analysis.
+* **Results:** [See implementation summary and findings](implementations/berlin_housing_bias_test/IMPLEMENTATION_SUMMARY.md)
+* **[View Implementation →](implementations/berlin_housing_bias_test/)**
+
 ### Core Regulatory & Compliance Focus (Top Priority Cases)
 
 These represent our most immediate and impactful areas for applying `watching_u_watching` due to existing or emerging legal frameworks. These real-world applications, such as the German job market inquiry, are lower-hanging fruit that allow us to thoroughly test the core of our toolkit in directly relevant contexts.

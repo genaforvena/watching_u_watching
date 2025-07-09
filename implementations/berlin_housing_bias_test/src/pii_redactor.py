@@ -128,37 +128,9 @@ class PIIRedactor:
     
     def redact_email_content(self, email_data: Dict[str, str]) -> Dict[str, str]:
         """
-        Redact all text content from an email while preserving structure.
-        
-        Args:
-            email_data: Dictionary containing email fields
-            
-        Returns:
-            Dictionary with all text fields redacted
+        Deprecated: No longer used for storage. Kept for backward compatibility/testing only.
         """
-        redacted_data = {}
-        
-        # Fields that should be redacted
-        text_fields = ['subject', 'sender_name', 'sender_email', 'body', 
-                      'recipient_name', 'recipient_email', 'headers']
-        
-        for key, value in email_data.items():
-            if key in text_fields and isinstance(value, str):
-                redacted_data[key] = self.redact_text(value)
-            elif key == 'headers' and isinstance(value, dict):
-                # Redact header values
-                redacted_headers = {}
-                for header_key, header_value in value.items():
-                    if isinstance(header_value, str):
-                        redacted_headers[header_key] = self.redact_text(header_value)
-                    else:
-                        redacted_headers[header_key] = header_value
-                redacted_data[key] = redacted_headers
-            else:
-                # Keep non-text fields as-is (timestamps, IDs, etc.)
-                redacted_data[key] = value
-                
-        return redacted_data
+        return {k: None for k in email_data.keys()}
     
     def verify_redaction(self, original: str, redacted: str) -> bool:
         """

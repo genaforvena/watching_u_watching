@@ -5,7 +5,10 @@ Tests for Application Generator
 import unittest
 import tempfile
 import os
-from src.application_generator import ApplicationGenerator
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+from application_generator import ApplicationGenerator
 
 
 class TestApplicationGenerator(unittest.TestCase):
