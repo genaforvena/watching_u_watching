@@ -1,3 +1,13 @@
+
+# Berlin Housing Bias Test: Privacy-by-Design Systemic Audit (At a Glance)
+
+**Summary for Reviewers:**
+- **Purpose:** Automated, privacy-by-design detection of systemic bias in Berlin's rental housing market.
+- **Landlord Categorization:** Only the top 5 corporate landlords (Deutsche Wohnen, Vonovia, Adler Group, Covivio, Grand City Properties) are named; all others are labeled "other" (no identifying info stored).
+- **Data Minimization:** No email content or PII is ever stored—only minimal response metadata (reply_received, is_positive_response, response_timestamp, response_type_category) and landlord category are persisted.
+- **Enforcement:** All code and tests strictly enforce these privacy guarantees.
+- **Documentation:** See [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for methodology, results, and compliance details.
+
 # Automated Paired Testing for Systemic Bias in the Berlin Housing Market
 
 ## Landlord Categorization & Data Minimization
