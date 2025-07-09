@@ -1,0 +1,19 @@
+# .dockerignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.log
+*.csv
+*.parquet
+*.egg-info/
+.env
+.env.*
+.venv
+env/
+venv/
+ENV/
+.idea/
+.vscode/
+.DS_Store
