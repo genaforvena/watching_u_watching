@@ -8,9 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-env/
-venv/
-ENV/
 build/
 develop-eggs/
 dist/
@@ -23,7 +20,6 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -47,10 +43,8 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
-*.py,cover
 .hypothesis/
 .pytest_cache/
-cover/
 
 # Translations
 *.mo
@@ -60,7 +54,6 @@ cover/
 *.log
 local_settings.py
 db.sqlite3
-db.sqlite3-journal
 
 # Flask stuff:
 instance/
@@ -73,7 +66,6 @@ instance/
 docs/_build/
 
 # PyBuilder
-.pybuilder/
 target/
 
 # Jupyter Notebook
@@ -86,28 +78,14 @@ ipython_config.py
 # pyenv
 .python-version
 
-# pipenv
-Pipfile.lock
-
-# poetry
-poetry.lock
-
-# pdm
-.pdm.toml
-
-# PEP 582
-__pypackages__/
-
-# Celery stuff
+# celery beat schedule file
 celerybeat-schedule
-celerybeat.pid
 
 # SageMath parsed files
 *.sage.py
 
 # Environments
 .env
-.env.*
 .venv
 env/
 venv/
@@ -133,41 +111,20 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-.idea/
-
-# VSCode
-.vscode/
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Bad English Bias specific
-implementations/bad_english_bias/results/
-implementations/bad_english_bias/src/*.log
-implementations/bad_english_bias/*.csv
-implementations/bad_english_bias/*.parquet
+# Results and output files
+results/
 *.parquet
 *.csv
-probe_pairs_*.csv
+error_log.txt
+evaluation.log
 
-# Logs
-*.log
-implementations/watching_fairlearn_and_learning/src/error_log.txt
-
-# Other
-*.bak
+# IDE
+.vscode/
+.idea/
 *.swp
-*.tmp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
