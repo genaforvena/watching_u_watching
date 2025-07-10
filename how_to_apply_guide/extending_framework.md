@@ -1,101 +1,196 @@
 # Extending the Correspondence Testing Framework
 
 ## Overview
-This guide enables contributors to adapt the correspondence testing framework for new bias detection scenarios using LLM-assisted code generation. It is designed for both technical and non-technical contributors, ensuring rapid, consistent, and ethical extension of the framework.
+Accelerate development of new audit scenarios using LLM-assisted code generation while maintaining ethical standards. This guide enables both technical and domain experts to extend our bias detection capabilities.
 
 ---
 
-## 1. Framework Extension Methodology
+## 1. Audit Case Definition Protocol
 
-### Case Definition Protocol
-- **Decision System Characterization**: Describe the system under audit (e.g., loan approval, housing allocation).
-- **Protected Characteristic Specification**: Define the attributes to test for bias (e.g., race, gender, ZIP code).
-- **Probe Generation Strategy**: Outline how probes (test cases) will be generated, including variations.
-- **Validation Metric Selection**: Choose metrics for bias detection (e.g., disparate impact, response rate).
+### Use the Case Definition Template
+Start with `/how_to_apply_guide/audit_case_definition.md` containing:
 
-### Case Definition Template
-See `/how_to_apply_guide/audit_case_definition.md` for a reusable template.
+```markdown
+## 1. Decision System Characterization
+- **System Under Audit**: [e.g., university admissions portal]
+- **Purpose/Function**: [e.g., initial application screening]
 
----
+## 2. Protected Characteristic(s)
+- **Characteristic(s) to Test**: [e.g., socioeconomic status proxies]
+- **Rationale**: [Brief justification]
 
-## 2. LLM Prompt Engineering Guidelines
+## 3. Probe Generation Strategy
+- **Probe Type**: [e.g., PDF application packages]
+- **Variation Details**: [e.g., parental education levels]
+- **Template**:
+  ```json
+  {
+    "applicant": {
+      "name": "$NAME",
+      "education": "$EDUCATION_LEVEL"
+    }
+  }
+  ```
 
-### System Prompt Template
+## 4. Validation Metrics
+- **Metric(s)**: [e.g., acknowledgment timing, interview rates]
+- **Thresholds**: [e.g., >10% difference = bias flag]
+
+## 5. Ethical Safeguards
+- **PII Avoidance**: [Describe synthetic data approach]
+- **Ethical Review Hook**: [Specify review points]
 ```
-SYSTEM PROMPT TEMPLATE:
+
+---
+
+## 2. LLM-Powered Implementation
+
+### Prompt Engineering Strategy
+```markdown
+SYSTEM PROMPT:
 You are an AI fairness auditing assistant. Generate Python code for:
 - New audit class inheriting from CorrespondenceAudit
-- Probe generation with {num_pairs} variations
-- Response analysis returning BiasReport
+- Implementation of the case definition at: [PASTE_URL]
 CONSTRAINTS:
-- Use fake_data_helper module exclusively
-- Implement rate_limiter protocol
-- Zero real PII
-- Include ethical_review_hook at probe generation
+1. Use ONLY fake_data_helper for synthetic data
+2. Implement rate_limiter protocol
+3. ZERO real PII
+4. Include ethical_review_hook() at probe generation
+5. Follow template structure from /core/audit_template.py
 ```
 
-### Additional Prompt Templates
-- **Test Case Generator**:
-  ```
-  Generate test cases for a new audit scenario. Use only synthetic data and ensure all probes are ethically reviewed.
-  ```
-- **Validation Protocol**:
-  ```
-  Review the following code for compliance with framework standards: no real PII, uses rate_limiter, and includes ethical_review_hook.
-  ```
+### Example: Scholarship Audit Prompt
+````markdown
+Generate a ScholarshipAudit class with:
+- VARIATIONS: {privileged: {parent_education: "PhD"}, marginalized: {parent_education: "High School"}}
+- Validation metric: Response time difference
+- Ethical hook: education_proxy_review()
+````
 
 ---
 
-## 3. Code Validation Protocols
-- Use `/how_to_apply_guide/code_validator.py` to check LLM-generated code for compliance.
-- Ensure all code:
-  - Does not use real PII (e.g., no real emails)
-  - Uses `rate_limiter` and `fake_data_helper`
-  - Includes ethical safeguards (e.g., `ethical_review_hook`)
+## 3. Enhanced Code Validation
+
+### Sophisticated Validator
+```python
+# /how_to_apply_guide/code_validator.py
+import ast
+
+def has_ethical_hooks(code: str) -> bool:
+    """Checks for ethical review hooks using AST parsing"""
+    tree = ast.parse(code)
+    return any(
+        isinstance(node, ast.Call) and 
+        hasattr(node.func, 'id') and 
+        'ethical_review_hook' in node.func.id
+        for node in ast.walk(tree)
+    )
+
+def validate_generated_code(code: str) -> dict:
+    """Comprehensive validation with diagnostics"""
+    checks = {
+        "no_real_pii": all(
+            kw not in code for kw in 
+            ["real_email", "actual_phone", "live_ssn"]
+        ),
+        "uses_rate_limiter": "@rate_limiter" in code,
+        "uses_fake_data": "fake_data_helper" in code,
+        "has_ethical_hooks": has_ethical_hooks(code),
+        "inheritance_check": "class " in code and "CorrespondenceAudit" in code
+    }
+    return {
+        "valid": all(checks.values()),
+        "details": checks
+    }
+```
 
 ---
 
-## 4. Implementation Workflow
+## 4. Implementation Workflow with Error Handling
 
 ```mermaid
 graph TD
-A[Define Case] --> B(Generate Code Skeleton via LLM)
-B --> C{Validation Check}
-C -->|Pass| D[Implement Domain Logic]
-C -->|Fail| E[Revise Prompt]
-D --> F[Add Test Cases]
-F --> G[Submit PR]
+A[Define Case Template] --> B(Generate Code via LLM)
+B --> C{Validation}
+C -->|Valid| D[Implement Domain Logic]
+C -->|Invalid| E[Analyze Failure]
+E --> F{Pattern?}
+F -->|Common| G[Apply Fix Template]
+F -->|Novel| H[Manual Correction]
+G --> C
+D --> I[Add Tests]
+I --> J[Submit PR]
 ```
 
 ---
 
-## 5. Complete Implementation Example: Loan Application Audit
+## 5. Complete Loan Audit Example
 
+### Case Definition Snippet
+```markdown
+## 3. Probe Generation Strategy
+- **Probe Type**: JSON loan applications
+- **Variation Details**: ZIP code occupational proxies
+```
+
+### Generated Class
 ```python
-# LLM-GENERATED WITH HUMAN EDITS
 class LoanAudit(CorrespondenceAudit):
     VARIATIONS = {
         'privileged': {'zipcode': '94025', 'occupation': 'Doctor'},
         'marginalized': {'zipcode': '60623', 'occupation': 'Janitor'}
     }
-
+    
+    @rate_limiter(requests=5, period=60)
     def generate_probes(self, num_pairs):
-        return [Probe(
-            template=load_template('loan_application.json'),
-            variations=random.sample(self.VARIATIONS, 2)
-        ) for _ in range(num_pairs)]
+        ethical_review_hook(self.VARIATIONS)
+        return [
+            Probe(
+                template=load_template('loan_app.json'),
+                variations=random.sample(self.VARIATIONS, 2),
+                fake_data=True
+            ) for _ in range(num_pairs)
+        ]
 ```
 
 ---
 
-## 6. Acceptance Criteria
-- Guide covers all framework extension aspects
-- Includes 3 reusable prompt templates
-- Provides complete scholarship audit implementation
-- Code validator passes 100% test coverage
-- Documentation reviewed by 2 core maintainers
+## 6. Testing Protocol
+
+### Audit-Specific Test Cases
+```python
+def test_loan_audit_variations():
+    audit = LoanAudit()
+    probes = audit.generate_probes(10)
+    assert all('zipcode' in p.variation for p in probes)
+    assert all(p.fake_data for p in probes)
+
+def test_ethical_hook_called():
+    from unittest.mock import patch
+    with patch('core.ethics.ethical_review_hook') as mock_hook:
+        audit = LoanAudit()
+        audit.generate_probes(1)
+        mock_hook.assert_called_once()
+```
 
 ---
 
-## 7. Impact
-Following this guide, contributors can develop new audit types in under 4 hours, accelerating the pace of fairness research and implementation.
+## 7. Quality Gates
+
+1. **Validation Checklist**:
+   - [ ] Passes code_validator.py checks
+   - [ ] 100% test coverage for new logic
+   - [ ] Ethical review documentation complete
+
+2. **Review Process**:
+   ```mermaid
+   graph LR
+   PR[Pull Request] --> BOT[Automated Validation]
+   BOT -->|Pass| HUMAN[Maintainer Review]
+   HUMAN -->|Approved| MERGE
+   ```
+
+3. **Impact Metrics**:
+   - New audit development time: <4 hours
+   - False positive rate: <1%
+   - Bias detection accuracy: >95%
