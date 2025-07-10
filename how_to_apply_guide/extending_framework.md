@@ -86,6 +86,9 @@ graph TD
     I --> J[Submit PR]
 ```
 
+### 4a. Incident Response Reference
+In the event of an ethical breach (e.g., accidental PII collection, unauthorized data retention, or system disruption), immediately follow the [Ethical Incident Response Protocol](../docs/ethical_incident_response.md) for emergency halt, data purge, review, and communication steps. Lessons learned must be incorporated into this guide and related documentation.
+
 ### 5. Testing Protocol
 **Unit Tests:**
 ```python
@@ -170,6 +173,8 @@ graph LR
 
 ### 8. Error Recovery
 **Common Patterns:**
+
+If an error or breach involves ethical or data handling issues, refer to the [Ethical Incident Response Protocol](../docs/ethical_incident_response.md) and update this guide as part of the post-incident review.
 ```markdown
 | Error Type              | Auto-Fix                         | Manual Fix                     |
 |-------------------------|----------------------------------|--------------------------------|

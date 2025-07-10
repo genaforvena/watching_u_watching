@@ -1,6 +1,10 @@
 """
 Enhanced Code Validator for watching_u_watching Framework
+
 Performs comprehensive validation of LLM-generated audit code
+
+If a suspected ethical breach (e.g., PII detected, unauthorized data retention) is found during validation, immediately follow the Ethical Incident Response Protocol:
+https://github.com/genaforvena/watching_u_watching/blob/main/docs/ethical_incident_response.md
 """
 
 import ast
