@@ -1,4 +1,3 @@
-
 # 👁️ watching_u_watching 👁️
 
 An open-source methodology for scaled, automated correspondence testing to detect bias in high-stakes decision-making processes.
@@ -31,6 +30,24 @@ Our rigorous approach to bias detection:
 5. **Ethical Safeguards:** Follow "no harm" principles with fictitious data
 
 This scales correspondence testing to unprecedented levels—revealing subtle biases undetectable through manual audits.
+
+## 📦 How to Apply Guide for LLM-Assisted Framework Extension
+
+The `/how_to_apply_guide` directory provides a comprehensive guide, templates, and code validation tools for extending the correspondence testing framework to new bias detection scenarios using LLM-assisted code generation.
+
+**Key Features:**
+- Step-by-step methodology for defining new audit cases
+- Reusable prompt templates for LLM code generation
+- Automated code validation for safety and compliance
+- Example implementations (e.g., loan and scholarship audits)
+- Markdown templates for consistent case definitions
+
+**Quick Start:**
+- See `/how_to_apply_guide/extending_framework.md` for the full contributor guide
+- Use `/how_to_apply_guide/audit_case_definition.md` to propose new audit cases
+- Validate generated code with `/how_to_apply_guide/code_validator.py`
+
+This guide enables both technical and non-technical contributors to rapidly and ethically extend the framework, reducing development time for new audit types from 10–15 hours to under 4 hours.
 
 ## Case Studies
 
