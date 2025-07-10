@@ -29,13 +29,9 @@
 - **Systemic focus**: Documentation restricted to pattern analysis  
 
 ### 6. Documented Ethical Evolution  
-- **Public revision log**: All changes with rationale  
-- **Mandatory comment period**: 30-day public review for substantive changes  
- **Breach response**: Published analysis of ethical violations  
+
+- **Breach response**: Published analysis of ethical violations  
 
 ### 7. Ethical Incident Response Protocol
-- All contributors must follow the [Ethical Incident Response Protocol](docs/ethical_incident_response.md) in the event of a suspected or confirmed ethical breach (e.g., accidental PII collection, unauthorized data retention, or system disruption).
-- The protocol includes emergency halt procedures, data purge execution, post-incident review, and communication guidelines.
-- Lessons learned from incidents must be incorporated into this document and related framework guides as part of continuous improvement.
 
 
