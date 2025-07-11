@@ -76,6 +76,15 @@ This guide enables both technical and non-technical contributors to rapidly and 
 
 **[Explore repository →](./implementations/watching_fairlearn_and_learning/)**
 
+### British Airways Customer Service Responsiveness Bias Audit
+* Automated audit of BA customer service channels (email/web forms)
+* Uses synthetic identities to test for bias in response rate, timing, and sentiment
+* Strict privacy: zero PII, immediate discard of raw reply text
+* Rate limiting and ethical review hooks ensure compliance
+* Fully documented and extensible for other customer service audits
+
+**[See implementation →](./implementations/ba_customer_service/BA_Audit_Implementation_Summary.md)**
+
 ## How We Stand Apart
 
 | Approach            | Limitations                | Our Advantage                  |
