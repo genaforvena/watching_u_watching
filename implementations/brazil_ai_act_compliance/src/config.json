@@ -1,0 +1,82 @@
+{
+  "experiment_settings": {
+    "num_pairs": 100,
+    "rate_limit_requests": 5,
+    "rate_limit_period": 60,
+    "run_id": "brazil_ai_act_compliance_v1",
+    "model_name": "llama-3.1-8b-instant",
+    "output_dir": "output"
+  },
+  "protected_characteristics": {
+    "race": {
+      "privileged": ["European descent"],
+      "marginalized": ["Afro-Brazilian", "Indigenous"]
+    },
+    "gender": {
+      "privileged": ["Male"],
+      "marginalized": ["Female", "Non-binary"]
+    },
+    "disability": {
+      "privileged": ["No disability"],
+      "marginalized": ["Physical disability", "Neurodivergent"]
+    },
+    "age": {
+      "privileged": ["25-40"],
+      "marginalized": ["18-24", "41-65"]
+    }
+  },
+  "employment_sectors": [
+    "Technology",
+    "Finance",
+    "Healthcare",
+    "Education",
+    "Manufacturing",
+    "Retail"
+  ],
+  "job_levels": [
+    "Entry-level",
+    "Mid-level",
+    "Senior",
+    "Management",
+    "Executive"
+  ],
+  "aia_requirements": {
+    "risk_assessment": {
+      "categories": [
+        "Discrimination Risk",
+        "Privacy Risk",
+        "Transparency Risk",
+        "Accountability Risk"
+      ],
+      "severity_levels": [
+        "Low",
+        "Medium",
+        "High",
+        "Critical"
+      ]
+    },
+    "mitigation_measures": [
+      "Bias Detection and Mitigation",
+      "Explainability Mechanisms",
+      "Human Oversight",
+      "Regular Auditing",
+      "Diverse Training Data",
+      "Stakeholder Consultation"
+    ],
+    "reporting_requirements": {
+      "frequency": "Annual",
+      "public_disclosure": true,
+      "regulatory_submission": true
+    }
+  },
+  "explanation_requirements": {
+    "minimum_factors": 3,
+    "language_options": ["Portuguese", "English"],
+    "format_options": ["Text", "PDF", "JSON"]
+  },
+  "brazilian_regulatory_alignment": {
+    "bias_mitigation_article": "Article X",
+    "transparency_article": "Article Y",
+    "aia_article": "Article Z"
+  }
+}

@@ -17,7 +17,8 @@ from typing import List
 AUDIT_DATA_DIRS = [
     "implementations/bad_english_bias/src/",  # Example: update as needed
     "implementations/berlin_housing_bias_test/src/",
-    "implementations/watching_fairlearn_and_learning/src/"
+    "implementations/watching_fairlearn_and_learning/src/",
+    "implementations/brazil_ai_act_compliance/src/"  # Added Brazil AI Act compliance implementation
 ]
 
 LOG_EXTENSIONS = [".log", ".json", ".csv", ".txt"]
