@@ -1,0 +1,37 @@
+{
+  "api": {
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
+    "rate_limit": 60,
+    "max_retries": 3,
+    "retry_delay": 5,
+    "timeout": 30
+  },
+  "probe": {
+    "count": 200,
+    "names": {
+      "anglo": ["Emma Johnson", "Liam Murphy"],
+      "non_anglo": ["Aisha Rahman", "Mohamed Hassan"]
+    },
+    "english_levels": ["perfect", "l2"],
+    "prompt_seeds": 25
+  },
+  "l2_english": {
+    "error_types": ["article_omission", "preposition_error", "verb_agreement", "word_order"],
+    "error_density": 0.2
+  },
+  "analysis": {
+    "significance_threshold": 0.05,
+    "metrics": ["response_length", "sentiment_score", "refusal_flag", "latency"]
+  },
+  "output": {
+    "results_dir": "results",
+    "figures_dir": "figures",
+    "log_file": "audit.log",
+    "progress_file": "progress.json"
+  },
+  "ethical_safeguards": {
+    "max_calls": 200,
+    "store_raw_responses": false,
+    "synthetic_data_only": true
+  }
+}
