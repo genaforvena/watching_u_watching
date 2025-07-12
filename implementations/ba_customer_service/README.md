@@ -27,14 +27,19 @@ ba_customer_service/
 ```python
 from ba_customer_service_audit import BA_CustomerService_Audit
 
-# Configure audit with 100 probes and demographic groups
+# Step 1: Configure audit with 100 probes and demographic groups
 audit = BA_CustomerService_Audit(config={
     "num_probes": 100,
     "demographic_groups": ["GroupA", "GroupB"]
 })
 
+# Step 2: Generate synthetic probes
 probes = audit.generate_probes(n_pairs=50)
+
+# Step 3: Simulate sending and collecting responses
 results = [audit.analyze_response({"text": "Thank you for contacting us.", "response_time": 2.5}) for _ in probes]
+
+# Step 4: Print analyzed results
 print(results)
 # Example output:
 # [
