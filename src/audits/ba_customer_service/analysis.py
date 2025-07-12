@@ -1,7 +1,22 @@
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional
-import nltk
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, Optional
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
+# Initialize NLTK VADER sentiment analyzer
+try:
+    sid = SentimentIntensityAnalyzer()
+except LookupError:
+    logging.warning("NLTK vader_lexicon not found. Downloading...")
+    # import nltk  # Used for downloading the vader_lexicon
+    from nltk import download
+    download('vader_lexicon')
+    sid = SentimentIntensityAnalyzer()
+
+# TODO: For large-scale audits, consider using a more efficient sentiment analysis library or pre-trained model.
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # Initialize NLTK VADER sentiment analyzer
