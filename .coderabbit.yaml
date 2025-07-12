@@ -1,6 +1,10 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 # 👁️ watching_u_watching CodeRabbit Configuration 👁️
+# Repository cleanup performed via PR request - removed temporary config files
+# and reorganized documentation structure for better maintainability.
+# Reference: Link to this PR for cleanup rationale and configuration details
+#
 # Configuration for bias detection correspondence testing framework
 
 language: "en-US"
@@ -77,7 +81,7 @@ path_filters:
 file_path_instructions:
 
   # ETHICS & COMPLIANCE FILES (HIGHEST PRIORITY)
-  - path: "**/ETHICS.md"
+  - path: "docs/ETHICS.md"
     instructions: |
       🛡️ ETHICS REVIEW: This file defines core ethical principles.
       - Ensure changes maintain "no harm" commitments
