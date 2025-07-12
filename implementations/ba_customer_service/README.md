@@ -25,13 +25,26 @@ ba_customer_service/
 
 ## Example
 ```python
-from ba_customer_service_audit import BACustomerServiceAudit
+from ba_customer_service_audit import BA_CustomerService_Audit
 
-audit = BACustomerServiceAudit(num_probes=100)
-audit.generate_probes()
-audit.submit_probes()
-results = audit.analyze_results()
+# Configure audit with 100 probes and demographic groups
+audit = BA_CustomerService_Audit(config={
+    "num_probes": 100,
+    "demographic_groups": ["GroupA", "GroupB"]
+})
+
+# Generate synthetic probes
+probes = audit.generate_probes(n_pairs=50)
+
+# Simulate sending and collecting responses (example, replace with your method)
+results = [audit.analyze_response({"text": "Thank you for contacting us.", "response_time": 2.5}) for _ in probes]
+
 print(results)
+# Example output:
+# [
+#   {'reply_received': True, 'response_time': 2.5, 'sentiment': 'neutral'},
+#   ...
+# ]
 ```
 
 ## Ethical Considerations
