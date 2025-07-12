@@ -81,7 +81,18 @@ def _analyze_sentiment(text: str) -> float:
         return 0.0 # Neutral sentiment for empty text
         
     # Use NLTK VADER to get sentiment scores
-    scores = sid.polarity_scores(text)
+return 0.0 # Neutral sentiment for empty text
+        
+    # Use NLTK VADER to get sentiment scores
+    try:
+        scores = sid.polarity_scores(text)
+        return scores['compound']
+    except Exception as e:
+        logging.error(f"Error analyzing sentiment: {e}")
+        return 0.0  # Return neutral sentiment in case of error
+    
+    # Return the compound score, which is a normalized composite score
+    return scores['compound']
     
     # Return the compound score, which is a normalized composite score
     return scores['compound']
