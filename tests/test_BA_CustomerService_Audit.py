@@ -19,7 +19,7 @@ sys.modules['fake_data_helper'] = MagicMock()
 sys.modules['rate_limiter'] = MagicMock()
 
 # Import the module after mocking dependencies
-from BA_CustomerService_Audit import BACustomerServiceAudit
+from audits.ba_customer_service.audit import BACustomerServiceAudit
 
 
 class TestBACustomerServiceAudit(unittest.TestCase):
@@ -28,7 +28,8 @@ class TestBACustomerServiceAudit(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Create a mock for CorrespondenceAudit parent class
-        with patch('BA_CustomerService_Audit.CorrespondenceAudit'):
+        # The import path for CorrespondenceAudit might need adjustment depending on its actual location
+        with patch('audits.ba_customer_service.audit.CorrespondenceAudit'):
             self.audit = BACustomerServiceAudit()
             
         # Mock the fake_data_helper functions
