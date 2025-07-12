@@ -123,7 +123,24 @@ def generate_probes(num_pairs: int) -> List[Dict]:
     #     raise ValueError("Failed ethical review - audit cannot proceed")
         
     if num_pairs < MIN_PROBES:
-        logging.warning(f"{num_pairs} pairs is below the recommended minimum of {MIN_PROBES}")
+#     raise ValueError("Failed ethical review - audit cannot proceed")
+        
+    if num_pairs < MIN_PROBES:
+        sanitized_num_pairs = str(num_pairs).replace('
+', ' ')
+        logging.warning(f"{sanitized_num_pairs} pairs is below the recommended minimum of {MIN_PROBES}")
+    
+    # Generate probes using generator expression
+    probes_generator = (
+        probe
+        for _ in range(num_pairs)
+        for probe in _generate_probe_pair()
+    )
+    
+    # Convert generator to list for consistency with return type
+    probes_list = list(probes_generator)
+
+    # Sanitize input before logging
         sanitized_num_pairs = str(num_pairs).replace('\n', ' ')
     # Generate probes using list comprehension} pairs is below the recommended minimum of {MIN_PROBES}")
     # TODO: Consider using a generator expression for large num_pairs to reduce memory usage.
