@@ -1,0 +1,256 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# 👁️ watching_u_watching CodeRabbit Configuration 👁️
+# Configuration for bias detection correspondence testing framework
+
+language: "en-US"
+early_access: true
+
+reviews:
+  profile: "assertive"  # Thorough reviews for sensitive bias detection work
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: true
+  
+  # CORE REVIEW INSTRUCTIONS FOR BIAS DETECTION FRAMEWORK
+  review_instructions: |
+    🔍 MANDATORY ARCHITECTURAL & ETHICAL ANALYSIS:
+    
+    1. **ETHICS.MD COMPLIANCE**: 
+       - Verify all code changes comply with ETHICS.md principles
+       - Flag any collection of real PII or identifiable data
+       - Ensure "no harm" principles are maintained
+       - Validate synthetic data usage only
+       - Check for proper "CC0 release" compliance
+       - Ensure "transparent simulation" with no deception
+    
+    2. **CODE DUPLICATION DETECTION**:
+       - Scan for duplicate class names across ALL directories
+       - Compare src/ vs implementations/ for code duplication
+       - Flag multiple definitions of same function/class
+       - Validate import path consistency
+       - Check for conflicting implementations
+       
+    3. **CORRESPONDENCE TESTING FRAMEWORK INTEGRITY**:
+       - Verify rate limiting implementation
+       - Check for proper ethical safeguards
+       - Validate automated probe generation safety
+       - Ensure bias metrics are statistically sound
+       - Validate "systemic process analysis" focus
+       
+    4. **PRIVACY & SECURITY (CRITICAL)**:
+       - No real personal data in any form
+       - Validate synthetic identity generation with embedded markers
+       - Check data retention policies and automated redaction
+       - Verify secure disposal of responses
+       - Ensure "exposure prohibition" for uninvolved individuals
+    
+    5. **FRAMEWORK EXTENSION COMPLIANCE**:
+       - Follow how_to_apply_guide methodology
+       - Validate against audit case definition templates
+       - Ensure new audits align with existing patterns
+       - Check for proper ethical review hooks
+
+auto_review:
+  enabled: true
+  drafts: false
+  ignore_title_keywords:
+    - "WIP"
+    - "DO NOT MERGE" 
+    - "DRAFT"
+  base_branches:
+    - "main"
+    - "master"
+
+# PATH FILTERS - Exclude generated/build files
+path_filters:
+  - "!dist/**"
+  - "!build/**" 
+  - "!node_modules/**"
+  - "!**/*.pyc"
+  - "!**/__pycache__/**"
+  - "!**/.pytest_cache/**"
+  - "!**/*.egg-info/**"
+  - "!gallery_assets/**"
+
+# DETAILED PATH-BASED REVIEW INSTRUCTIONS
+file_path_instructions:
+
+  # ETHICS & COMPLIANCE FILES (HIGHEST PRIORITY)
+  - path: "**/ETHICS.md"
+    instructions: |
+      🛡️ ETHICS REVIEW: This file defines core ethical principles.
+      - Ensure changes maintain "no harm" commitments
+      - Validate privacy protection requirements
+      - Check alignment with correspondence testing ethics
+      - Verify "Ethical Incident Response Protocol" references
+
+  - path: "docs/ethical_incident_response.md"
+    instructions: |
+      🚨 ETHICAL INCIDENT PROTOCOL:
+      - Validate incident response procedures
+      - Check breach response documentation
+      - Ensure alignment with ETHICS.md principles
+
+  # AUDIT IMPLEMENTATIONS (CRITICAL FOR DUPLICATION)
+  - path: "**/*audit*.py"
+    instructions: |
+      🔍 CRITICAL AUDIT IMPLEMENTATION REVIEW:
+      - MANDATORY: Check for duplicate implementations across directories
+      - Compare with files in both src/ and implementations/ folders
+      - ETHICS.md COMPLIANCE: Verify synthetic data only, rate limiting
+      - Validate bias detection methodology integrity
+      - Ensure proper error handling and logging
+      - Check for statistical soundness in bias metrics
+      - Verify automated redaction before storage
+      - Validate "transparent simulation" principles
+
+  - path: "implementations/**/*.py"
+    instructions: |
+      📊 IMPLEMENTATION VALIDATION:
+      - Compare against src/ architecture for consistency  
+      - Flag any code duplication or conflicting implementations
+      - Verify correspondence testing methodology compliance
+      - Ensure privacy-by-design principles
+      - Validate rate limiting and ethical safeguards
+      - Check for NYC Local Law 144 compliance patterns
+      - Ensure "systemic process analysis" focus
+
+  - path: "src/**/*.py"
+    instructions: |
+      🏗️ CORE FRAMEWORK REVIEW:
+      - Compare with corresponding files in implementations/ directory
+      - Flag any duplicate logic, classes, or functions
+      - Ensure framework extensibility patterns
+      - Validate API consistency across implementations
+      - Check for proper abstraction layers
+
+  # DATA HANDLING & PRIVACY (ULTRA-CRITICAL)
+  - path: "**/*data*.py"
+    instructions: |
+      📊 DATA HANDLING REVIEW (CRITICAL):
+      - VERIFY: No real PII collection or processing
+      - ENSURE: Synthetic data generation only with embedded markers
+      - VALIDATE: Privacy-preserving analysis methods
+      - CHECK: Data retention and disposal policies
+      - CONFIRM: Automated redaction before storage
+      - ETHICS.MD: "Exposure prohibition" compliance
+
+  - path: "**/pii_redactor.py"
+    instructions: |
+      🔒 PII REDACTION CRITICAL REVIEW:
+      - Validate comprehensive PII detection
+      - Check redaction effectiveness
+      - Ensure no data persistence violations
+      - Verify automated operation
+
+  - path: "**/data_purger.py"  
+    instructions: |
+      🗑️ DATA PURGE UTILITY REVIEW:
+      - Validate secure deletion mechanisms
+      - Check ethical incident response integration
+      - Ensure compliance with data retention policies
+
+  # FRAMEWORK EXTENSION GUIDE
+  - path: "how_to_apply_guide/**/*"
+    instructions: |
+      📖 FRAMEWORK EXTENSION DOCUMENTATION:
+      - Ensure methodology clarity and completeness
+      - Validate template consistency
+      - Check code generation safety guidelines
+      - Verify ethical review requirements
+      - Ensure LLM-assisted extension safety
+
+  - path: "how_to_apply_guide/code_validator.py"
+    instructions: |
+      ✅ CODE VALIDATOR REVIEW:
+      - Validate safety checks for generated code
+      - Ensure ethical compliance verification
+      - Check for comprehensive validation rules
+
+  # TESTS (ETHICAL BOUNDARY TESTING)
+  - path: "**/test_*.py"
+    instructions: |
+      🧪 TEST REVIEW:
+      - Ensure comprehensive coverage of ethical safeguards
+      - Validate bias detection accuracy tests
+      - Check for proper mocking of external services
+      - Verify no real data in test fixtures
+      - Test ethical boundary conditions
+
+  - path: "**/tests/**/*.py"
+    instructions: |
+      🧪 TEST SUITE REVIEW:
+      - Follow pytest conventions and project standards
+      - Ensure tests cover ethical boundary conditions
+      - Validate synthetic data generation tests
+      - Check rate limiting and safety mechanism tests
+      - Verify PII redaction effectiveness tests
+
+  # DOCUMENTATION & COMPLIANCE
+  - path: "**/README.md"
+    instructions: |
+      📝 DOCUMENTATION REVIEW:
+      - Verify accuracy of implementation descriptions
+      - Check for proper ethical disclaimers
+      - Ensure methodology explanations are clear
+      - Validate links and references
+      - Confirm "data, not judgment" principle
+
+  - path: "**/*IMPLEMENTATION*.md" 
+    instructions: |
+      📋 IMPLEMENTATION DOCUMENTATION:
+      - Verify technical accuracy
+      - Check ethical safeguard documentation
+      - Ensure replication instructions are complete
+      - Validate bias detection methodology description
+      - Confirm compliance with ETHICS.md
+
+  # CONFIGURATION & SETUP
+  - path: "**/*.yaml"
+    instructions: |
+      ⚙️ CONFIGURATION REVIEW:
+      - Validate syntax and schema compliance
+      - Check for security implications
+      - Ensure consistency with project standards
+
+  - path: "**/*.yml"  
+    instructions: |
+      ⚙️ CONFIGURATION REVIEW:
+      - Validate syntax and schema compliance
+      - Check for security implications
+      - Ensure consistency with project standards
+
+  # JUPYTER NOTEBOOKS
+  - path: "**/*.ipynb"
+    instructions: |
+      📓 NOTEBOOK REVIEW:
+      - Ensure no real data exposure in outputs
+      - Validate methodology demonstration accuracy
+      - Check for proper ethical disclaimers
+      - Clear outputs before committing if containing examples
+      - Verify synthetic data usage only
+
+  # PROBE GENERATION & BIAS ANALYSIS
+  - path: "**/probe_generator.py"
+    instructions: |
+      🎯 PROBE GENERATION REVIEW:
+      - Validate synthetic identity generation
+      - Check for embedded marker inclusion
+      - Ensure demographic representation accuracy
+      - Verify no real identity usage
+
+  - path: "**/bias_analyzer.py"
+    instructions: |
+      📈 BIAS ANALYSIS REVIEW:
+      - Validate statistical methodology
+      - Check for proper significance testing
+      - Ensure "systemic pattern" focus
+      - Verify no individual attribution
+
+# RELEASE NOTES & PERFORMANCE
+ignore_drafts: true
+collapse_review_details: false
+release_notes:
+  enabled: true
+  include_summary: true
