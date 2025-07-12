@@ -71,7 +71,33 @@ class BACustomerServiceAudit(CorrespondenceAudit):
             
         Returns:
             True if the audit passes ethical review, False otherwise
-        """r(f"Ethical review failed: variation {str(variation_key).replace('\\n', ' ')} missing name_origin")  # Sanitize input
+Returns:
+            True if the audit passes ethical review, False otherwise
+        """
+        # Check that we're only testing perceived identity through names
+        for variation_key, variation in variations.items():
+            if 'name_origin' not in variation:
+                # Sanitize variation_key before logging
+                sanitized_key = html.escape(str(variation_key))
+                logging.error(f"Ethical review failed: variation {sanitized_key} missing name_origin")
+                return False
+                
+        # Ensure we're not using any real PII
+        if any('real_' in str(v).lower() for v in variations.values()):
+            logging.error("Ethical review failed: real PII detected in variations")
+            return False
+
+        # Validate that we're only testing appropriate characteristics
+        allowed_demographics = ['perceived_majority', 'perceived_minority']
+        for variation in variations.values():
+            if 'demographic' in variation and variation['demographic'] not in allowed_demographics:
+                # Sanitize demographic before logging
+                sanitized_demographic = html.escape(str(variation['demographic']))
+                logging.error(f"Ethical review failed: invalid demographic {sanitized_demographic}")
+                return False
+        
+        logging.info("Ethical review passed: audit meets ethical standards")
+        return True
         # Check that we're only testing perceived identity through names                return False
         for variation_key, variation in variations.items():
             if 'name_origin' not in variation:
