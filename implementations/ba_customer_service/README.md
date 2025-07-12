@@ -23,24 +23,18 @@ ba_customer_service/
 3. **Submit probes**: Use `submit_probes()` to simulate sending inquiries and collecting responses.
 4. **Analyze results**: Use `analyze_results()` to aggregate and interpret bias metrics.
 
-## Example
+## Usage Example
 ```python
 from ba_customer_service_audit import BA_CustomerService_Audit
 
-# Step 1: Configure audit with 100 probes and demographic groups
+# Configure audit with 100 probes and demographic groups
 audit = BA_CustomerService_Audit(config={
     "num_probes": 100,
     "demographic_groups": ["GroupA", "GroupB"]
 })
 
-# Step 2: Generate synthetic probes
 probes = audit.generate_probes(n_pairs=50)
-
-# Step 3: Simulate sending and collecting responses
-# (Replace with your actual method for sending probes and collecting responses)
 results = [audit.analyze_response({"text": "Thank you for contacting us.", "response_time": 2.5}) for _ in probes]
-
-# Step 4: Print analyzed results
 print(results)
 # Example output:
 # [
