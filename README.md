@@ -76,6 +76,14 @@ This guide enables both technical and non-technical contributors to rapidly and 
 
 **[Explore repository →](./implementations/watching_fairlearn_and_learning/)**
 
+
+### British Airways Customer Service Responsiveness Bias Audit
+* Tests for bias based on perceived identity through name.
+* Uses correspondence testing with synthetic identities.
+* Measures response rates, timing, and sentiment.
+
+**[See implementation details →](./audit_cases/BA_CustomerService_Audit.md)**
+
 ## How We Stand Apart
 
 | Approach            | Limitations                | Our Advantage                  |
