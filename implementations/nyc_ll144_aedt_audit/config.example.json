@@ -1,0 +1,80 @@
+{
+  "audit": {
+    "name": "NYC LL144 AEDT Audit",
+    "description": "Automated paired testing for AEDT bias detection in compliance with NYC Local Law 144",
+    "version": "1.0.0"
+  },
+  "aedt": {
+    "name": "Example AEDT System",
+    "type": "applicant_tracking_system",
+    "interface": "web_form",
+    "url": "https://example.com/apply",
+    "api_key": "YOUR_API_KEY_IF_APPLICABLE"
+  },
+  "probe_generation": {
+    "num_pairs": 200,
+    "job_types": ["software_engineer", "data_scientist", "marketing_specialist", "customer_service_representative"],
+    "protected_characteristics": {
+      "race_ethnicity": true,
+      "sex_gender": true,
+      "intersectional": true
+    },
+    "control_variables": {
+      "education": "bachelor_degree",
+      "years_experience": 5,
+      "skills_level": "advanced"
+    }
+  },
+  "submission": {
+    "rate_limit": {
+      "requests_per_minute": 5,
+      "max_daily_requests": 100
+    },
+    "timeout": 30,
+    "retry": {
+      "max_attempts": 3,
+      "backoff_factor": 2
+    }
+  },
+  "response_collection": {
+    "methods": ["email", "web_portal"],
+    "email_config": {
+      "imap_server": "imap.example.com",
+      "username": "YOUR_EMAIL_USERNAME",
+      "password": "YOUR_EMAIL_PASSWORD",
+      "folder": "INBOX"
+    },
+    "check_interval_minutes": 60,
+    "max_wait_days": 14
+  },
+  "analysis": {
+    "metrics": {
+      "disparate_impact_ratio": true,
+      "statistical_significance": true,
+      "confidence_intervals": true
+    },
+    "thresholds": {
+      "disparate_impact": 0.8,
+      "p_value": 0.05,
+      "confidence_level": 0.95
+    },
+    "output_format": "ll144_compliant"
+  },
+  "storage": {
+    "database_path": "data/aedt_audit.db",
+    "backup_enabled": true,
+    "backup_interval_hours": 24,
+    "data_retention_days": 90
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/aedt_audit.log",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  },
+  "ethical_safeguards": {
+    "dry_run": false,
+    "pii_redaction": true,
+    "rate_limiting": true,
+    "error_handling": true
+  }
+}
