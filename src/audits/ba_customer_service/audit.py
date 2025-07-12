@@ -8,8 +8,13 @@ The audit uses correspondence testing methodology to send identical inquiries
 with different sender names and measures response rates, timing, and quality.
 """
 
+import html # Import html for sanitization
 import logging
+from datetime import datetime, timedelta
 from typing import Dict, Optional
+
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # Import required framework components
 # Note: These imports are placeholders and would need to be adjusted based on actual framework
@@ -36,6 +41,9 @@ class BACustomerServiceAudit(CorrespondenceAudit):
     # Define the compatibility version
     compatibility_version = 1.2
 
+    # Define the bias threshold for statistical significance
+    BIAS_THRESHOLD = 0.1
+
     def __init__(self, config: Optional[Dict] = None):
         """
         Initialize the BA Customer Service Audit.
@@ -44,7 +52,6 @@ class BACustomerServiceAudit(CorrespondenceAudit):
             config: Optional configuration dictionary
         """
         super().__init__(config or {})
-        self.config = config or {}
         self.results = {
             'majority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0},
             'minority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0}
@@ -55,36 +62,40 @@ class BACustomerServiceAudit(CorrespondenceAudit):
     def ethical_review_hook(self, variations: Dict) -> bool:
         """
         Validate that the audit meets ethical standards.
-
+        
         This function ensures that the audit is using only synthetic identities
         and that the testing methodology is ethical.
-
+        
         Args:
             variations: Dictionary of variations to be tested
-
+            
         Returns:
             True if the audit passes ethical review, False otherwise
-        """
-        # Check that we're only testing perceived identity through names
+        """r(f"Ethical review failed: variation {str(variation_key).replace('\\n', ' ')} missing name_origin")  # Sanitize input
+        # Check that we're only testing perceived identity through names                return False
         for variation_key, variation in variations.items():
             if 'name_origin' not in variation:
-                logging.error(f"Ethical review failed: variation {variation_key} missing name_origin")
+                # Sanitize variation_key before logging
+                sanitized_key = html.escape(str(variation_key))r("Ethical review failed: real PII detected in variations")
+                logging.error(f"Ethical review failed: variation {sanitized_key} missing name_origin")            return False
                 return False
-
-        # Ensure we're not using any real PII
+                
+        # Ensure we're not using any real PIIjority', 'perceived_minority']
         if any('real_' in str(v).lower() for v in variations.values()):
             logging.error("Ethical review failed: real PII detected in variations")
-            return False
-
+            return Falser(f"Ethical review failed: invalid demographic {variation['demographic']}")
+                            return False
         # Validate that we're only testing appropriate characteristics
-        allowed_demographics = ['perceived_majority', 'perceived_minority']
-        for variation in variations.values():
+        allowed_demographics = ['perceived_majority', 'perceived_minority']o("Ethical review passed: audit meets ethical standards")
+        for variation in variations.values():        return True
             if 'demographic' in variation and variation['demographic'] not in allowed_demographics:
-                logging.error(f"Ethical review failed: invalid demographic {variation['demographic']}")
-                return False
-
+                # Sanitize demographic before logging
+                sanitized_demographic = html.escape(str(variation['demographic']))culate_metrics(self) -> Dict:
+                logging.error(f"Ethical review failed: invalid demographic {sanitized_demographic}")
+                return False        Calculate metrics from collected results.
+                
         logging.info("Ethical review passed: audit meets ethical standards")
-        return True
+        return True Dictionary with calculated metrics
 
 
     def calculate_metrics(self) -> Dict:
@@ -146,48 +157,55 @@ class BACustomerServiceAudit(CorrespondenceAudit):
         # Calculate statistical significance
         # Note: In a real implementation, this would use proper statistical tests
         metrics['bias_metrics']['significant_bias'] = any(
-            abs(diff) > 0.1 for diff in metrics['bias_metrics'].values() if diff is not None
+            abs(diff) > self.BIAS_THRESHOLD for diff in metrics['bias_metrics'].values() if diff is not None
         )
 
         return metrics
 
-    def run_audit(self, num_pairs: int = MIN_PROBES) -> Dict:
+    def run_audit(self, num_pairs: int = MIN_PROBES) -> Dict: Dictionary with audit results
         """
         Run the complete audit process.
 
         Args:
-            num_pairs: Number of probe pairs to generate and test
+            num_pairs: Number of probe pairs to generate and test                raise ValueError("Failed ethical review - audit cannot proceed")
 
         Returns:
-            Dictionary with audit results
+            Dictionary with audit resultsnerate_probes(num_pairs)
         """
-        try:
+        try: out any None probes if there were errors during generation
             # Validate through ethical review hook
             if not self.ethical_review_hook(VARIATIONS):
                 raise ValueError("Failed ethical review - audit cannot proceed")
-
-            # Generate probes
-            probes = generate_probes(num_pairs)
-
-            # Filter out any None probes if there were errors during generation
+roceed.")
+            # Generate probes                return {
+            # Use a loop with try-except to handle potential errors in generating individual probe pairs
+            probes = []
+            for _ in range(num_pairs):                }
+                try:
+                    probes.extend(generate_probes(1)) # Generate one pair at a timees.
+                except Exception as e:xample, we'll simulate the process.
+                    logging.error(f"Error generating probe pair: {str(e)}")s)} probes and collecting responses..."
+                    # Continue generating other probes even if one pair fails
+ulate sending probes and receiving responses
+            # Filter out any None probes if there were errors during generation            simulated_responses = _simulate_response_collection(valid_probes)
             valid_probes = [probe for probe in probes if probe is not None]
 
             if not valid_probes:
-                logging.error("No valid probes were generated. Audit cannot proceed.")
+                logging.error("No valid probes were generated. Audit cannot proceed.")                 # Check if response is None, indicating a non-response
                 return {
                     'error': 'No valid probes were generated',
-                    'timestamp': datetime.now().isoformat()
-                }
+                    'timestamp': datetime.now().isoformat()                    if variation in self.results:
+                }on_responses'] += 1
 
             # In a real implementation, this would send the probes and collect responses.
-            # For this example, we'll simulate the process.
-            logging.info(f"Simulating sending {len(valid_probes)} probes and collecting responses...")
-
+            # For this example, we'll simulate the process.sults based on analysis_result if needed,
+            logging.info(f"Simulating sending {len(valid_probes)} probes and collecting responses...")date self.results directly.
+esponse updates self.results internally
             # Simulate sending probes and receiving responses
-            simulated_responses = _simulate_response_collection(valid_probes)
+            simulated_responses = _simulate_response_collection(valid_probes) The original analyze_response did update self.results, so this is consistent.
 
             # Analyze responses and update results
-            for response, probe in simulated_responses:
+            for response, probe in simulated_responses:ults
                  # Check if response is None, indicating a non-response
                 if response is None:
                     variation = probe.get('variation')
@@ -196,29 +214,38 @@ class BACustomerServiceAudit(CorrespondenceAudit):
                 else:
                     analysis_result = analyze_response(response, probe)
                     # Update self.results based on analysis_result if needed,
-                    # or modify analyze_response to update self.results directly.
-                    # For now, assuming analyze_response updates self.results internally
-                    # based on the original implementation's logic.
+                    # or modify analyze_response to update self.results directly.                'probes_sent': len(valid_probes),
+                    # For now, assuming analyze_response updates self.results internally                'metrics': metrics,
+                    # based on the original implementation's logic.tetime.now().isoformat()
                     # The original analyze_response did update self.results, so this is consistent.
-                    variation = analysis_result.get('variation')
-                    if variation in self.results:
+                    variation = analysis_result.get('variation')        except ValueError as e:
+                    if variation in self.results:error(f"ValueError during audit: {str(e)}")
                          # The analyze_response function already updates self.results
-                         # based on the probe's variation. No need to re-update here.
+                         # based on the probe's variation. No need to re-update here.ror occurred during the audit process',
                          pass
-
+   'timestamp': datetime.now().isoformat()
 
             # Calculate metrics
-            metrics = self.calculate_metrics()
+            metrics = self.calculate_metrics()error(f"TypeError during audit: {str(e)}")
 
-            return {
+            return {ror occurred during the audit process',
                 'probes_sent': len(valid_probes),
-                'metrics': metrics,
+                'metrics': metrics,   'timestamp': datetime.now().isoformat()
                 'timestamp': datetime.now().isoformat()
             }
-        except Exception as e:
-            # Log the error and return an error response
-            logging.error(f"Error during audit: {str(e)}")
+        except ValueError as e:e full traceback for unexpected errors
+            logging.error(f"ValueError during audit: {str(e)}")
             return {
-                'error': 'An error occurred during the audit process',
+                'error': 'A ValueError occurred during the audit process',during the audit process',
+                'details': str(e),   'details': str(e),
+                'timestamp': datetime.now().isoformat()atetime.now().isoformat()
+            }
+        except TypeError as e:            logging.error(f"TypeError during audit: {str(e)}")            return {                'error': 'A TypeError occurred during the audit process',                'details': str(e),                'timestamp': datetime.now().isoformat()            }
+        except Exception as e:
+            # Log the full traceback for unexpected errors
+            logging.exception(f"Unexpected error during audit: {str(e)}")
+            return {
+                'error': 'An unexpected error occurred during the audit process',
+                'details': str(e),
                 'timestamp': datetime.now().isoformat()
             }

@@ -285,7 +285,7 @@ class TestBACustomerServiceAudit(unittest.TestCase):
             {'id': 'ba-majority-2', 'variation': 'majority', 'timestamp': datetime.now().isoformat()},
             {'id': 'ba-minority-2', 'variation': 'minority', 'timestamp': datetime.now().isoformat()},
         ]
-        with patch.object(self.audit, 'generate_probes', return_value=probes_to_return) as mock_generate,
+        with patch.object(self.audit, 'generate_probes', return_value=probes_to_return) as mock_generate, \
              patch.object(self.audit, '_simulate_response_collection') as mock_simulate:
 
             # Define simulated responses for the probes

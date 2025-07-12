@@ -124,13 +124,23 @@ def generate_probes(num_pairs: int) -> List[Dict]:
         
     if num_pairs < MIN_PROBES:
         logging.warning(f"{num_pairs} pairs is below the recommended minimum of {MIN_PROBES}")
-        
-    # Generate probes using list comprehension
-    probes = [
+        sanitized_num_pairs = str(num_pairs).replace('\n', ' ')
+    # Generate probes using list comprehension} pairs is below the recommended minimum of {MIN_PROBES}")
+    # TODO: Consider using a generator expression for large num_pairs to reduce memory usage.
+    probes = [e probes using generator expression
         probe
         for _ in range(num_pairs)
-        for probe in _generate_probe_pair()
-    ]
+        for probe in _generate_probe_pair()   for _ in range(num_pairs)
+    ]    for probe in _generate_probe_pair()
     
     logging.info(f"Generated {len(probes)} probes ({num_pairs} pairs)")
-    return probes
+    return probes    # Convert generator to list for consistency with return type
+
+    probes_list = list(probes_generator)
+
+    # Sanitize input before logging
+    sanitized_len_probes = str(len(probes_list)).replace('\n', ' ')
+    sanitized_num_pairs_log = str(num_pairs).replace('\n', ' ')
+    logging.info(f"Generated {sanitized_len_probes} probes ({sanitized_num_pairs_log} pairs)")
+
+    return probes_list
