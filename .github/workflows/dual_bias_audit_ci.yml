@@ -1,0 +1,33 @@
+name: Dual Bias Audit CI
+
+on:
+  push:
+    paths:
+      - "src/audits/dual_bias_audit/**"
+      - "tests/audits/test_dual_bias_audit.py"
+      - ".github/workflows/dual_bias_audit_ci.yml"
+  pull_request:
+    paths:
+      - "src/audits/dual_bias_audit/**"
+      - "tests/audits/test_dual_bias_audit.py"
+      - ".github/workflows/dual_bias_audit_ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+      - name: Run tests
+        run: |
+          pytest tests/audits/test_dual_bias_audit.py --maxfail=2 --disable-warnings
