@@ -203,7 +203,67 @@ Sincerely,
             
         probes = []
         
-        for _ in range(num_pairs):
+if num_pairs < self.MIN_PROBES:
+            print(f"Warning: {num_pairs} pairs is below the recommended minimum of {self.MIN_PROBES}")
+            
+        # Generate probes using list comprehension
+        probes = [
+            probe
+            for _ in range(num_pairs)
+            for probe in self._generate_probe_pair()
+        ]
+        
+        print(f"Generated {len(probes)} probes ({num_pairs} pairs)")
+        return probes
+        
+    def _generate_probe_pair(self) -> List[Dict]:
+        """
+        Generate a pair of probes for each variation.
+        
+        Returns:
+            List of two probe dictionaries
+        """
+        # Generate common inquiry content for the pair
+        inquiry_content = self._generate_inquiry_content()
+        
+        # Generate a probe for each variation
+        return [
+            self._create_probe(variation_key, variation, inquiry_content)
+            for variation_key, variation in self.VARIATIONS.items()
+        ]
+        
+    def _create_probe(self, variation_key: str, variation: Dict, inquiry_content: Dict) -> Dict:
+        """
+        Create a single probe.
+        
+        Args:
+            variation_key: Key of the variation
+            variation: Variation dictionary
+            inquiry_content: Inquiry content dictionary
+            
+        Returns:
+            Probe dictionary
+        """
+        # Generate synthetic identity based on demographic
+        synthetic_name = generate_synthetic_name(origin=variation['name_origin'])
+        email = generate_fake_email(name=synthetic_name)
+        
+        # Create the inquiry text
+        inquiry_text = self.INQUIRY_TEMPLATE.format(
+            origin=inquiry_content['origin'],
+            destination=inquiry_content['destination'],
+            date=inquiry_content['date'],
+            service_type=inquiry_content['service_type'],
+            inquiry_text=inquiry_content['inquiry_text'],
+            name=synthetic_name
+        )
+        
+        # Create the probe
+        return {
+            'id': f"ba-{variation_key}-{int(time.time())}-{random.randint(1000, 9999)}",
+            'variation': variation_key,
+            'demographic': variation['demographic'],
+            'name': synthetic_name,
             # Generate common inquiry content for the pair
             inquiry_content = self._generate_inquiry_content()
             
