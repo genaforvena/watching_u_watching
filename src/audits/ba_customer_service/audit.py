@@ -84,7 +84,7 @@ class BACustomerServiceAudit(CorrespondenceAudit):
         """
         # This would normally check against the actual framework version
         # For now, we'll assume it's compatible
-        return compatibility_version >= 1.2
+        return COMPATIBILITY_VERSION >= 1.2
     
     @rate_limiter(requests=MAX_REQUESTS_PER_DAY, period=86400)  # 86400 seconds = 24 hours
     def generate_probes(self, num_pairs: int) -> List[Probe]:
