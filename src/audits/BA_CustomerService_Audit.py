@@ -216,7 +216,7 @@ Sincerely,
                 
                 # Create the probe
                 probe = {
-                    'id': f"ba-{variation_key}-{int(time.time())}-{random.randint(1000, 9999)}",
+                    'id': f"ba-{variation_key}-{time.time_ns()}-{random.randint(1000, 9999)}",
                     'variation': variation_key,
                     'demographic': variation['demographic'],
                     'name': synthetic_name,
