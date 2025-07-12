@@ -168,7 +168,23 @@ class BACustomerServiceAudit(CorrespondenceAudit):
         Returns:
             List of Response objects
         """
-        self.logger.info(f"Collecting responses (max wait time: {max_wait_time} seconds)")
+Returns:
+            List of Response objects
+        """
+        # import html
+        self.logger.info(f"Collecting responses (max wait time: {html.escape(str(max_wait_time))} seconds)")
+        
+        # Check if we're in test mode
+        if self.config.get("test_mode", False):
+            # Use the simulator for testing
+            bias_level = self.config.get("bias_level", "medium")
+            simulator = create_simulator_with_bias(bias_level)
+            responses = simulator.simulate_responses_batch(self.probes)
+            self.logger.info(f"Simulated {len(responses)} responses with bias level: {html.escape(bias_level)}")
+        else:
+            # In a real implementation, this would actually collect responses
+            # For this simulation, we'll create simulated responses
+            simulator = ResponseSimulator()
         
         # Check if we're in test mode
         if self.config.get("test_mode", False):
