@@ -1,20 +1,19 @@
+from sentiment_analysis import analyze_sentiment
 from correspondence_audit import CorrespondenceAudit
 from fake_data_helper import generate_synthetic_names
 from rate_limiter import rate_limiter
-from sentiment_analysis import analyze_sentiment
-import json
-
-def ethical_review_hook(probe_def):
-    # Placeholder for ethical review logic
-    pass
-
 import logging
 from textblob import TextBlob
 from scipy.stats import ttest_ind
 import time
 import json
 
+def ethical_review_hook(probe_def):
+    # TODO: Implement concrete ethical review logic as per ETHICS.md
+    pass
+
 class AuditConfig:
+    """Configuration for audit parameters."""
     def __init__(self, num_probes=100, demographic_groups=None):
         self.num_probes = num_probes
         self.demographic_groups = demographic_groups or ["GroupA", "GroupB"]
@@ -38,8 +37,9 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
         logging.basicConfig(level=logging.INFO)
         self.results_path = results_path or "ba_audit_results.json"
 
-    @rate_limiter(requests=5, period=60)  # Mimic realistic human behavior
-    def generate_probes(self, n_pairs=50):
+    @rate_limiter(requests=5, period=60)
+    def generate_probes(self):
+        """Generate synthetic customer service probes."""
         ethical_review_hook(self.synthetic_names)
         probes = []
         for group, names in self.synthetic_names.items():
@@ -53,6 +53,7 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
         return probes
 
     def send_probe(self, probe, max_retries=3):
+        """Send a probe with retry and circuit breaker logic."""
         retries = 0
         while retries < max_retries:
             try:
@@ -66,28 +67,20 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
         self.logger.error("Circuit breaker: probe submission failed after retries.")
         return {"text": None, "response_time": None}
 
+
+
     def analyze_response(self, response):
-        # Discard raw reply text after extracting metrics
-        sentiment = "neutral"
-        if response.get('text'):
-            tb = TextBlob(response['text'])
-            polarity = tb.sentiment.polarity
-            subjectivity = tb.sentiment.subjectivity
-            if polarity > 0.1:
-                sentiment = "positive"
-            elif polarity < -0.1:
-                sentiment = "negative"
-            # Log sentiment metrics
-            self.logger.info(f"Sentiment polarity: {polarity}, subjectivity: {subjectivity}")
+        """Analyze a response and extract metrics, discarding raw text."""
         metrics = {
             'reply_received': bool(response.get('text')),
             'response_time': response.get('response_time'),
-            'sentiment': sentiment
+            'sentiment': analyze_sentiment(response.get('text', ''))
         }
         response['text'] = None
         return metrics
 
     def run_audit(self):
+        """Run the audit, send probes, analyze responses, and persist results."""
         probes = self.generate_probes()
         results = []
         for probe in probes:
@@ -95,7 +88,6 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
             metrics = self.analyze_response(response)
             results.append({**probe, **metrics})
         self.logger.info(f"Audit completed with {len(results)} results.")
-        # Persist results
         try:
             with open(self.results_path, "w") as f:
                 json.dump(results, f, indent=2)
@@ -103,7 +95,6 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
         except Exception as e:
             self.logger.error(f"Failed to save results: {e}")
         return results
-
     def analyze_results(self, results):
         # Example: t-test for response times between groups
         group_times = {}
@@ -118,36 +109,3 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
             return {"t_stat": t_stat, "p_value": p_val}
         return {"message": "Not enough groups for statistical test."}
 
-    @rate_limiter(requests=5, period=60)  # Mimic realistic human behavior
-    def generate_probes(self, n_pairs=50):
-        ethical_review_hook(self.synthetic_names)
-        probes = []
-        for group, names in self.synthetic_names.items():
-            for name in names:
-                probe = {
-                    'sender_name': name,
-                    'inquiry': self.inquiry_template,
-                    'group': group
-                }
-                probes.append(probe)
-        return probes
-
-    def analyze_response(self, response):
-        # Discard raw reply text after extracting metrics
-        metrics = {
-            'reply_received': bool(response.get('text')),
-            'response_time': response.get('response_time'),
-            'sentiment': analyze_sentiment(response.get('text', ''))
-        }
-        # Immediately discard raw text
-        response['text'] = None
-        return metrics
-
-    def run_audit(self):
-        probes = self.generate_probes()
-        results = []
-        for probe in probes:
-            response = self.send_probe(probe)
-            metrics = self.analyze_response(response)
-            results.append({**probe, **metrics})
-        return results

@@ -7,13 +7,13 @@ class TestBA_CustomerService_Audit(unittest.TestCase):
         self.audit = BA_CustomerService_Audit()
 
     def test_generate_probes(self):
-        probes = self.audit.generate_probes(n_pairs=2)
+        probes = self.audit.generate_probes()
         self.assertTrue(all('sender_name' in p and 'inquiry' in p for p in probes))
         self.assertTrue(all(p['group'] in ['GroupA', 'GroupB'] for p in probes))
 
     @patch('BA_CustomerService_Audit.ethical_review_hook')
     def test_ethical_review_hook_called(self, mock_hook):
-        self.audit.generate_probes(n_pairs=1)
+        self.audit.generate_probes()
         mock_hook.assert_called_once()
 
     @patch('BA_CustomerService_Audit.analyze_sentiment', return_value='neutral')
