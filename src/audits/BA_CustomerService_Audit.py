@@ -10,10 +10,11 @@ with different sender names and measures response rates, timing, and quality.
 
 import random
 import time
-import random
-import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
+import logging
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # Import specific statistics functions
 # from statistics import mean, median, stdev  # Used for calculating response time statistics
@@ -110,10 +111,17 @@ Sincerely,
         super().__init__(config or {})
         self.config = config or {}
         self.results = {
-            'majority': {'responses': 0, 'response_times': [], 'sentiment_scores': []},
-            'minority': {'responses': 0, 'response_times': [], 'sentiment_scores': []}
+            'majority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0},
+            'minority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0}
         }
-        
+        # Initialize NLTK VADER sentiment analyzer
+        try:
+            self.sid = SentimentIntensityAnalyzer()
+        except LookupError:
+            logging.warning("NLTK vader_lexicon not found. Downloading...")
+            nltk.download('vader_lexicon')
+            self.sid = SentimentIntensityAnalyzer()
+
     def ethical_review_hook(self, variations: Dict) -> bool:
         """
         Validate that the audit meets ethical standards.
@@ -130,22 +138,22 @@ Sincerely,
         # Check that we're only testing perceived identity through names
         for variation_key, variation in variations.items():
             if 'name_origin' not in variation:
-                print(f"Ethical review failed: variation {variation_key} missing name_origin")
+                logging.error(f"Ethical review failed: variation {variation_key} missing name_origin")
                 return False
                 
         # Ensure we're not using any real PII
         if any('real_' in str(v).lower() for v in variations.values()):
-            print("Ethical review failed: real PII detected in variations")
+            logging.error("Ethical review failed: real PII detected in variations")
             return False
             
         # Validate that we're only testing appropriate characteristics
         allowed_demographics = ['perceived_majority', 'perceived_minority']
         for variation in variations.values():
             if 'demographic' in variation and variation['demographic'] not in allowed_demographics:
-                print(f"Ethical review failed: invalid demographic {variation['demographic']}")
+                logging.error(f"Ethical review failed: invalid demographic {variation['demographic']}")
                 return False
                 
-        print("Ethical review passed: audit meets ethical standards")
+        logging.info("Ethical review passed: audit meets ethical standards")
         return True
         
     def _generate_future_date(self) -> str:
@@ -199,12 +207,7 @@ Sincerely,
             raise ValueError("Failed ethical review - audit cannot proceed")
             
         if num_pairs < self.MIN_PROBES:
-            print(f"Warning: {num_pairs} pairs is below the recommended minimum of {self.MIN_PROBES}")
-            
-        probes = []
-        
-if num_pairs < self.MIN_PROBES:
-            print(f"Warning: {num_pairs} pairs is below the recommended minimum of {self.MIN_PROBES}")
+            logging.warning(f"{num_pairs} pairs is below the recommended minimum of {self.MIN_PROBES}")
             
         # Generate probes using list comprehension
         probes = [
@@ -213,7 +216,7 @@ if num_pairs < self.MIN_PROBES:
             for probe in self._generate_probe_pair()
         ]
         
-        print(f"Generated {len(probes)} probes ({num_pairs} pairs)")
+        logging.info(f"Generated {len(probes)} probes ({num_pairs} pairs)")
         return probes
         
     def _generate_probe_pair(self) -> List[Dict]:
@@ -245,8 +248,14 @@ if num_pairs < self.MIN_PROBES:
             Probe dictionary
         """
         # Generate synthetic identity based on demographic
-        synthetic_name = generate_synthetic_name(origin=variation['name_origin'])
-        email = generate_fake_email(name=synthetic_name)
+        try:
+            synthetic_name = generate_synthetic_name(origin=variation['name_origin'])
+            email = generate_fake_email(name=synthetic_name)
+        except Exception as e:
+            logging.error(f"Error generating synthetic identity: {str(e)}")
+            # Return None or raise a specific exception if a probe cannot be created
+            # For now, we'll log and return None, which will be filtered out later
+            return None
         
         # Create the inquiry text
         inquiry_text = self.INQUIRY_TEMPLATE.format(
@@ -260,58 +269,17 @@ if num_pairs < self.MIN_PROBES:
         
         # Create the probe
         return {
-            'id': f"ba-{variation_key}-{int(time.time())}-{random.randint(1000, 9999)}",
+            'id': f"ba-{variation_key}-{time.time_ns()}-{random.randint(1000, 9999)}",
             'variation': variation_key,
             'demographic': variation['demographic'],
             'name': synthetic_name,
-            # Generate common inquiry content for the pair
-            inquiry_content = self._generate_inquiry_content()
-            
-            # Generate a probe for each variation
-            for variation_key, variation in self.VARIATIONS.items():
-                # Generate synthetic identity based on demographic
-# Generate a probe for each variation
-            for variation_key, variation in self.VARIATIONS.items():
-                # Generate synthetic identity based on demographic
-                try:
-                    synthetic_name = generate_synthetic_name(origin=variation['name_origin'])
-                    email = generate_fake_email(name=synthetic_name)
-                except Exception as e:
-                    print(f"Error generating synthetic identity: {str(e)}")
-                    continue
-                
-                # Create the inquiry text
-                inquiry_text = self.INQUIRY_TEMPLATE.format(
-                email = generate_fake_email(name=synthetic_name)
-                
-                # Create the inquiry text
-                inquiry_text = self.INQUIRY_TEMPLATE.format(
-                    origin=inquiry_content['origin'],
-                    destination=inquiry_content['destination'],
-                    date=inquiry_content['date'],
-                    service_type=inquiry_content['service_type'],
-                    inquiry_text=inquiry_content['inquiry_text'],
-                    name=synthetic_name
-                )
-                
-                # Create the probe
-                probe = {
-                    'id': f"ba-{variation_key}-{time.time_ns()}-{random.randint(1000, 9999)}",
-                    'variation': variation_key,
-                    'demographic': variation['demographic'],
-                    'name': synthetic_name,
-                    'email': email,
-                    'subject': f"Question about {inquiry_content['service_type']}",
-                    'body': inquiry_text,
-                    'timestamp': datetime.now().isoformat(),
-                    'inquiry_type': inquiry_content['service_type'],
-                    'route': f"{inquiry_content['origin']} to {inquiry_content['destination']}"
-                }
-                
-                probes.append(probe)
-                
-        print(f"Generated {len(probes)} probes ({num_pairs} pairs)")
-        return probes
+            'email': email,
+            'subject': f"Question about {inquiry_content['service_type']}",
+            'body': inquiry_text,
+            'timestamp': datetime.now().isoformat(),
+            'inquiry_type': inquiry_content['service_type'],
+            'route': f"{inquiry_content['origin']} to {inquiry_content['destination']}"
+        }
         
     def analyze_response(self, response: Dict, probe: Dict) -> Dict:
         """
@@ -377,41 +345,28 @@ if num_pairs < self.MIN_PROBES:
             response_dt = datetime.fromisoformat(response_time)
             delta = response_dt - probe_dt
             return delta.total_seconds() / 3600  # Convert to hours
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            logging.error(f"Error calculating response time: {e}")
             return None
             
     def _analyze_sentiment(self, text: str) -> float:
         """
-        Analyze the sentiment of response text.
-        
-        In a real implementation, this would use a proper NLP library.
-        This is a simplified placeholder implementation.
+        Analyze the sentiment of response text using NLTK VADER.
         
         Args:
             text: Response text to analyze
             
         Returns:
-            Sentiment score between 0.0 (negative) and 1.0 (positive)
+            Compound sentiment score between -1.0 (negative) and 1.0 (positive).
         """
-        # This is a placeholder for actual sentiment analysis
-        # In a real implementation, use a proper NLP library
-        
-        # Count positive and negative words as a simple proxy
-        positive_words = ['thank', 'happy', 'help', 'assist', 'welcome', 
-                         'pleasure', 'glad', 'resolve', 'solution']
-        negative_words = ['unfortunately', 'cannot', 'issue', 'problem', 
-                         'difficult', 'sorry', 'regret', 'delay']
-                         
-        text_lower = text.lower()
-        
-        positive_count = sum(1 for word in positive_words if word in text_lower)
-        negative_count = sum(1 for word in negative_words if word in text_lower)
-        
-        total_count = positive_count + negative_count
-        if total_count == 0:
-            return 0.5  # Neutral if no sentiment words found
+        if not text:
+            return 0.0 # Neutral sentiment for empty text
             
-        return positive_count / total_count
+        # Use NLTK VADER to get sentiment scores
+        scores = self.sid.polarity_scores(text)
+        
+        # Return the compound score, which is a normalized composite score
+        return scores['compound']
         
     def calculate_metrics(self) -> Dict:
         """
@@ -429,7 +384,8 @@ if num_pairs < self.MIN_PROBES:
         
         # Calculate metrics for each variation
         for variation, data in self.results.items():
-            total_probes = len(data['response_times']) + (data.get('non_responses', 0))
+            # Corrected total_probes calculation
+            total_probes = data['responses'] + data.get('non_responses', 0)
             
             if total_probes > 0:
                 metrics['response_rates'][variation] = data['responses'] / total_probes
@@ -437,12 +393,16 @@ if num_pairs < self.MIN_PROBES:
                 metrics['response_rates'][variation] = 0
                 
             if data['response_times']:
-                metrics['avg_response_times'][variation] = statistics.mean(data['response_times'])
+                # Ensure statistics module is imported if needed, or use a manual calculation
+                # from statistics import mean
+                metrics['avg_response_times'][variation] = sum(data['response_times']) / len(data['response_times'])
             else:
                 metrics['avg_response_times'][variation] = None
                 
             if data['sentiment_scores']:
-                metrics['avg_sentiment_scores'][variation] = statistics.mean(data['sentiment_scores'])
+                 # Ensure statistics module is imported if needed, or use a manual calculation
+                # from statistics import mean
+                metrics['avg_sentiment_scores'][variation] = sum(data['sentiment_scores']) / len(data['sentiment_scores'])
             else:
                 metrics['avg_sentiment_scores'][variation] = None
                 
@@ -482,53 +442,83 @@ if num_pairs < self.MIN_PROBES:
         Returns:
             Dictionary with audit results
         """
-        # Generate probes
-Returns:
-            Dictionary with audit results
-        """
         try:
             # Generate probes
             probes = self.generate_probes(num_pairs)
             
-            # In a real implementation, this would send the probes and collect responses
-            # For this example, we'll simulate the process
+            # Filter out any None probes if there were errors during generation
+            valid_probes = [probe for probe in probes if probe is not None]
             
-            # Reset results
-            self.results = {
-                'majority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0},
-                'minority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0}
-            }
+            if not valid_probes:
+                logging.error("No valid probes were generated. Audit cannot proceed.")
+                return {
+                    'error': 'No valid probes were generated',
+                    'timestamp': datetime.now().isoformat()
+                }
+
+            # In a real implementation, this would send the probes and collect responses.
+            # For this example, we'll simulate the process.
+            logging.info(f"Simulating sending {len(valid_probes)} probes and collecting responses...")
             
+            # Simulate sending probes and receiving responses
+            # This is a placeholder and needs to be replaced with actual logic
+            simulated_responses = self._simulate_response_collection(valid_probes)
+
+            # Analyze responses and update results
+            for response, probe in simulated_responses:
+                 # Check if response is None, indicating a non-response
+                if response is None:
+                    variation = probe.get('variation')
+                    if variation in self.results:
+                        self.results[variation]['non_responses'] += 1
+                else:
+                    self.analyze_response(response, probe)
+
             # Calculate metrics
             metrics = self.calculate_metrics()
             
             return {
-                'probes_sent': len(probes),
+                'probes_sent': len(valid_probes),
                 'metrics': metrics,
                 'timestamp': datetime.now().isoformat()
             }
         except Exception as e:
             # Log the error and return an error response
-            print(f"Error during audit: {str(e)}")
+            logging.error(f"Error during audit: {str(e)}")
             return {
                 'error': 'An error occurred during the audit process',
                 'timestamp': datetime.now().isoformat()
             }
-        
-        # In a real implementation, this would send the probes and collect responses
-        # For this example, we'll simulate the process
-        
-        # Reset results
-        self.results = {
-            'majority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0},
-            'minority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0}
-        }
-        
-        # Calculate metrics
-        metrics = self.calculate_metrics()
-        
-        return {
-            'probes_sent': len(probes),
-            'metrics': metrics,
-            'timestamp': datetime.now().isoformat()
-        }
+
+    def _simulate_response_collection(self, probes: List[Dict]) -> List[Tuple[Optional[Dict], Dict]]:
+        """
+        Simulate sending probes and collecting responses.
+
+        This is a placeholder function. In a real implementation, this would
+        involve sending emails/requests and waiting for responses.
+
+        Args:
+            probes: List of probe dictionaries.
+
+        Returns:
+            List of tuples, where each tuple contains a simulated response (or None
+            for no response) and the original probe.
+        """
+        logging.info("Simulating response collection...")
+        simulated_results = []
+        for probe in probes:
+            # Simulate a response or no response
+            if random.random() < 0.8:  # 80% response rate simulation
+                # Simulate a response with a timestamp and some text
+                response_time_hours = random.uniform(1, 72) # Simulate response within 1 to 72 hours
+                response_timestamp = (datetime.fromisoformat(probe['timestamp']) + timedelta(hours=response_time_hours)).isoformat()
+                simulated_response = {
+                    'timestamp': response_timestamp,
+                    'text': 'This is a simulated response.' # Placeholder text
+                }
+                simulated_results.append((simulated_response, probe))
+            else:
+                # Simulate no response
+                simulated_results.append((None, probe))
+
+        return simulated_results

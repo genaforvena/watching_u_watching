@@ -81,17 +81,30 @@ class TestBACustomerServiceAudit(unittest.TestCase):
         
     def test_generate_future_date(self):
         """Test that future dates are generated correctly"""
-        future_date = self.audit._generate_future_date()
-        self.assertIsInstance(future_date, str)
-        
-        # Parse the date to verify it's in the future
-        # This is a simple check assuming the format is "DD Month YYYY"
-        day, month, year = future_date.split()
-        months = ["January", "February", "March", "April", "May", "June", 
-                 "July", "August", "September", "October", "November", "December"]
-        self.assertIn(month, months)
-        self.assertTrue(int(day) >= 1 and int(day) <= 31)
-        self.assertTrue(int(year) >= datetime.now().year)
+        # Define a fixed datetime to patch datetime.now()
+        fixed_now = datetime(2025, 7, 12, 10, 0, 0) # July 12, 2025, 10:00:00
+
+        with patch('BA_CustomerService_Audit.datetime') as mock_datetime:
+            mock_datetime.now.return_value = fixed_now
+            mock_datetime.fromisoformat = datetime.fromisoformat # Keep original fromisoformat
+            mock_datetime.strptime = datetime.strptime # Keep original strptime
+            mock_datetime.timedelta = timedelta # Keep original timedelta
+
+            future_date_str = self.audit._generate_future_date()
+
+            self.assertIsInstance(future_date_str, str)
+
+            # Parse the generated date string back into a datetime object
+            # The format is "%d %B %Y" (e.g., "15 June 2023")
+            generated_date = datetime.strptime(future_date_str, "%d %B %Y")
+
+            # Calculate the expected minimum and maximum future dates
+            min_future_date = fixed_now + timedelta(days=14)
+            max_future_date = fixed_now + timedelta(days=56)
+
+            # Assert that the generated date is within the expected range (inclusive)
+            self.assertTrue(generated_date >= min_future_date.replace(hour=0, minute=0, second=0, microsecond=0))
+            self.assertTrue(generated_date <= max_future_date.replace(hour=0, minute=0, second=0, microsecond=0))
         
     def test_generate_inquiry_content(self):
         """Test that inquiry content is generated correctly"""
@@ -264,20 +277,69 @@ class TestBACustomerServiceAudit(unittest.TestCase):
         
     def test_run_audit(self):
         """Test that the complete audit process runs correctly"""
-        # Mock the generate_probes method
-        with patch.object(self.audit, 'generate_probes') as mock_generate:
-            mock_generate.return_value = [{'id': 'test-probe-1'}, {'id': 'test-probe-2'}]
-            
-            # Run the audit
-            result = self.audit.run_audit(1)
-            
-            # Check that generate_probes was called
-            mock_generate.assert_called_once_with(1)
-            
-            # Check that the result has the expected fields
-            self.assertEqual(result['probes_sent'], 2)
+        # Mock the generate_probes method to return a known set of probes
+        probes_to_return = [
+            {'id': 'ba-majority-1', 'variation': 'majority', 'timestamp': datetime.now().isoformat()},
+            {'id': 'ba-minority-1', 'variation': 'minority', 'timestamp': datetime.now().isoformat()},
+            {'id': 'ba-majority-2', 'variation': 'majority', 'timestamp': datetime.now().isoformat()},
+            {'id': 'ba-minority-2', 'variation': 'minority', 'timestamp': datetime.now().isoformat()},
+        ]
+        with patch.object(self.audit, 'generate_probes', return_value=probes_to_return) as mock_generate,
+             patch.object(self.audit, '_simulate_response_collection') as mock_simulate:
+
+            # Define simulated responses for the probes
+            # Simulate 1 response for majority (2 hours, positive sentiment)
+            # Simulate 0 responses for minority
+            simulated_responses = [
+                ({'timestamp': (datetime.now() + timedelta(hours=2)).isoformat(), 'text': 'Thank you!'}, probes_to_return[0]),
+                (None, probes_to_return[1]), # No response for minority probe 1
+                (None, probes_to_return[2]), # No response for majority probe 2
+                (None, probes_to_return[3]), # No response for minority probe 2
+            ]
+            mock_simulate.return_value = simulated_responses
+
+            # Run the audit with 2 pairs (which should result in 4 probes)
+            result = self.audit.run_audit(2)
+
+            # Check that generate_probes and _simulate_response_collection were called
+            mock_generate.assert_called_once_with(2)
+            mock_simulate.assert_called_once_with(probes_to_return)
+
+            # Check the overall result structure
+            self.assertEqual(result['probes_sent'], 4)
             self.assertIn('metrics', result)
             self.assertIn('timestamp', result)
+
+            # Check the calculated metrics based on simulated responses
+            metrics = result['metrics']
+
+            # Expected metrics:
+            # Majority: 1 response, 1 non-response. Total probes: 2. Response rate: 1/2 = 0.5
+            #           Response times: [2.0]. Avg response time: 2.0
+            #           Sentiment scores: [~1.0]. Avg sentiment score: ~1.0
+            # Minority: 0 responses, 2 non-responses. Total probes: 2. Response rate: 0/2 = 0.0
+            #           Response times: []. Avg response time: None
+            #           Sentiment scores: []. Avg sentiment score: None
+
+            self.assertAlmostEqual(metrics['response_rates']['majority'], 0.5)
+            self.assertAlmostEqual(metrics['response_rates']['minority'], 0.0)
+
+            self.assertAlmostEqual(metrics['avg_response_times']['majority'], 2.0, delta=0.1)
+            self.assertIsNone(metrics['avg_response_times']['minority'])
+
+            # The exact sentiment score depends on the placeholder logic, but it should be high for 'Thank you!'
+            self.assertGreater(metrics['avg_sentiment_scores']['majority'], 0.5)
+            self.assertIsNone(metrics['avg_sentiment_scores']['minority'])
+
+            # Check bias metrics
+            self.assertAlmostEqual(metrics['bias_metrics']['response_rate_diff'], 0.5) # 0.5 - 0.0
+            # Response time diff is minority - majority, but minority is None, so this will be None
+            self.assertIsNone(metrics['bias_metrics'].get('response_time_diff'))
+            # Sentiment diff is majority - minority, but minority is None, so this will be None
+            self.assertIsNone(metrics['bias_metrics'].get('sentiment_diff'))
+
+            # Significant bias should be True because response rate diff > 0.1
+            self.assertTrue(metrics['bias_metrics']['significant_bias'])
 
 
 if __name__ == '__main__':
