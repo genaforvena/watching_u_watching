@@ -1,5 +1,5 @@
 """
-Tests for British Airways Customer Service Responsiveness Bias Audit
+Tests for initialization of the British Airways Customer Service Audit
 """
 
 import unittest
@@ -22,8 +22,8 @@ sys.modules['rate_limiter'] = MagicMock()
 from audits.ba_customer_service.audit import BACustomerServiceAudit
 
 
-class TestBACustomerServiceAudit(unittest.TestCase):
-    """Test cases for the British Airways Customer Service Audit"""
+class TestBACustomerServiceAuditInitialization(unittest.TestCase):
+    """Test cases for the initialization of the British Airways Customer Service Audit"""
     
     def setUp(self):
         """Set up test fixtures"""
@@ -41,6 +41,13 @@ class TestBACustomerServiceAudit(unittest.TestCase):
         
         # Mock the rate_limiter decorator to do nothing in tests
         sys.modules['rate_limiter'].rate_limiter = lambda requests, period: lambda f: f
+        
+    def test_initialization(self):
+        """Test that the audit initializes correctly"""
+        self.assertEqual(self.audit.MIN_PROBES, 100)
+        self.assertEqual(self.audit.compatibility_version, 1.2)
+        self.assertIn('majority', self.audit.VARIATIONS)
+        self.assertIn('minority', self.audit.VARIATIONS)
 
 
 if __name__ == '__main__':

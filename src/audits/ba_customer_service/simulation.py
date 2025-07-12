@@ -19,6 +19,9 @@ def _simulate_response_collection(probes: List[Dict]) -> List[Tuple[Optional[Dic
     """
     logging.info("Simulating response collection...")
     simulated_results = []
+    # TODO: The random seed is fixed for reproducibility in testing.
+    # In a real simulation or production environment, use a more robust source of randomness.
+    random.seed(42) # Fixed seed for reproducibility
     for probe in probes:
         # Simulate a response or no response
         if random.random() < 0.8:  # 80% response rate simulation
