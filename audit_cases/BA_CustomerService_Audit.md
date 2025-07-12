@@ -62,5 +62,5 @@
   - All response content discarded after sentiment analysis
   - No storage of actual BA employee information
 - **Rate Limiting**: Maximum 5 inquiries per day to prevent system disruption
-- **Ethical Review Hook**: `validate_name_based_testing()` to ensure ethical use of name-based testing
+- **Ethical Review Hook**: `ethical_review_hook()` to ensure ethical use of name-based testing
 - **Error Handling**: Automatic halt if any PII is accidentally collected
