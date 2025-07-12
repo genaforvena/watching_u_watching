@@ -2,6 +2,7 @@ from correspondence_audit import CorrespondenceAudit
 from fake_data_helper import generate_synthetic_names
 from rate_limiter import rate_limiter
 from sentiment_analysis import analyze_sentiment
+import json
 
 def ethical_review_hook(probe_def):
     # Placeholder for ethical review logic
@@ -11,6 +12,7 @@ import logging
 from textblob import TextBlob
 from scipy.stats import ttest_ind
 import time
+import json
 
 class AuditConfig:
     def __init__(self, num_probes=100, demographic_groups=None):
@@ -22,7 +24,7 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
     Audit for British Airways (BA) customer service responsiveness bias.
     Inherits from CorrespondenceAudit (framework v1.2+).
     """
-    def __init__(self, config=None):
+    def __init__(self, config=None, results_path=None):
         super().__init__(config)
         if isinstance(config, dict):
             self.config = AuditConfig(**config)
@@ -34,6 +36,7 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
         self.inquiry_template = "Hello, I have a question about my upcoming flight. Could you please assist me?"
         self.logger = logging.getLogger("BA_CustomerService_Audit")
         logging.basicConfig(level=logging.INFO)
+        self.results_path = results_path or "ba_audit_results.json"
 
     @rate_limiter(requests=5, period=60)  # Mimic realistic human behavior
     def generate_probes(self, n_pairs=50):
@@ -69,10 +72,13 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
         if response.get('text'):
             tb = TextBlob(response['text'])
             polarity = tb.sentiment.polarity
+            subjectivity = tb.sentiment.subjectivity
             if polarity > 0.1:
                 sentiment = "positive"
             elif polarity < -0.1:
                 sentiment = "negative"
+            # Log sentiment metrics
+            self.logger.info(f"Sentiment polarity: {polarity}, subjectivity: {subjectivity}")
         metrics = {
             'reply_received': bool(response.get('text')),
             'response_time': response.get('response_time'),
@@ -89,6 +95,13 @@ class BA_CustomerService_Audit(CorrespondenceAudit):
             metrics = self.analyze_response(response)
             results.append({**probe, **metrics})
         self.logger.info(f"Audit completed with {len(results)} results.")
+        # Persist results
+        try:
+            with open(self.results_path, "w") as f:
+                json.dump(results, f, indent=2)
+            self.logger.info(f"Results saved to {self.results_path}")
+        except Exception as e:
+            self.logger.error(f"Failed to save results: {e}")
         return results
 
     def analyze_results(self, results):
