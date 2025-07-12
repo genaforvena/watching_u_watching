@@ -47,6 +47,24 @@ def _calculate_response_time(probe_time: str, response_time: str) -> float:
         return delta.total_seconds() / 3600  # Convert to hours
     except (ValueError, TypeError) as e:
         logging.error(f"Error calculating response time: {e}")
+def _calculate_response_time(probe_time: str, response_time: str) -> Optional[float]:
+    """
+    Calculate the time between probe submission and response.
+    
+    Args:
+        probe_time: ISO format timestamp of probe submission
+        response_time: ISO format timestamp of response
+        
+    Returns:
+        Response time in hours or None if calculation fails
+    """
+    try:
+        probe_dt = datetime.fromisoformat(probe_time)
+        response_dt = datetime.fromisoformat(response_time)
+        delta = response_dt - probe_dt
+        return delta.total_seconds() / 3600  # Convert to hours
+    except (ValueError, TypeError) as e:
+        logging.error(f"Error calculating response time: {e}")
         return None
         
 def _analyze_sentiment(text: str) -> float:
