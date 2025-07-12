@@ -1,58 +1,56 @@
 # British Airways Customer Service Responsiveness Bias Audit
 
 ## 1. Decision System Characterization
-- **System Under Audit**: British Airways Customer Service Inquiry Channels
-- **Purpose/Function**: Responding to customer inquiries and support requests
-- **Decision Type**: Response provision (timing, quality, and whether a response is provided)
+- **System Under Audit**: British Airways Customer Service
+- **Purpose/Function**: Customer inquiry response system
+- **Decision Type**: Response prioritization and quality
 
 ## 2. Protected Characteristic(s)
 - **Characteristic(s)**: Perceived identity (via name as proxy)
-- **Rationale**: Names can signal perceived ethnicity, nationality, or cultural background, which may unconsciously influence customer service responsiveness
+- **Rationale**: Names can signal demographic information that may influence service quality
 
 ## 3. Probe Generation
-- **Probe Type**: Standardized customer service inquiry via email/web form
+- **Probe Type**: Standardized customer support inquiry via email/web form
 - **Variation Details**:
-  - Group A: Western-sounding names (e.g., "James Wilson", "Emma Thompson")
-  - Group B: Non-Western-sounding names (e.g., "Mohammed Ahmed", "Aisha Khan")
+  - Group A: Names associated with perceived British/Western identity
+  - Group B: Names associated with perceived non-Western identity
 - **Template**:
   ```
-  Subject: Question about flight booking options
+  Subject: Inquiry about [INQUIRY_TYPE]
   
   Dear British Airways Customer Service,
   
-  I am planning to book a flight from London to New York in the coming months and have a question about your booking options.
+  I hope this message finds you well. I am writing to inquire about [SPECIFIC_INQUIRY] for my upcoming travel.
   
-  Could you please provide information about the different fare classes available and what amenities are included with each? I'm particularly interested in understanding the differences between your economy and premium economy offerings.
+  [INQUIRY_DETAILS]
   
-  Thank you for your assistance.
+  I would greatly appreciate your assistance with this matter.
   
-  Sincerely,
-  $NAME
+  Thank you for your time and consideration.
+  
+  Best regards,
+  [NAME]
   ```
 
 ## 4. Statistical Parameters
 - **Minimum Probes**: 100 pairs (50 per group)
 - **Power Calculation**: 80% power to detect 15% difference in response rate
 - **Confidence Level**: 95%
-- **Expected Runtime**: 14 days (to account for response time variations)
+- **Expected Runtime**: 14 days (to account for response time)
 
 ## 5. Validation Metrics
-- **Primary Metrics**:
-  1. **Response Rate**: Percentage of inquiries receiving a response (Group A vs. Group B)
-  2. **Response Time**: Average time elapsed between inquiry submission and response receipt
-  3. **Response Quality**: Sentiment analysis score of response content
+- **Primary Metrics**: 
+  1. Response Rate: Percentage of inquiries receiving a response
+  2. Response Time: Average time to first response
+  3. Response Quality: Sentiment analysis score of responses
 - **Bias Threshold**: 
-  - Response Rate: >10% difference = significant bias
-  - Response Time: >24 hour difference = significant bias
-  - Response Quality: >0.2 sentiment score difference = significant bias
-- **False Positive Control**: Benjamini-Hochberg procedure with α = 0.05
+  - >15% difference in response rate = significant bias
+  - >24 hour difference in average response time = significant bias
+  - >0.2 difference in sentiment score = significant bias
+- **False Positive Control**: Benjamini-Hochberg correction for multiple comparisons
 
 ## 6. Ethical Safeguards
-- **PII Avoidance**: Only synthetic identities generated via fake_data_helper
-- **Rate Limiting**: Maximum 5 inquiries per day to prevent system disruption
-- **Ethical Review Hook**: `validate_identity_variations()` to ensure:
-  1. No real customer identities are used
-  2. Inquiry content is identical except for sender information
-  3. Inquiries are reasonable and do not waste customer service resources
-- **Data Handling**: Raw response text discarded immediately after sentiment analysis
-- **Error Handling**: Graceful termination on HTTP 429 (Too Many Requests)
+- **PII Avoidance**: Only synthetic identities used, no real customer data
+- **Rate Limiting**: Maximum 10 inquiries per day to prevent system disruption
+- **Ethical Review Hook**: `ethical_review_hook()` validates all probe content before sending
+- **Data Retention**: Response content discarded after sentiment analysis

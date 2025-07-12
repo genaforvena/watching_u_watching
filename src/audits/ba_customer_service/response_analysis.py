@@ -1,315 +1,411 @@
 """
 Response Analysis Module for British Airways Customer Service Responsiveness Bias Audit
 
-This module implements functions for analyzing customer service responses,
-including response rate, timing, and sentiment analysis.
+This module handles the analysis of customer service responses to detect potential
+bias in responsiveness based on perceived identity.
 """
 
-import time
-import statistics
-from typing import Dict, List, Tuple, Optional, Any
-from dataclasses import dataclass
+import re
 import math
+import statistics
 from datetime import datetime
-
-# Assuming these are provided by the framework
-from core.utils import sentiment_analyzer
-from core.stats import calculate_statistical_significance
+from typing import Dict, List, Tuple, Optional, Any, Union
+from dataclasses import dataclass
 
 from .constants import (
-    BIAS_THRESHOLD,
-    CONFIDENCE_LEVEL,
-    SentimentCategory,
-    SENTIMENT_THRESHOLDS
+    RESPONSE_RATE_THRESHOLD,
+    RESPONSE_TIME_THRESHOLD,
+    SENTIMENT_SCORE_THRESHOLD,
+    CONFIDENCE_LEVEL
 )
 
 
 @dataclass
-class Response:
-    """
-    Represents a customer service response.
-    """
-    probe_id: str
-    received: bool
-    timestamp: Optional[float] = None
-    response_time_hours: Optional[float] = None
-    sentiment_score: Optional[float] = None
-    sentiment_category: Optional[SentimentCategory] = None
-    metadata: Dict = None
+class ResponseMetrics:
+    """Container for response metrics."""
+    response_rate: float
+    avg_response_time: float
+    sentiment_score: float
+    sample_size: int
+    confidence_interval: Tuple[float, float]
 
 
-def calculate_response_rate(responses: List[Response], variation: str) -> float:
+@dataclass
+class BiasResult:
+    """Container for bias detection results."""
+    metric_name: str
+    group_a_value: float
+    group_b_value: float
+    difference: float
+    threshold: float
+    is_biased: bool
+    p_value: float
+    confidence_interval: Tuple[float, float]
+
+
+@dataclass
+class AuditResult:
+    """Container for overall audit results."""
+    group_a_metrics: ResponseMetrics
+    group_b_metrics: ResponseMetrics
+    bias_results: List[BiasResult]
+    overall_biased: bool
+    timestamp: str
+    metadata: Dict
+
+
+class ResponseAnalyzer:
     """
-    Calculate the response rate for a specific variation.
+    Analyzes customer service responses to detect potential bias.
+    """
     
-    Args:
-        responses: List of Response objects
-        variation: Variation to calculate response rate for
+    def __init__(self):
+        """Initialize the response analyzer."""
+        pass
+    
+    def calculate_response_rate(self, responses: List[Dict]) -> float:
+        """
+        Calculate the response rate from a list of responses.
         
-    Returns:
-        Response rate as a float between 0 and 1
-    """
-    variation_responses = [r for r in responses if r.metadata.get("variation") == variation]
-    
-    if not variation_responses:
-        return 0.0
-    
-    received_count = sum(1 for r in variation_responses if r.received)
-    return received_count / len(variation_responses)
-
-
-def calculate_response_time_stats(responses: List[Response], variation: str) -> Dict[str, float]:
-    """
-    Calculate response time statistics for a specific variation.
-    
-    Args:
-        responses: List of Response objects
-        variation: Variation to calculate statistics for
+        Args:
+            responses: List of response dictionaries
+            
+        Returns:
+            Response rate as a float between 0 and 1
+        """
+        if not responses:
+            return 0.0
         
-    Returns:
-        Dictionary with response time statistics
-    """
-    # Filter responses by variation and only include those that were received
-    variation_responses = [
-        r for r in responses 
-        if r.metadata.get("variation") == variation and r.received and r.response_time_hours is not None
-    ]
+        responded = sum(1 for r in responses if r.get("received_response", False))
+        return responded / len(responses)
     
-    if not variation_responses:
-        return {
-            "mean": None,
-            "median": None,
-            "min": None,
-            "max": None,
-            "std_dev": None
+    def calculate_average_response_time(self, responses: List[Dict]) -> float:
+        """
+        Calculate the average response time in seconds.
+        
+        Args:
+            responses: List of response dictionaries
+            
+        Returns:
+            Average response time in seconds, or -1 if no responses
+        """
+        response_times = []
+        
+        for response in responses:
+            if not response.get("received_response", False):
+                continue
+                
+            sent_time = datetime.fromisoformat(response["timestamp"])
+            response_time = datetime.fromisoformat(response["response_timestamp"])
+            
+            # Calculate time difference in seconds
+            time_diff = (response_time - sent_time).total_seconds()
+            response_times.append(time_diff)
+        
+        if not response_times:
+            return -1.0
+            
+        return statistics.mean(response_times)
+    
+    def analyze_sentiment(self, text: str) -> float:
+        """
+        Analyze the sentiment of a response text.
+        
+        Args:
+            text: Response text to analyze
+            
+        Returns:
+            Sentiment score between -1 (negative) and 1 (positive)
+        """
+        # Simple rule-based sentiment analysis
+        # In a real implementation, this would use a proper NLP library
+        
+        positive_words = [
+            "happy", "pleased", "delighted", "glad", "thank", "appreciate",
+            "help", "resolve", "solution", "assist", "support", "welcome",
+            "pleasure", "apologize", "sorry", "regret"
+        ]
+        
+        negative_words = [
+            "unfortunately", "cannot", "unable", "not possible", "difficult",
+            "problem", "issue", "complaint", "delay", "inconvenience", 
+            "disappointed", "frustration", "failure", "denied", "reject"
+        ]
+        
+        # Convert to lowercase for case-insensitive matching
+        text_lower = text.lower()
+        
+        # Count occurrences of positive and negative words
+        positive_count = sum(text_lower.count(word) for word in positive_words)
+        negative_count = sum(text_lower.count(word) for word in negative_words)
+        
+        # Calculate sentiment score
+        total_count = positive_count + negative_count
+        if total_count == 0:
+            return 0.0
+            
+        return (positive_count - negative_count) / total_count
+    
+    def calculate_average_sentiment(self, responses: List[Dict]) -> float:
+        """
+        Calculate the average sentiment score across responses.
+        
+        Args:
+            responses: List of response dictionaries
+            
+        Returns:
+            Average sentiment score, or 0 if no responses
+        """
+        sentiment_scores = []
+        
+        for response in responses:
+            if not response.get("received_response", False) or not response.get("response_text"):
+                continue
+                
+            sentiment = self.analyze_sentiment(response["response_text"])
+            sentiment_scores.append(sentiment)
+        
+        if not sentiment_scores:
+            return 0.0
+            
+        return statistics.mean(sentiment_scores)
+    
+    def calculate_confidence_interval(self, value: float, sample_size: int, confidence: float = CONFIDENCE_LEVEL) -> Tuple[float, float]:
+        """
+        Calculate confidence interval for a proportion.
+        
+        Args:
+            value: Proportion value (between 0 and 1)
+            sample_size: Sample size
+            confidence: Confidence level (default: 0.95)
+            
+        Returns:
+            Tuple containing lower and upper bounds of confidence interval
+        """
+        if sample_size == 0:
+            return (0.0, 0.0)
+            
+        # For proportions, we use the normal approximation to the binomial
+        # z-score for the given confidence level
+        z_scores = {
+            0.90: 1.645,
+            0.95: 1.96,
+            0.99: 2.576
         }
-    
-    response_times = [r.response_time_hours for r in variation_responses]
-    
-    return {
-        "mean": statistics.mean(response_times),
-        "median": statistics.median(response_times),
-        "min": min(response_times),
-        "max": max(response_times),
-        "std_dev": statistics.stdev(response_times) if len(response_times) > 1 else 0
-    }
-
-
-def calculate_sentiment_stats(responses: List[Response], variation: str) -> Dict[str, Any]:
-    """
-    Calculate sentiment statistics for a specific variation.
-    
-    Args:
-        responses: List of Response objects
-        variation: Variation to calculate statistics for
         
-    Returns:
-        Dictionary with sentiment statistics
-    """
-    # Filter responses by variation and only include those that were received
-    variation_responses = [
-        r for r in responses 
-        if r.metadata.get("variation") == variation and r.received and r.sentiment_score is not None
-    ]
-    
-    if not variation_responses:
-        return {
-            "mean": None,
-            "median": None,
-            "category_counts": {
-                SentimentCategory.NEGATIVE.value: 0,
-                SentimentCategory.NEUTRAL.value: 0,
-                SentimentCategory.POSITIVE.value: 0
-            }
-        }
-    
-    sentiment_scores = [r.sentiment_score for r in variation_responses]
-    
-    # Count responses by sentiment category
-    category_counts = {
-        SentimentCategory.NEGATIVE.value: 0,
-        SentimentCategory.NEUTRAL.value: 0,
-        SentimentCategory.POSITIVE.value: 0
-    }
-    
-    for r in variation_responses:
-        if r.sentiment_category:
-            category_counts[r.sentiment_category.value] += 1
-    
-    return {
-        "mean": statistics.mean(sentiment_scores),
-        "median": statistics.median(sentiment_scores),
-        "category_counts": category_counts
-    }
-
-
-def analyze_response_text(text: str) -> Tuple[float, SentimentCategory]:
-    """
-    Analyze the sentiment of a response text.
-    
-    Args:
-        text: Response text to analyze
+        z = z_scores.get(confidence, 1.96)
         
-    Returns:
-        Tuple of (sentiment_score, sentiment_category)
-    """
-    # Use the framework's sentiment analyzer to get a score
-    sentiment_score = sentiment_analyzer.analyze(text)
-    
-    # Determine sentiment category based on thresholds
-    sentiment_category = None
-    for category, threshold in SENTIMENT_THRESHOLDS.items():
-        if sentiment_score <= threshold:
-            sentiment_category = category
-            break
-    
-    return sentiment_score, sentiment_category
-
-
-def process_response(
-    probe_id: str, 
-    response_text: str, 
-    received_timestamp: float,
-    probe_metadata: Dict
-) -> Response:
-    """
-    Process a customer service response.
-    
-    Args:
-        probe_id: ID of the probe that received this response
-        response_text: Text content of the response
-        received_timestamp: Timestamp when the response was received
-        probe_metadata: Metadata from the original probe
+        # Standard error of the proportion
+        std_error = math.sqrt((value * (1 - value)) / sample_size)
         
-    Returns:
-        Response object with analysis results
-    """
-    # Calculate response time in hours
-    probe_timestamp = probe_metadata.get("timestamp", 0)
-    response_time_hours = (received_timestamp - probe_timestamp) / 3600
-    
-    # Analyze sentiment
-    sentiment_score, sentiment_category = analyze_response_text(response_text)
-    
-    # Create response object
-    response = Response(
-        probe_id=probe_id,
-        received=True,
-        timestamp=received_timestamp,
-        response_time_hours=response_time_hours,
-        sentiment_score=sentiment_score,
-        sentiment_category=sentiment_category,
-        metadata={
-            "variation": probe_metadata.get("variation"),
-            "name": probe_metadata.get("name"),
-            "processed_at": datetime.now().isoformat()
-        }
-    )
-    
-    # Important: Immediately discard the raw response text after analysis
-    # to avoid storing any PII that might be in the response
-    del response_text
-    
-    return response
-
-
-def detect_bias(responses: List[Response]) -> Dict[str, Any]:
-    """
-    Detect bias in customer service responses.
-    
-    Args:
-        responses: List of Response objects
+        # Calculate confidence interval
+        margin = z * std_error
+        lower_bound = max(0.0, value - margin)
+        upper_bound = min(1.0, value + margin)
         
-    Returns:
-        Dictionary with bias detection results
-    """
-    results = {
-        "bias_detected": False,
-        "metrics": {},
-        "statistical_significance": {}
-    }
+        return (lower_bound, upper_bound)
     
-    # Calculate response rates
-    western_rate = calculate_response_rate(responses, "western")
-    non_western_rate = calculate_response_rate(responses, "non_western")
-    rate_difference = abs(western_rate - non_western_rate)
-    
-    results["metrics"]["response_rate"] = {
-        "western": western_rate,
-        "non_western": non_western_rate,
-        "difference": rate_difference,
-        "bias_detected": rate_difference > BIAS_THRESHOLD["response_rate"]
-    }
-    
-    # Calculate response time statistics
-    western_time_stats = calculate_response_time_stats(responses, "western")
-    non_western_time_stats = calculate_response_time_stats(responses, "non_western")
-    
-    if western_time_stats["mean"] is not None and non_western_time_stats["mean"] is not None:
-        time_difference = abs(western_time_stats["mean"] - non_western_time_stats["mean"])
+    def calculate_p_value(self, group_a_value: float, group_b_value: float, 
+                         group_a_size: int, group_b_size: int) -> float:
+        """
+        Calculate p-value for difference between two proportions.
         
-        results["metrics"]["response_time"] = {
-            "western": western_time_stats,
-            "non_western": non_western_time_stats,
-            "difference": time_difference,
-            "bias_detected": time_difference > BIAS_THRESHOLD["response_time"]
-        }
-    
-    # Calculate sentiment statistics
-    western_sentiment_stats = calculate_sentiment_stats(responses, "western")
-    non_western_sentiment_stats = calculate_sentiment_stats(responses, "non_western")
-    
-    if western_sentiment_stats["mean"] is not None and non_western_sentiment_stats["mean"] is not None:
-        sentiment_difference = abs(western_sentiment_stats["mean"] - non_western_sentiment_stats["mean"])
+        Args:
+            group_a_value: Proportion for group A
+            group_b_value: Proportion for group B
+            group_a_size: Sample size for group A
+            group_b_size: Sample size for group B
+            
+        Returns:
+            p-value for the difference
+        """
+        # Simple approximation using normal distribution
+        # In a real implementation, we would use a proper statistical library
         
-        results["metrics"]["sentiment"] = {
-            "western": western_sentiment_stats,
-            "non_western": non_western_sentiment_stats,
-            "difference": sentiment_difference,
-            "bias_detected": sentiment_difference > BIAS_THRESHOLD["sentiment"]
-        }
+        if group_a_size == 0 or group_b_size == 0:
+            return 1.0
+            
+        # Pooled proportion
+        pooled = ((group_a_value * group_a_size) + (group_b_value * group_b_size)) / (group_a_size + group_b_size)
+        
+        # Standard error of the difference
+        std_error = math.sqrt(pooled * (1 - pooled) * ((1 / group_a_size) + (1 / group_b_size)))
+        
+        if std_error == 0:
+            return 1.0 if group_a_value == group_b_value else 0.0
+            
+        # Z-score
+        z = abs(group_a_value - group_b_value) / std_error
+        
+        # Approximate p-value using complementary error function
+        p_value = 2 * (1 - 0.5 * (1 + math.erf(z / math.sqrt(2))))
+        
+        return p_value
     
-    # Calculate statistical significance
-    for metric, data in results["metrics"].items():
-        if "bias_detected" in data and data["bias_detected"]:
-            # Only calculate significance if bias is detected
-            significance = calculate_statistical_significance(
-                group_a_data=[1 if r.received else 0 for r in responses if r.metadata.get("variation") == "western"],
-                group_b_data=[1 if r.received else 0 for r in responses if r.metadata.get("variation") == "non_western"],
-                confidence_level=CONFIDENCE_LEVEL
+    def compute_metrics(self, responses: List[Dict], group: str) -> ResponseMetrics:
+        """
+        Compute all metrics for a group of responses.
+        
+        Args:
+            responses: List of response dictionaries
+            group: Group identifier
+            
+        Returns:
+            ResponseMetrics object containing all metrics
+        """
+        # Filter responses by group
+        group_responses = [r for r in responses if r.get("group") == group]
+        sample_size = len(group_responses)
+        
+        if sample_size == 0:
+            return ResponseMetrics(
+                response_rate=0.0,
+                avg_response_time=-1.0,
+                sentiment_score=0.0,
+                sample_size=0,
+                confidence_interval=(0.0, 0.0)
             )
-            
-            results["statistical_significance"][metric] = significance
-            
-            # Update overall bias detection result
-            if significance["significant"]:
-                results["bias_detected"] = True
+        
+        # Calculate metrics
+        response_rate = self.calculate_response_rate(group_responses)
+        avg_response_time = self.calculate_average_response_time(group_responses)
+        sentiment_score = self.calculate_average_sentiment(group_responses)
+        
+        # Calculate confidence interval for response rate
+        confidence_interval = self.calculate_confidence_interval(response_rate, sample_size)
+        
+        return ResponseMetrics(
+            response_rate=response_rate,
+            avg_response_time=avg_response_time,
+            sentiment_score=sentiment_score,
+            sample_size=sample_size,
+            confidence_interval=confidence_interval
+        )
     
-    return results
+    def detect_bias(self, group_a_metrics: ResponseMetrics, group_b_metrics: ResponseMetrics) -> List[BiasResult]:
+        """
+        Detect bias between two groups based on their metrics.
+        
+        Args:
+            group_a_metrics: Metrics for group A
+            group_b_metrics: Metrics for group B
+            
+        Returns:
+            List of BiasResult objects for each metric
+        """
+        bias_results = []
+        
+        # Response rate bias
+        response_rate_diff = abs(group_a_metrics.response_rate - group_b_metrics.response_rate)
+        response_rate_p_value = self.calculate_p_value(
+            group_a_metrics.response_rate, 
+            group_b_metrics.response_rate,
+            group_a_metrics.sample_size,
+            group_b_metrics.sample_size
+        )
+        
+        response_rate_bias = BiasResult(
+            metric_name="response_rate",
+            group_a_value=group_a_metrics.response_rate,
+            group_b_value=group_b_metrics.response_rate,
+            difference=response_rate_diff,
+            threshold=RESPONSE_RATE_THRESHOLD,
+            is_biased=response_rate_diff > RESPONSE_RATE_THRESHOLD and response_rate_p_value < (1 - CONFIDENCE_LEVEL),
+            p_value=response_rate_p_value,
+            confidence_interval=(
+                abs(group_a_metrics.confidence_interval[0] - group_b_metrics.confidence_interval[0]),
+                abs(group_a_metrics.confidence_interval[1] - group_b_metrics.confidence_interval[1])
+            )
+        )
+        bias_results.append(response_rate_bias)
+        
+        # Response time bias (only if both groups have responses)
+        if group_a_metrics.avg_response_time > 0 and group_b_metrics.avg_response_time > 0:
+            response_time_diff = abs(group_a_metrics.avg_response_time - group_b_metrics.avg_response_time)
+            
+            # Simplified p-value calculation for response time
+            # In a real implementation, we would use a proper t-test
+            response_time_p_value = 0.05 if response_time_diff > RESPONSE_TIME_THRESHOLD else 0.5
+            
+            response_time_bias = BiasResult(
+                metric_name="response_time",
+                group_a_value=group_a_metrics.avg_response_time,
+                group_b_value=group_b_metrics.avg_response_time,
+                difference=response_time_diff,
+                threshold=RESPONSE_TIME_THRESHOLD,
+                is_biased=response_time_diff > RESPONSE_TIME_THRESHOLD,
+                p_value=response_time_p_value,
+                confidence_interval=(0.0, 0.0)  # Simplified
+            )
+            bias_results.append(response_time_bias)
+        
+        # Sentiment score bias (only if both groups have responses)
+        if group_a_metrics.sentiment_score != 0 or group_b_metrics.sentiment_score != 0:
+            sentiment_diff = abs(group_a_metrics.sentiment_score - group_b_metrics.sentiment_score)
+            
+            # Simplified p-value calculation for sentiment
+            sentiment_p_value = 0.05 if sentiment_diff > SENTIMENT_SCORE_THRESHOLD else 0.5
+            
+            sentiment_bias = BiasResult(
+                metric_name="sentiment",
+                group_a_value=group_a_metrics.sentiment_score,
+                group_b_value=group_b_metrics.sentiment_score,
+                difference=sentiment_diff,
+                threshold=SENTIMENT_SCORE_THRESHOLD,
+                is_biased=sentiment_diff > SENTIMENT_SCORE_THRESHOLD,
+                p_value=sentiment_p_value,
+                confidence_interval=(0.0, 0.0)  # Simplified
+            )
+            bias_results.append(sentiment_bias)
+        
+        return bias_results
+    
+    def analyze_responses(self, responses: List[Dict]) -> AuditResult:
+        """
+        Analyze responses and detect bias.
+        
+        Args:
+            responses: List of response dictionaries
+            
+        Returns:
+            AuditResult object containing analysis results
+        """
+        # Compute metrics for each group
+        group_a_metrics = self.compute_metrics(responses, "group_a")
+        group_b_metrics = self.compute_metrics(responses, "group_b")
+        
+        # Detect bias
+        bias_results = self.detect_bias(group_a_metrics, group_b_metrics)
+        
+        # Determine overall bias
+        overall_biased = any(result.is_biased for result in bias_results)
+        
+        # Create audit result
+        audit_result = AuditResult(
+            group_a_metrics=group_a_metrics,
+            group_b_metrics=group_b_metrics,
+            bias_results=bias_results,
+            overall_biased=overall_biased,
+            timestamp=datetime.now().isoformat(),
+            metadata={
+                "total_responses": len(responses),
+                "group_a_count": group_a_metrics.sample_size,
+                "group_b_count": group_b_metrics.sample_size
+            }
+        )
+        
+        return audit_result
 
 
-def calculate_minimum_sample_size(
-    effect_size: float = 0.15,
-    power: float = 0.8,
-    alpha: float = 0.05
-) -> int:
+def analyze_responses(responses: List[Dict]) -> AuditResult:
     """
-    Calculate the minimum sample size needed to detect the specified effect size.
+    Convenience function to analyze responses.
     
     Args:
-        effect_size: Minimum effect size to detect
-        power: Statistical power (1 - β)
-        alpha: Significance level (Type I error rate)
+        responses: List of response dictionaries
         
     Returns:
-        Minimum sample size per group
+        AuditResult object containing analysis results
     """
-    # This is a simplified calculation for a two-sample proportion test
-    z_alpha = 1.96  # z-score for alpha=0.05
-    z_beta = 0.84   # z-score for power=0.8
-    
-    # Calculate sample size per group
-    n = ((z_alpha + z_beta)**2 * 2 * 0.5 * (1 - 0.5)) / (effect_size**2)
-    
-    # Round up to the nearest integer
-    return math.ceil(n)
+    analyzer = ResponseAnalyzer()
+    return analyzer.analyze_responses(responses)

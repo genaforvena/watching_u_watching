@@ -1,182 +1,273 @@
 """
 Probe Generation Module for British Airways Customer Service Responsiveness Bias Audit
 
-This module implements functions for generating synthetic customer service inquiries
-with controlled variations in sender identity while maintaining identical content.
+This module handles the generation of synthetic customer service inquiries
+for testing potential bias in response patterns based on perceived identity.
 """
 
 import uuid
-import time
 import random
+import time
+from datetime import datetime
 from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass
-
-# Assuming these are provided by the framework
-from core.utils import fake_data_helper
-from core.ethics import ethical_review_hook
-from core.decorators import rate_limiter
+from functools import wraps
 
 from .constants import (
-    INQUIRY_TEMPLATE,
-    VARIATIONS,
-    MAX_REQUESTS_PER_DAY,
-    REQUEST_INTERVAL_SECONDS
+    INQUIRY_TEMPLATES,
+    IDENTITY_GROUPS,
+    EMAIL_TEMPLATE,
+    PLACEHOLDER_VALUES,
+    InquiryType,
+    MAX_INQUIRIES_PER_DAY,
+    RATE_LIMIT_PERIOD
 )
 
 
-@dataclass
-class Probe:
-    """
-    Represents a single customer service inquiry probe.
-    """
-    probe_id: str
-    variation: str  # "western" or "non_western"
-    name: str
-    content: str
-    timestamp: float
-    metadata: Dict
+class ProbeGenerationError(Exception):
+    """Exception raised for errors in probe generation."""
+    pass
 
 
-def ethical_review_variations(variations: Dict) -> bool:
+def rate_limiter(requests: int, period: int):
     """
-    Ethical review hook for validating identity variations.
+    Decorator to limit the rate of function calls.
     
     Args:
-        variations: Dictionary of variation groups
+        requests: Maximum number of requests allowed in the period
+        period: Time period in seconds
+    """
+    def decorator(func):
+        # Store the timestamps of function calls
+        timestamps = []
+        
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            current_time = time.time()
+            
+            # Remove timestamps older than the period
+            while timestamps and current_time - timestamps[0] > period:
+                timestamps.pop(0)
+            
+            # Check if we've exceeded the rate limit
+            if len(timestamps) >= requests:
+                wait_time = period - (current_time - timestamps[0])
+                if wait_time > 0:
+                    time.sleep(wait_time)
+                    # Update current time after waiting
+                    current_time = time.time()
+                    # Remove timestamps older than the period again
+                    while timestamps and current_time - timestamps[0] > period:
+                        timestamps.pop(0)
+            
+            # Add current timestamp
+            timestamps.append(current_time)
+            
+            # Call the original function
+            return func(*args, **kwargs)
+        
+        return wrapper
+    
+    return decorator
+
+
+def ethical_review_hook(variations: Dict) -> bool:
+    """
+    Validate that probe variations meet ethical standards.
+    
+    Args:
+        variations: Dictionary of probe variations to validate
         
     Returns:
-        True if variations pass ethical review, False otherwise
+        bool: True if variations pass ethical review, False otherwise
         
     Raises:
-        ValueError: If variations fail ethical review
+        ValueError: If variations contain potential ethical issues
     """
-    # Check that we have exactly two variation groups
-    if len(variations) != 2:
-        raise ValueError("Exactly two variation groups are required for paired testing")
-    
-    # Check that all variations use synthetic identities
+    # Check for real PII
     for group, data in variations.items():
-        if not all(fake_data_helper.is_synthetic_name(name) for name in data.get("examples", [])):
-            raise ValueError(f"Group '{group}' contains non-synthetic names")
+        for email in data.get("emails", []):
+            if not email.endswith("@example.com"):
+                raise ValueError(f"Potential real email detected: {email}")
     
-    # Validate that the variation groups are balanced
-    group_sizes = [len(data.get("examples", [])) for data in variations.values()]
-    if len(set(group_sizes)) > 1:
-        raise ValueError("Variation groups must have the same number of examples")
+    # Check for appropriate inquiry content
+    for group, data in variations.items():
+        for name in data.get("names", []):
+            if len(name.split()) < 2:
+                raise ValueError(f"Invalid name format: {name}")
     
+    # All checks passed
     return True
 
 
-@rate_limiter(requests=MAX_REQUESTS_PER_DAY, period=86400)  # 86400 seconds = 24 hours
-def generate_probe(variation: str) -> Optional[Probe]:
+class ProbeGenerator:
     """
-    Generate a single customer service inquiry probe.
+    Generates synthetic customer service inquiries for bias testing.
+    """
     
-    Args:
-        variation: The variation group to use ("western" or "non_western")
+    def __init__(self, seed: Optional[int] = None):
+        """
+        Initialize the probe generator.
         
-    Returns:
-        Probe object or None if generation fails
-    """
-    if variation not in VARIATIONS:
-        raise ValueError(f"Unknown variation: {variation}")
+        Args:
+            seed: Random seed for reproducibility
+        """
+        self.seed = seed
+        if seed is not None:
+            random.seed(seed)
+        
+        # Validate identity groups
+        for group, data in IDENTITY_GROUPS.items():
+            if len(data.get("names", [])) != len(data.get("emails", [])):
+                raise ValueError(f"Names and emails must have the same length for group {group}")
     
-    # Get a synthetic name from the specified variation group
-    examples = VARIATIONS[variation]["examples"]
-    name = fake_data_helper.generate_name(
-        gender=None,  # Random gender
-        ethnicity=variation,
-        examples=examples
-    )
+    def _generate_inquiry_details(self, inquiry_type: InquiryType) -> Tuple[str, str]:
+        """
+        Generate inquiry details for a specific type.
+        
+        Args:
+            inquiry_type: Type of inquiry to generate
+            
+        Returns:
+            Tuple containing subject and details
+        """
+        template = INQUIRY_TEMPLATES.get(inquiry_type)
+        if not template:
+            raise ProbeGenerationError(f"No template found for inquiry type: {inquiry_type}")
+        
+        subject = template["subject"]
+        details = template["details"]
+        
+        # Replace placeholders with random values
+        for placeholder, values in PLACEHOLDER_VALUES.items():
+            if placeholder in details:
+                details = details.replace(f"[{placeholder}]", random.choice(values))
+        
+        return subject, details
     
-    # Format the inquiry template with the name
-    content = INQUIRY_TEMPLATE.format(name=name)
+    def _select_identity(self, group: str) -> Tuple[str, str]:
+        """
+        Select a random identity from the specified group.
+        
+        Args:
+            group: Identity group to select from
+            
+        Returns:
+            Tuple containing name and email
+        """
+        if group not in IDENTITY_GROUPS:
+            raise ProbeGenerationError(f"Unknown identity group: {group}")
+        
+        group_data = IDENTITY_GROUPS[group]
+        index = random.randrange(len(group_data["names"]))
+        
+        return group_data["names"][index], group_data["emails"][index]
     
-    # Create and return the probe
-    return Probe(
-        probe_id=str(uuid.uuid4()),
-        variation=variation,
-        name=name,
-        content=content,
-        timestamp=time.time(),
-        metadata={
-            "variation_group": variation,
-            "variation_description": VARIATIONS[variation]["description"],
-            "synthetic_identity": True,
-            "template_used": "standard_inquiry"
+    @rate_limiter(requests=MAX_INQUIRIES_PER_DAY, period=RATE_LIMIT_PERIOD)
+    def generate_probe(self, group: str, inquiry_type: Optional[InquiryType] = None) -> Dict:
+        """
+        Generate a single probe for the specified group.
+        
+        Args:
+            group: Identity group to use
+            inquiry_type: Type of inquiry to generate (random if None)
+            
+        Returns:
+            Dictionary containing probe data
+        """
+        # Select random inquiry type if not specified
+        if inquiry_type is None:
+            inquiry_type = random.choice(list(InquiryType))
+        
+        # Generate inquiry details
+        subject, details = self._generate_inquiry_details(inquiry_type)
+        
+        # Select identity
+        name, email = self._select_identity(group)
+        
+        # Generate email content
+        email_content = EMAIL_TEMPLATE.format(
+            subject=subject,
+            inquiry_type=inquiry_type.value,
+            inquiry_details=details,
+            name=name
+        )
+        
+        # Create probe
+        probe = {
+            "id": str(uuid.uuid4()),
+            "group": group,
+            "name": name,
+            "email": email,
+            "inquiry_type": inquiry_type.value,
+            "subject": subject,
+            "content": email_content,
+            "timestamp": datetime.now().isoformat(),
+            "metadata": {
+                "seed": self.seed,
+                "synthetic": True
+            }
         }
-    )
+        
+        return probe
+    
+    def generate_probe_pair(self, inquiry_type: Optional[InquiryType] = None) -> Tuple[Dict, Dict]:
+        """
+        Generate a pair of probes, one from each identity group.
+        
+        Args:
+            inquiry_type: Type of inquiry to generate (random if None)
+            
+        Returns:
+            Tuple containing two probe dictionaries
+        """
+        # Use the same inquiry type for both probes
+        if inquiry_type is None:
+            inquiry_type = random.choice(list(InquiryType))
+        
+        # Generate probes
+        probe_a = self.generate_probe("group_a", inquiry_type)
+        probe_b = self.generate_probe("group_b", inquiry_type)
+        
+        return probe_a, probe_b
+    
+    def generate_probe_batch(self, count: int) -> List[Dict]:
+        """
+        Generate a batch of probes with equal distribution across groups.
+        
+        Args:
+            count: Total number of probes to generate
+            
+        Returns:
+            List of probe dictionaries
+        """
+        if count % 2 != 0:
+            raise ValueError("Probe count must be even to ensure equal distribution")
+        
+        probes = []
+        pairs_count = count // 2
+        
+        # Generate probe pairs
+        for _ in range(pairs_count):
+            probe_a, probe_b = self.generate_probe_pair()
+            probes.extend([probe_a, probe_b])
+        
+        return probes
 
 
-def generate_probe_pair() -> Tuple[Probe, Probe]:
+def generate_probes(count: int, seed: Optional[int] = None) -> List[Dict]:
     """
-    Generate a pair of probes, one from each variation group.
-    
-    Returns:
-        Tuple of two Probe objects, one from each variation group
-    """
-    western_probe = generate_probe("western")
-    
-    # Add a small delay between requests to avoid rate limiting
-    time.sleep(random.uniform(1, 3))
-    
-    non_western_probe = generate_probe("non_western")
-    
-    return western_probe, non_western_probe
-
-
-@rate_limiter(requests=MAX_REQUESTS_PER_DAY, period=86400)  # 86400 seconds = 24 hours
-def generate_probe_batch(batch_size: int = 10) -> List[Tuple[Probe, Probe]]:
-    """
-    Generate a batch of probe pairs.
+    Convenience function to generate probes.
     
     Args:
-        batch_size: Number of probe pairs to generate
+        count: Number of probes to generate
+        seed: Random seed for reproducibility
         
     Returns:
-        List of probe pairs
+        List of probe dictionaries
     """
-    # First, perform ethical review of the variations
-    ethical_review_hook(VARIATIONS)
+    # Validate that variations meet ethical standards
+    ethical_review_hook(IDENTITY_GROUPS)
     
-    probe_pairs = []
-    for _ in range(batch_size):
-        try:
-            pair = generate_probe_pair()
-            probe_pairs.append(pair)
-            
-            # Add delay between pairs to respect rate limiting
-            time.sleep(REQUEST_INTERVAL_SECONDS / batch_size)
-            
-        except Exception as e:
-            print(f"Error generating probe pair: {e}")
-            continue
-    
-    return probe_pairs
-
-
-def validate_probe_content(probe: Probe) -> bool:
-    """
-    Validate that a probe's content meets requirements.
-    
-    Args:
-        probe: Probe to validate
-        
-    Returns:
-        True if probe is valid, False otherwise
-    """
-    # Check that the probe has all required fields
-    required_fields = ["probe_id", "variation", "name", "content", "timestamp"]
-    for field in required_fields:
-        if not hasattr(probe, field) or getattr(probe, field) is None:
-            return False
-    
-    # Check that the content includes the name
-    if probe.name not in probe.content:
-        return False
-    
-    # Check that the content is not too short or too long
-    if len(probe.content) < 100 or len(probe.content) > 1000:
-        return False
-    
-    return True
+    # Create generator and generate probes
+    generator = ProbeGenerator(seed)
+    return generator.generate_probe_batch(count)
