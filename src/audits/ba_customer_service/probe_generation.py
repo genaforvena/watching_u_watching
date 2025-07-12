@@ -103,7 +103,18 @@ def _generate_probe_pair() -> List[Dict]:
     inquiry_content = _generate_inquiry_content()
     
     # Generate a probe for each variation, filtering out None values
+# Generate common inquiry content for the pair
+    inquiry_content = _generate_inquiry_content()
+    
+    # Generate a probe for each variation, filtering out None values
     return [
+        probe for probe in
+        (_create_probe(variation_key, variation, inquiry_content)
+         for variation_key, variation in VARIATIONS.items())
+        if probe is not None
+    ]
+
+@rate_limiter(requests=5, period=86400)  # 5 requests per day (86400 seconds)
         probe for variation_key, variation in VARIATIONS.items()
         for probe in [_create_probe(variation_key, variation, inquiry_content)]
         if probe is not None
