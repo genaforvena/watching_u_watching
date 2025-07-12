@@ -1,0 +1,82 @@
+name: Nightly Dual Bias Audit
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      probe_count:
+        description: 'Number of probe pairs per study'
+        required: false
+        default: '50'
+        type: string
+      skip_publication:
+        description: 'Skip publication to Hacker News'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  run_audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r implementations/dual_bias_audit/requirements.txt
+    
+    - name: Run dual bias audit
+      env:
+        LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+        LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        HN_API_KEY: ${{ secrets.HN_API_KEY }}
+      run: |
+        cd implementations/dual_bias_audit
+        
+        # Set probe count from input or default
+        PROBE_COUNT="${{ github.event.inputs.probe_count || '50' }}"
+        
+        # Set skip publication flag
+        if [[ "${{ github.event.inputs.skip_publication }}" == "true" ]]; then
+          SKIP_PUB="--skip-publication"
+        else
+          SKIP_PUB=""
+        fi
+        
+        # Run the audit
+        python src/main.py \
+          --endpoint "$LLM_ENDPOINT" \
+          --api-key "$LLM_API_KEY" \
+          --probe-count "$PROBE_COUNT" \
+          $SKIP_PUB \
+          --hn-api-key "$HN_API_KEY" \
+          --output-dir "./results"
+    
+    - name: Upload results
+      uses: actions/upload-artifact@v3
+      with:
+        name: audit-results
+        path: implementations/dual_bias_audit/results/
+    
+    - name: Update experiment progress
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        
+        # Copy experiment progress to main directory if it exists
+        if [ -f "implementations/dual_bias_audit/experiment_progress.json" ]; then
+          cp implementations/dual_bias_audit/experiment_progress.json ./experiment_progress.json
+          git add experiment_progress.json
+          git commit -m "Update experiment progress [skip ci]"
+          git push
+        fi
