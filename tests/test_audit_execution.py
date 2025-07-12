@@ -51,8 +51,8 @@ class TestBACustomerServiceAuditExecution(unittest.TestCase):
             {'id': 'ba-majority-2', 'variation': 'majority', 'timestamp': datetime.now().isoformat()},
             {'id': 'ba-minority-2', 'variation': 'minority', 'timestamp': datetime.now().isoformat()},
         ]
-        with patch.object(self.audit, 'generate_probes', return_value=probes_to_return) as mock_generate, \
-             patch.object(self.audit, '_simulate_response_collection') as mock_simulate:
+        with patch('audits.ba_customer_service.audit.generate_probes', return_value=probes_to_return) as mock_generate, \
+             patch('audits.ba_customer_service.audit._simulate_response_collection') as mock_simulate:
 
             # Define simulated responses for the probes
             # Simulate 1 response for majority (2 hours, positive sentiment)

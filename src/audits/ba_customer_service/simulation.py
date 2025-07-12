@@ -19,18 +19,25 @@ def _simulate_response_collection(probes: List[Dict]) -> List[Tuple[Optional[Dic
     """
     logging.info("Simulating response collection...")
     simulated_results = []
-    # TODO: The random seed is fixed for reproducibility in testing.
-    # In a real simulation or production environment, use a more robust source of randomness.
-    random.seed(42) # Fixed seed for reproducibility
+    # Use a more robust source of randomness or allow seed to be passed as a parameter
+    random_seed = random.randint(1, 1000000)  # Generate a random seed
+    random.seed(random_seed)
+    logging.info(f"Using random seed: {random_seed}")
     for probe in probes:
         # Simulate a response or no response
         if random.random() < 0.8:  # 80% response rate simulation
             # Simulate a response with a timestamp and some text
-            response_time_hours = random.uniform(1, 72) # Simulate response within 1 to 72 hours
-            response_timestamp = (datetime.fromisoformat(probe['timestamp']) + timedelta(hours=response_time_hours)).isoformat()
+            response_time_hours = random.uniform(1, 72)  # Simulate response within 1 to 72 hours
+            try:
+                response_timestamp = (
+                    datetime.fromisoformat(probe['timestamp']) + timedelta(hours=response_time_hours)
+                ).isoformat()
+            except ValueError:
+                logging.error(f"Invalid timestamp format in probe: {probe['timestamp']}")
+                continue
             simulated_response = {
                 'timestamp': response_timestamp,
-                'text': 'This is a simulated response.' # Placeholder text
+                'text': 'This is a simulated response.'  # Placeholder text
             }
             simulated_results.append((simulated_response, probe))
         else:

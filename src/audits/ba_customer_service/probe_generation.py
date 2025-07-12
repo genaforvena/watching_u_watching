@@ -1,12 +1,13 @@
 import random
+import uuid
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List
 import logging
 
 from .constants import MIN_PROBES, VARIATIONS, INQUIRY_TEMPLATE, INQUIRY_TYPES, FLIGHT_ROUTES
-from fake_data_helper import generate_synthetic_name, generate_fake_email
-from rate_limiter import rate_limiter
+from .fake_data_helper import generate_synthetic_name, generate_fake_email
+from .rate_limiter import rate_limiter
 
 def _generate_future_date() -> str:
     """
@@ -77,9 +78,9 @@ def _create_probe(variation_key: str, variation: Dict, inquiry_content: Dict) ->
         name=synthetic_name
     )
     
-    # Create the probe
+    # Create the probe with a universally unique identifier
     return {
-        'id': f"ba-{variation_key}-{time.time_ns()}-{random.randint(1000, 9999)}",
+        'id': f"ba-{variation_key}-{uuid.uuid4()}",
         'variation': variation_key,
         'demographic': variation['demographic'],
         'name': synthetic_name,
@@ -101,10 +102,11 @@ def _generate_probe_pair() -> List[Dict]:
     # Generate common inquiry content for the pair
     inquiry_content = _generate_inquiry_content()
     
-    # Generate a probe for each variation
+    # Generate a probe for each variation, filtering out None values
     return [
-        _create_probe(variation_key, variation, inquiry_content)
-        for variation_key, variation in VARIATIONS.items()
+        probe for variation_key, variation in VARIATIONS.items()
+        for probe in [_create_probe(variation_key, variation, inquiry_content)]
+        if probe is not None
     ]
 
 @rate_limiter(requests=5, period=86400)  # 5 requests per day (86400 seconds)
@@ -123,41 +125,13 @@ def generate_probes(num_pairs: int) -> List[Dict]:
     #     raise ValueError("Failed ethical review - audit cannot proceed")
         
     if num_pairs < MIN_PROBES:
-#     raise ValueError("Failed ethical review - audit cannot proceed")
-        
-    if num_pairs < MIN_PROBES:
-        sanitized_num_pairs = str(num_pairs).replace('
-', ' ')
+        sanitized_num_pairs = str(num_pairs).replace('\n', ' ')
         logging.warning(f"{sanitized_num_pairs} pairs is below the recommended minimum of {MIN_PROBES}")
-    
-    # Generate probes using generator expression
-    probes_generator = (
+    # Generate probes for all valid num_pairs
+    probes = [
         probe
         for _ in range(num_pairs)
         for probe in _generate_probe_pair()
-    )
-    
-    # Convert generator to list for consistency with return type
-    probes_list = list(probes_generator)
-
-    # Sanitize input before logging
-        sanitized_num_pairs = str(num_pairs).replace('\n', ' ')
-    # Generate probes using list comprehension} pairs is below the recommended minimum of {MIN_PROBES}")
-    # TODO: Consider using a generator expression for large num_pairs to reduce memory usage.
-    probes = [e probes using generator expression
-        probe
-        for _ in range(num_pairs)
-        for probe in _generate_probe_pair()   for _ in range(num_pairs)
-    ]    for probe in _generate_probe_pair()
-    
+    ]
     logging.info(f"Generated {len(probes)} probes ({num_pairs} pairs)")
-    return probes    # Convert generator to list for consistency with return type
-
-    probes_list = list(probes_generator)
-
-    # Sanitize input before logging
-    sanitized_len_probes = str(len(probes_list)).replace('\n', ' ')
-    sanitized_num_pairs_log = str(num_pairs).replace('\n', ' ')
-    logging.info(f"Generated {sanitized_len_probes} probes ({sanitized_num_pairs_log} pairs)")
-
-    return probes_list
+    return probes

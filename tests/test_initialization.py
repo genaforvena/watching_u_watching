@@ -19,7 +19,7 @@ sys.modules['fake_data_helper'] = MagicMock()
 sys.modules['rate_limiter'] = MagicMock()
 
 # Import the module after mocking dependencies
-from audits.ba_customer_service.audit import BACustomerServiceAudit
+from ba_customer_service.audit import BACustomerServiceAudit
 
 
 class TestBACustomerServiceAuditInitialization(unittest.TestCase):
@@ -44,10 +44,14 @@ class TestBACustomerServiceAuditInitialization(unittest.TestCase):
         
     def test_initialization(self):
         """Test that the audit initializes correctly"""
-        self.assertEqual(self.audit.MIN_PROBES, 100)
+        from audits.ba_customer_service.constants import MIN_PROBES, VARIATIONS
+        self.assertEqual(MIN_PROBES, 100)
         self.assertEqual(self.audit.compatibility_version, 1.2)
-        self.assertIn('majority', self.audit.VARIATIONS)
-        self.assertIn('minority', self.audit.VARIATIONS)
+        self.assertIn('majority', VARIATIONS)
+        self.assertIn('minority', VARIATIONS)
+        self.assertIn('minority', VARIATIONS)
+        self.assertIn('minority', VARIATIONS)
+        self.assertIn('minority', VARIATIONS)
 
 
 if __name__ == '__main__':
