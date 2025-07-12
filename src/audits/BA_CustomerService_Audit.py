@@ -403,7 +403,37 @@ Sincerely,
             Dictionary with audit results
         """
         # Generate probes
-        probes = self.generate_probes(num_pairs)
+Returns:
+            Dictionary with audit results
+        """
+        try:
+            # Generate probes
+            probes = self.generate_probes(num_pairs)
+            
+            # In a real implementation, this would send the probes and collect responses
+            # For this example, we'll simulate the process
+            
+            # Reset results
+            self.results = {
+                'majority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0},
+                'minority': {'responses': 0, 'response_times': [], 'sentiment_scores': [], 'non_responses': 0}
+            }
+            
+            # Calculate metrics
+            metrics = self.calculate_metrics()
+            
+            return {
+                'probes_sent': len(probes),
+                'metrics': metrics,
+                'timestamp': datetime.now().isoformat()
+            }
+        except Exception as e:
+            # Log the error and return an error response
+            print(f"Error during audit: {str(e)}")
+            return {
+                'error': 'An error occurred during the audit process',
+                'timestamp': datetime.now().isoformat()
+            }
         
         # In a real implementation, this would send the probes and collect responses
         # For this example, we'll simulate the process
