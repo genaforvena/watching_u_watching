@@ -144,7 +144,13 @@ Returns:
             total_probes = data['responses'] + data.get('non_responses', 0)
 
             if total_probes > 0:
+if total_probes > 0:
                 metrics['response_rates'][variation] = data['responses'] / total_probes
+            else:
+                metrics['response_rates'][variation] = 0.0  # Set to 0.0 when total_probes is 0
+
+            if data['response_times']:
+                # Ensure statistics module is imported if needed, or use a manual calculation
             else:
                 metrics['response_rates'][variation] = 0
 
