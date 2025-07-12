@@ -1,13 +1,11 @@
-# Zero-Cost LLM Bias Probe: Gemini 2.0 Flash
+# Zero-cost LLM Bias Probe: Perfect English vs. L2-English × Anglo vs. Non-Anglo Names
 
-This repository contains an experimental setup designed to systematically investigate and quantify linguistic racism and name discrimination in Google's Gemini 2.0 Flash model. The project tests whether the model exhibits bias based on English language quality (perfect vs. L2-English) and name origin (Anglo vs. non-Anglo names).
+This repository contains an experimental setup designed to systematically investigate and quantify linguistic bias and name discrimination in Google's Gemini 2.0 Flash LLM. The project tests whether the model exhibits differential treatment based on English language proficiency and name ethnicity.
 
 ## Project Goal
 
-The core objective is to develop empirical evidence of two types of bias in large language models:
-
-1. **Linguistic racism**: Testing whether identical prompts written in perfect English vs. realistic L2-English receive different treatment (lower sentiment scores, shorter replies) for L2 versions.
-
+The core objective is to develop empirical evidence of two types of bias:
+1. **Linguistic racism**: Testing whether identical prompts written in perfect English vs. realistic L2-English receive lower sentiment scores and shorter replies for L2 versions.
 2. **Name discrimination**: Testing whether prompts signed with non-Anglo names receive worse treatment than identical prompts signed with Anglo names.
 
 This aligns with the `watching_u_watching` methodology of paired-testing for systematic bias detection.
@@ -18,22 +16,24 @@ The experiment employs a controlled paired-testing methodology following the est
 
 ### Controlled Probe Generation
 
-- Generates 200 probe pairs (4 names × 2 English levels × 25 unique prompt seeds)
-- Utilizes systematic L2-English error injection while preserving semantic meaning
+- Generates 200 probe pairs (25 unique prompt seeds × 4 names × 2 English levels)
+- Uses systematic error injection to create realistic L2-English variants while preserving meaning
 - Includes comprehensive validation to ensure semantic preservation across all variants
 - Tracks error metadata and injection patterns for traceability
 
-### Variables
+### Variable Matrix
 
-- **English quality**: `perfect`, `L2` (e.g., "I need to reschedule my flight." vs. "I need reschedule my flight.")
-- **Sender name**: `Emma Johnson`, `Aisha Rahman`, `Liam Murphy`, `Mohamed Hassan` (appended as signature "—Name")
+| Variable | Levels | Example |
+|---|---|---|
+| English quality | `perfect`, `L2` | "I need to reschedule my flight." vs. "I need reschedule my flight." |
+| Sender name | `Emma Johnson`, `Aisha Rahman`, `Liam Murphy`, `Mohamed Hassan` | appended as signature `—Name` |
 
 ### Statistical Analysis
 
-- Extracts multiple metrics from responses: length, sentiment score, refusal flag, latency
-- Performs statistical significance testing with effect size calculations
+- Feeds the response data into comprehensive statistical analysis
+- Applies multiple outcome metrics: response length, sentiment scores, refusal rates, latency
+- Performs independent statistical significance testing with effect size calculations
 - Generates detailed bias reports with practical significance assessments
-- Creates visualizations (raincloud plots, heatmaps) for gallery display
 
 ## Repository Structure
 
@@ -44,26 +44,21 @@ The experiment employs a controlled paired-testing methodology following the est
 ├── src/
 │   ├── config.json
 │   ├── probe_generator.py
-│   ├── bias_analyzer.py
 │   ├── run_audit.py
 │   └── analyze.py
-├── tests/
-│   ├── test_probe_generator.py
-│   ├── test_bias_analyzer.py
-│   └── test_gemini_linguistic_bias.py
-└── figures/
-    └── [generated visualizations]
+└── tests/
+    ├── test_probe_generator.py
+    ├── test_run_audit.py
+    └── test_analyze.py
 ```
 
 - **README.md**: This file
 - **requirements.txt**: Python dependencies including statistical analysis libraries
 - **src/config.json**: Configuration file for evaluation pipeline parameters
-- **src/probe_generator.py**: Generates probe pairs with perfect/L2-English and different name signatures
-- **src/bias_analyzer.py**: Statistical analysis using multiple metrics and significance testing
-- **src/run_audit.py**: Main script that orchestrates the entire audit process
-- **src/analyze.py**: Analysis and visualization of results
+- **src/probe_generator.py**: Generates probe pairs with perfect/L2 English and different names
+- **src/run_audit.py**: Main script that orchestrates the entire pipeline and calls the Gemini API
+- **src/analyze.py**: Statistical analysis using multiple metrics and significance testing
 - **tests/**: Comprehensive test suite covering all components
-- **figures/**: Generated visualizations for gallery display
 
 ## Setup
 
@@ -87,25 +82,63 @@ The experiment employs a controlled paired-testing methodology following the est
    pip install -r requirements.txt
    ```
 
+4. Set up your Gemini API key:
+
+   ```bash
+   export GEMINI_API_KEY=your_api_key_here
+   ```
+
 ## Usage
 
-To run the full audit, execute the `run_audit.py` script:
+To run the full evaluation pipeline, execute the `run_audit.py` script:
 
 ```bash
-python src/run_audit.py --probe-count 200 --max-calls 200
+python src/run_audit.py --prompt-count 25 --max-calls 200
 ```
 
 **Key Parameters**:
-- `--probe-count`: Number of probe pairs to generate (default: 200)
+- `--prompt-count`: Number of unique prompt seeds to generate (default: 25)
 - `--max-calls`: Maximum number of API calls to make (default: 200)
 - `--output-dir`: Directory for results (default: results/)
-- `--rate-limit`: Maximum requests per minute (default: 60)
+- `--rate-limit`: Maximum queries per minute (default: 60)
 
-To analyze results and generate visualizations:
+## How It Works
 
-```bash
-python src/analyze.py --input-file results/gemini_bias_YYYYMMDD.parquet --output-dir figures/
-```
+The pipeline consists of several key steps following the `watching_u_watching` methodology:
+
+1. **Probe Pair Generation (`probe_generator.py`)**:
+   - Creates semantically equivalent perfect English and L2-English probe pairs
+   - Appends different names to create the full test matrix
+   - Validates semantic preservation across all variants
+
+2. **Response Collection (`run_audit.py`)**:
+   - Submits probe pairs to Gemini 2.0 Flash API with rate limiting and error handling
+   - Extracts comprehensive response metrics including length, sentiment, latency
+   - Stores results in parquet format for analysis
+
+3. **Statistical Analysis (`analyze.py`)**:
+   - Computes various disparity metrics using statistical tests
+   - Performs statistical significance testing with effect size calculations
+   - Generates comprehensive bias reports with practical significance assessments
+   - Creates visualizations including raincloud plots and heatmaps
+
+## Expected Output and Analysis
+
+Upon running the evaluation pipeline, you will see:
+
+- **Console Output**: Real-time progress with timestamps showing probe generation, response collection, and analysis steps
+- **Log Files**: Detailed logging saved to `audit.log` with comprehensive error tracking
+- **Results Files**: Parquet format data files with complete probe pair and response data
+- **Statistical Results**: Comprehensive bias analysis with p-values, effect sizes, and significance assessments
+- **Visualizations**: Raincloud plots and heatmaps showing the differences in treatment
+
+### Key Features
+
+- **Zero Cost**: Uses Gemini 2.0 Flash free tier (1,500 requests/day)
+- **Ethical & Legal**: 100% synthetic data, within rate limits, no storage of raw model replies
+- **Comprehensive Testing**: Unit tests covering all components with edge case handling
+- **Robust Error Handling**: Graceful failure handling with detailed error logging and recovery
+- **Data Persistence**: Efficient Parquet format for data storage and analysis reproducibility
 
 ## Ethical & Legal Safeguards
 
@@ -115,44 +148,18 @@ python src/analyze.py --input-file results/gemini_bias_YYYYMMDD.parquet --output
 - ✅ **Public pre-analysis plan** – this issue serves as pre-registration.  
 - ✅ **Kill-switch** – `ctrl-c` or `--max_calls 200` hard cap.
 
-## Expected Output and Analysis
-
-Upon running the audit, you will see:
-
-- **Console Output**: Real-time progress with timestamps showing probe generation, response collection, and analysis steps
-- **Log Files**: Detailed logging saved to `audit.log` with comprehensive error tracking
-- **Results Files**: Parquet format data files with complete probe pair and response data
-- **Statistical Results**: Comprehensive bias analysis with p-values, effect sizes, and significance assessments
-- **Visualizations**: Raincloud plots and heatmaps showing bias patterns
-
-The analysis output provides critical insights such as:
-
-- Do statistically significant differences exist between responses to perfect vs. L2-English prompts?
-- Is there evidence of name discrimination based on Anglo vs. non-Anglo names?
-- How do these biases interact (e.g., are non-Anglo names with L2-English treated worse than other combinations)?
-- What are the practical implications of any detected biases?
-
-## Performance Notes
-
-- **Probe Generation**: Efficient template-based generation with semantic validation
-- **Response Collection**: Configurable rate limiting with comprehensive error handling  
-- **Statistical Analysis**: Robust statistical methods with proper handling of edge cases
-- **Data Storage**: Efficient Parquet format for large-scale data persistence and analysis
-- **Example Run (200 probe pairs)**: Typically completes in 4-5 minutes depending on API response times
-
 ## Exhibition Preparation Guide
 
 - Run the full experiment and generate all artifacts with:
 
 ```bash
-python src/run_audit.py --probe-count 200 --output-dir ./gallery_assets
+python src/run_audit.py --prompt-count 25 --max-calls 200 --output-dir ./gallery_assets
 ```
 
 - Outputs include:
-    - Statistical analysis tables
+    - Statistical results (t-tests, Cohen's d)
     - Raincloud plots, heatmaps
     - Anonymous dataset for gallery display
-    - Interactive installation assets in `gallery_assets/`
 
 ## Resume Interrupted Experiments
 
@@ -161,3 +168,5 @@ If an experiment run is interrupted, you can resume from the last checkpoint usi
 ```bash
 python src/run_audit.py --resume --progress-file progress.json
 ```
+
+You can also specify a custom progress file with `--progress-file`.

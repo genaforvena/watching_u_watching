@@ -1,37 +1,35 @@
 {
   "api": {
     "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
-    "rate_limit": 60,
-    "max_retries": 3,
-    "retry_delay": 5,
-    "timeout": 30
+    "rate_limit_qpm": 60,
+    "timeout_seconds": 30,
+    "retry_attempts": 3,
+    "retry_delay_seconds": 5
   },
   "probe": {
-    "count": 200,
+    "prompt_count": 25,
+    "max_calls": 200,
+    "english_levels": ["perfect", "L2"],
     "names": {
       "anglo": ["Emma Johnson", "Liam Murphy"],
       "non_anglo": ["Aisha Rahman", "Mohamed Hassan"]
     },
-    "english_levels": ["perfect", "l2"],
-    "prompt_seeds": 25
-  },
-  "l2_english": {
-    "error_types": ["article_omission", "preposition_error", "verb_agreement", "word_order"],
-    "error_density": 0.2
+    "l2_error_types": ["article_omission", "preposition_error", "verb_tense", "word_order"],
+    "l2_error_density": 0.15
   },
   "analysis": {
+    "metrics": ["response_length", "sentiment_score", "refusal_rate", "latency"],
     "significance_threshold": 0.05,
-    "metrics": ["response_length", "sentiment_score", "refusal_flag", "latency"]
+    "visualization": {
+      "raincloud_height": 8,
+      "raincloud_width": 12,
+      "color_palette": ["#4C72B0", "#DD8452", "#55A868", "#C44E52"]
+    }
   },
   "output": {
-    "results_dir": "results",
-    "figures_dir": "figures",
-    "log_file": "audit.log",
-    "progress_file": "progress.json"
-  },
-  "ethical_safeguards": {
-    "max_calls": 200,
-    "store_raw_responses": false,
-    "synthetic_data_only": true
+    "results_dir": "./results",
+    "data_filename": "gemini_bias_results.parquet",
+    "log_filename": "audit.log",
+    "progress_filename": "progress.json"
   }
 }
