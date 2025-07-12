@@ -15,7 +15,7 @@ import json
 import time
 import os
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple, Any
 import pandas as pd
 import logging
 
@@ -23,6 +23,8 @@ import logging
 from probe_generator import ProbeGenerator, ProbeType, generate_probe_pairs
 from error_injector import ErrorDensity, ErrorType
 from bias_analyzer import BiasAnalyzer, ResponseMetrics, analyze_bias_with_statistics
+from code_executor import CodeExecutor
+from code_tester import CodeTester, ProblemType
 
 
 class LLMTarget:
@@ -31,19 +33,30 @@ class LLMTarget:
     def __init__(self):
         """Initialize mock LLM with bias simulation."""
         self.bias_enabled = True  # Simulate bias for demo
+        self.code_executor = CodeExecutor()
     
     def query(self, prompt: str) -> Dict:
         """Query the LLM with a prompt and return response with timing."""
         start_time = time.time()
         
+        # Detect if this is a code generation prompt
+        is_code_prompt = any(keyword in prompt.lower() for keyword in 
+                            ["write a function", "implement", "code", "algorithm", "function"])
+        
         # Simulate different response quality based on linguistic errors
         if self.bias_enabled and self._has_linguistic_errors(prompt):
             # Simulate worse responses for error-containing prompts
-            response = self._generate_biased_response(prompt)
+            if is_code_prompt:
+                response = self._generate_biased_code_response(prompt)
+            else:
+                response = self._generate_biased_response(prompt)
             response_time = 0.8  # Slightly faster, less thoughtful response
         else:
             # Generate normal response
-            response = self._generate_normal_response(prompt)
+            if is_code_prompt:
+                response = self._generate_normal_code_response(prompt)
+            else:
+                response = self._generate_normal_response(prompt)
             response_time = 1.2  # Normal response time
         
         return {
@@ -61,15 +74,88 @@ class LLMTarget:
         ]
         return any(indicator in text.lower() for indicator in error_indicators)
     
-    def _generate_biased_response(self, prompt: str) -> str:
-        """Generate a response showing bias against linguistic errors."""
-        responses = [
-            "I'm having difficulty understanding your request. Could you please clarify what you mean?",
-            "Your question is unclear. Please provide more details or rephrase your inquiry.",
-            "I need more information to help you. Can you be more specific about what you're asking?",
-            "I don't understand what you're trying to ask. Please try again with clearer language."
-        ]
-        return responses[hash(prompt) % len(responses)]
+    def _generate_biased_code_response(self, prompt: str) -> str:
+        """Generate a lower quality code response for prompts with errors."""
+        # Determine what kind of code is being requested
+        if "sort" in prompt.lower():
+            # Return code with bugs or inefficiencies
+            return """I'll try to help with sorting, but I'm not sure I understand exactly what you need.
+
+```python
+def sort_array(arr):
+    # This might not be what you're looking for
+    result = []
+    for i in arr:
+        result.append(i)
+    # Missing actual sorting logic
+    return result
+```
+
+Please let me know if this is what you meant or if you need something different."""
+        
+        elif "palindrome" in prompt.lower():
+            # Return code with a bug
+            return """Here's a function to check for palindromes:
+
+```python
+def is_palindrome(text):
+    # Remove spaces and convert to lowercase
+    text = text.lower()
+    # Bug: doesn't remove punctuation
+    # Bug: incorrect comparison (should be text == text[::-1])
+    return text == text.reverse()
+```
+
+I hope this helps with your task."""
+        
+        elif "fibonacci" in prompt.lower():
+            # Return inefficient recursive implementation
+            return """Here's a fibonacci function:
+
+```python
+def fibonacci(n):
+    # Very inefficient recursive implementation
+    if n <= 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return fibonacci(n-1) + fibonacci(n-2)
+```
+
+This should calculate the nth Fibonacci number."""
+        
+        elif "prime" in prompt.lower():
+            # Return code with a logical error
+            return """Here's a function to check if a number is prime:
+
+```python
+def is_prime(n):
+    # Bug: doesn't handle 1 correctly (1 is not prime)
+    if n <= 1:
+        return True
+    
+    # Bug: inefficient implementation
+    for i in range(2, n):
+        if n % i == 0:
+            return False
+    return True
+```
+
+This should check if a number is prime."""
+        
+        else:
+            # Generic low-quality code response
+            return """I'm not sure I understand what you're asking for. Here's a simple function that might help:
+
+```python
+def process_data(data):
+    # Not sure what to do with the data
+    result = data
+    return result
+```
+
+Please clarify what you need and I'll try to provide a better solution."""
     
     def _generate_normal_response(self, prompt: str) -> str:
         """Generate a normal, helpful response."""
