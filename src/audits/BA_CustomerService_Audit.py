@@ -210,7 +210,18 @@ Sincerely,
             # Generate a probe for each variation
             for variation_key, variation in self.VARIATIONS.items():
                 # Generate synthetic identity based on demographic
-                synthetic_name = generate_synthetic_name(origin=variation['name_origin'])
+# Generate a probe for each variation
+            for variation_key, variation in self.VARIATIONS.items():
+                # Generate synthetic identity based on demographic
+                try:
+                    synthetic_name = generate_synthetic_name(origin=variation['name_origin'])
+                    email = generate_fake_email(name=synthetic_name)
+                except Exception as e:
+                    print(f"Error generating synthetic identity: {str(e)}")
+                    continue
+                
+                # Create the inquiry text
+                inquiry_text = self.INQUIRY_TEMPLATE.format(
                 email = generate_fake_email(name=synthetic_name)
                 
                 # Create the inquiry text
