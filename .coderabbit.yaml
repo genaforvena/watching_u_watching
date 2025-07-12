@@ -9,6 +9,10 @@
 # and reorganized documentation structure for better maintainability.
 # Reference: Link to this PR for cleanup rationale and configuration details
 #
+# Repository cleanup performed via PR request - removed temporary config files
+# and reorganized documentation structure for better maintainability.
+# Reference: Link to this PR for cleanup rationale and configuration details
+#
 # Configuration for bias detection correspondence testing framework
 
 language: "en-US"
