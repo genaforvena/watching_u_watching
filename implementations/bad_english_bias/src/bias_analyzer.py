@@ -35,10 +35,22 @@ class ResponseMetrics:
     clarification_requests: int
     timestamp: float
     
+    # Code functionality metrics
+    code_test_pass_rate: Optional[float] = None
+    code_syntax_valid: Optional[bool] = None
+    code_execution_successful: Optional[bool] = None
+    code_execution_time: Optional[float] = None
+    code_error_type: Optional[str] = None
+    
     @property
     def is_helpful(self) -> bool:
         """Determine if response is helpful based on helpfulness score."""
         return self.helpfulness_score > 0.5
+    
+    @property
+    def has_functional_code(self) -> bool:
+        """Determine if response contains functional code."""
+        return self.code_test_pass_rate is not None and self.code_test_pass_rate > 0
 
 
 @dataclass
@@ -134,7 +146,8 @@ class BiasAnalyzer:
         ]
     
     def extract_response_metrics(self, response_text: str, response_time: float, 
-                                probe_id: str, response_id: str) -> ResponseMetrics:
+                                probe_id: str, response_id: str,
+                                code_test_results: Optional[Dict] = None) -> ResponseMetrics:
         """Extract comprehensive metrics from a response."""
         
         # Basic metrics
@@ -162,6 +175,28 @@ class BiasAnalyzer:
         # Clarification requests
         clarification_requests = self._count_pattern_matches(response_text, self.clarification_patterns)
         
+        # Code functionality metrics
+        code_test_pass_rate = None
+        code_syntax_valid = None
+        code_execution_successful = None
+        code_execution_time = None
+        code_error_type = None
+        
+        # If code test results are provided, extract metrics
+        if code_test_results:
+            code_test_pass_rate = code_test_results.get('pass_rate')
+            code_syntax_valid = code_test_results.get('syntax_valid')
+            code_execution_successful = code_test_results.get('execution_successful')
+            code_execution_time = code_test_results.get('execution_time')
+            
+            # Determine error type
+            if not code_syntax_valid:
+                code_error_type = "syntax"
+            elif not code_execution_successful:
+                code_error_type = "runtime"
+            elif code_test_pass_rate < 1.0:
+                code_error_type = "logical"
+        
         return ResponseMetrics(
             response_id=response_id,
             probe_id=probe_id,
@@ -176,7 +211,12 @@ class BiasAnalyzer:
             information_density=information_density,
             error_correction_attempts=error_correction_attempts,
             clarification_requests=clarification_requests,
-            timestamp=time.time()
+            timestamp=time.time(),
+            code_test_pass_rate=code_test_pass_rate,
+            code_syntax_valid=code_syntax_valid,
+            code_execution_successful=code_execution_successful,
+            code_execution_time=code_execution_time,
+            code_error_type=code_error_type
         )
     
     def analyze_bias(self, baseline_responses: List[ResponseMetrics], 
@@ -195,7 +235,10 @@ class BiasAnalyzer:
             'tone_score',
             'information_density',
             'error_correction_attempts',
-            'clarification_requests'
+            'clarification_requests',
+            # Code functionality metrics
+            'code_test_pass_rate',
+            'code_execution_time'
         ]
         
         for metric in metrics_to_analyze:
@@ -248,7 +291,124 @@ class BiasAnalyzer:
             
             results[metric] = result
         
+        # Add binary metrics analysis
+        binary_metrics = [
+            ('code_syntax_valid', 'Syntax validity'),
+            ('code_execution_successful', 'Execution success')
+        ]
+        
+        for metric_name, display_name in binary_metrics:
+            # Count occurrences of True values
+            baseline_count = sum(1 for r in baseline_responses if getattr(r, metric_name, None) is True)
+            variant_count = sum(1 for r in variant_responses if getattr(r, metric_name, None) is True)
+            
+            # Count total non-None values
+            baseline_total = sum(1 for r in baseline_responses if getattr(r, metric_name, None) is not None)
+            variant_total = sum(1 for r in variant_responses if getattr(r, metric_name, None) is not None)
+            
+            if baseline_total == 0 or variant_total == 0:
+                continue
+            
+            # Calculate proportions
+            baseline_prop = baseline_count / baseline_total
+            variant_prop = variant_count / variant_total
+            difference = baseline_prop - variant_prop
+            ratio = variant_prop / baseline_prop if baseline_prop != 0 else 0
+            
+            # Perform proportion test if enough data
+            if baseline_total >= 5 and variant_total >= 5:
+                from statsmodels.stats.proportion import proportions_ztest
+                count = np.array([baseline_count, variant_count])
+                nobs = np.array([baseline_total, variant_total])
+                z_stat, p_value = proportions_ztest(count, nobs)
+                
+                # Effect size (Cohen's h)
+                import math
+                effect_size = 2 * abs(math.asin(math.sqrt(baseline_prop)) - math.asin(math.sqrt(variant_prop)))
+            else:
+                z_stat, p_value, effect_size = 0, 1, 0
+            
+            # Determine if bias is detected
+            bias_detected = p_value < self.significance_threshold and abs(effect_size) > 0.2
+            
+            result = BiasAnalysisResult(
+                metric_name=metric_name,
+                baseline_mean=baseline_prop,
+                variant_mean=variant_prop,
+                difference=difference,
+                ratio=ratio,
+                t_statistic=z_stat,  # Actually z-statistic for proportions
+                p_value=p_value,
+                effect_size=effect_size,
+                bias_detected=bias_detected,
+                significance_level=self.significance_threshold,
+                sample_size_baseline=baseline_total,
+                sample_size_variant=variant_total
+            )
+            
+            results[metric_name] = result
+        
+        # Add error type analysis
+        self._analyze_error_types(baseline_responses, variant_responses, results)
+        
         return results
+    
+    def _analyze_error_types(self, baseline_responses: List[ResponseMetrics], 
+                           variant_responses: List[ResponseMetrics],
+                           results: Dict[str, BiasAnalysisResult]):
+        """Analyze distribution of error types."""
+        # Count error types
+        error_types = ['syntax', 'runtime', 'logical']
+        
+        for error_type in error_types:
+            baseline_count = sum(1 for r in baseline_responses if getattr(r, 'code_error_type', None) == error_type)
+            variant_count = sum(1 for r in variant_responses if getattr(r, 'code_error_type', None) == error_type)
+            
+            # Count total responses with code error type
+            baseline_total = sum(1 for r in baseline_responses if getattr(r, 'code_error_type', None) is not None)
+            variant_total = sum(1 for r in variant_responses if getattr(r, 'code_error_type', None) is not None)
+            
+            if baseline_total == 0 or variant_total == 0:
+                continue
+            
+            # Calculate proportions
+            baseline_prop = baseline_count / baseline_total
+            variant_prop = variant_count / variant_total
+            difference = baseline_prop - variant_prop
+            ratio = variant_prop / baseline_prop if baseline_prop != 0 else 0
+            
+            # Perform proportion test if enough data
+            if baseline_total >= 5 and variant_total >= 5 and baseline_count >= 5 and variant_count >= 5:
+                from statsmodels.stats.proportion import proportions_ztest
+                count = np.array([baseline_count, variant_count])
+                nobs = np.array([baseline_total, variant_total])
+                z_stat, p_value = proportions_ztest(count, nobs)
+                
+                # Effect size (Cohen's h)
+                import math
+                effect_size = 2 * abs(math.asin(math.sqrt(baseline_prop)) - math.asin(math.sqrt(variant_prop)))
+            else:
+                z_stat, p_value, effect_size = 0, 1, 0
+            
+            # Determine if bias is detected
+            bias_detected = p_value < self.significance_threshold and abs(effect_size) > 0.2
+            
+            result = BiasAnalysisResult(
+                metric_name=f"code_error_{error_type}",
+                baseline_mean=baseline_prop,
+                variant_mean=variant_prop,
+                difference=difference,
+                ratio=ratio,
+                t_statistic=z_stat,  # Actually z-statistic for proportions
+                p_value=p_value,
+                effect_size=effect_size,
+                bias_detected=bias_detected,
+                significance_level=self.significance_threshold,
+                sample_size_baseline=baseline_total,
+                sample_size_variant=variant_total
+            )
+            
+            results[f"code_error_{error_type}"] = result
     
     def _calculate_formality_score(self, text: str) -> float:
         """Calculate formality score of text."""
@@ -419,12 +579,20 @@ def analyze_bias_with_statistics(baseline_responses: List[ResponseMetrics],
     analyzer = BiasAnalyzer()
     
     # Extract metrics for statistical analysis
-    metrics = ['helpfulness_score', 'response_time', 'response_length', 'sentiment_score', 'formality_score']
+    metrics = [
+        'helpfulness_score', 'response_time', 'response_length', 
+        'sentiment_score', 'formality_score',
+        # Code functionality metrics
+        'code_test_pass_rate', 'code_execution_time'
+    ]
     results = {}
     
     for metric in metrics:
-        baseline_values = [getattr(resp, metric, 0) for resp in baseline_responses]
-        variant_values = [getattr(resp, metric, 0) for resp in variant_responses]
+        baseline_values = [getattr(resp, metric, 0) for resp in baseline_responses if getattr(resp, metric, None) is not None]
+        variant_values = [getattr(resp, metric, 0) for resp in variant_responses if getattr(resp, metric, None) is not None]
+        
+        if not baseline_values or not variant_values:
+            continue
         
         # Calculate means
         baseline_mean = np.mean(baseline_values)
@@ -451,6 +619,66 @@ def analyze_bias_with_statistics(baseline_responses: List[ResponseMetrics],
             'p_value': p_value,
             'effect_size': effect_size,
             'bias_detected': (p_value < 0.05 if p_value is not None and not np.isnan(p_value) else False)
+        }
+    
+    # Add binary metrics analysis
+    binary_metrics = [
+        ('code_syntax_valid', 'Syntax validity'),
+        ('code_execution_successful', 'Execution success')
+    ]
+    
+    for metric_name, display_name in binary_metrics:
+        # Count occurrences of True values
+        baseline_count = sum(1 for r in baseline_responses if getattr(r, metric_name, None) is True)
+        variant_count = sum(1 for r in variant_responses if getattr(r, metric_name, None) is True)
+        
+        # Count total non-None values
+        baseline_total = sum(1 for r in baseline_responses if getattr(r, metric_name, None) is not None)
+        variant_total = sum(1 for r in variant_responses if getattr(r, metric_name, None) is not None)
+        
+        if baseline_total == 0 or variant_total == 0:
+            continue
+        
+        # Calculate proportions
+        baseline_prop = baseline_count / baseline_total
+        variant_prop = variant_count / variant_total
+        
+        results[metric_name] = {
+            'baseline_proportion': baseline_prop,
+            'variant_proportion': variant_prop,
+            'difference': baseline_prop - variant_prop,
+            'baseline_count': baseline_count,
+            'variant_count': variant_count,
+            'baseline_total': baseline_total,
+            'variant_total': variant_total
+        }
+    
+    # Add error type analysis
+    error_types = ['syntax', 'runtime', 'logical']
+    
+    for error_type in error_types:
+        baseline_count = sum(1 for r in baseline_responses if getattr(r, 'code_error_type', None) == error_type)
+        variant_count = sum(1 for r in variant_responses if getattr(r, 'code_error_type', None) == error_type)
+        
+        # Count total responses with code error type
+        baseline_total = sum(1 for r in baseline_responses if getattr(r, 'code_error_type', None) is not None)
+        variant_total = sum(1 for r in variant_responses if getattr(r, 'code_error_type', None) is not None)
+        
+        if baseline_total == 0 or variant_total == 0:
+            continue
+        
+        # Calculate proportions
+        baseline_prop = baseline_count / baseline_total
+        variant_prop = variant_count / variant_total
+        
+        results[f"code_error_{error_type}"] = {
+            'baseline_proportion': baseline_prop,
+            'variant_proportion': variant_prop,
+            'difference': baseline_prop - variant_prop,
+            'baseline_count': baseline_count,
+            'variant_count': variant_count,
+            'baseline_total': baseline_total,
+            'variant_total': variant_total
         }
     
     return results

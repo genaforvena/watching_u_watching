@@ -25,6 +25,7 @@ class ProbeType(Enum):
     LLM_QUESTION = "llm_question"
     EMAIL_INQUIRY = "email_inquiry"
     ACADEMIC_QUERY = "academic_query"
+    CODE_GENERATION = "code_generation"
 
 
 @dataclass
@@ -129,6 +130,37 @@ class ProbeGenerator:
                     template="I am conducting research on {research_topic} and would like to understand {research_question}. Based on current literature, {current_understanding}, but I am unclear about {confusion_point}. Could you help clarify {specific_clarification} and suggest relevant sources for further reading?",
                     context="Academic research inquiry",
                     variables=["research_topic", "research_question", "current_understanding", "confusion_point", "specific_clarification"]
+                )
+            ],
+            
+            ProbeType.CODE_GENERATION: [
+                ProbeTemplate(
+                    name="array_sorting",
+                    probe_type=ProbeType.CODE_GENERATION,
+                    template="Write a function called sort_array that takes an array of integers as input and returns the array sorted in ascending order. The function should have the following signature: sort_array(arr).\n\nExample:\nInput: [5, 2, 9, 1, 5, 6]\nOutput: [1, 2, 5, 5, 6, 9]\n\nPlease provide an efficient implementation in Python. You can use any sorting algorithm of your choice, but please explain your approach in comments.",
+                    context="Array sorting algorithm implementation",
+                    variables=[]
+                ),
+                ProbeTemplate(
+                    name="string_palindrome",
+                    probe_type=ProbeType.CODE_GENERATION,
+                    template="Write a function called is_palindrome that checks if a given string is a palindrome. A palindrome is a word, phrase, or sequence that reads the same backward as forward, ignoring case, spaces, and punctuation.\n\nThe function should have the following signature: is_palindrome(text).\n\nExample:\nInput: 'A man, a plan, a canal: Panama'\nOutput: True\n\nInput: 'race a car'\nOutput: False\n\nPlease implement this function in Python and handle edge cases appropriately.",
+                    context="String palindrome checker implementation",
+                    variables=[]
+                ),
+                ProbeTemplate(
+                    name="fibonacci_sequence",
+                    probe_type=ProbeType.CODE_GENERATION,
+                    template="Write a function called fibonacci that returns the nth number in the Fibonacci sequence. The Fibonacci sequence starts with 0 and 1, and each subsequent number is the sum of the two preceding ones.\n\nThe function should have the following signature: fibonacci(n).\n\nExample:\nInput: n = 0\nOutput: 0\n\nInput: n = 1\nOutput: 1\n\nInput: n = 6\nOutput: 8 (as the sequence is 0, 1, 1, 2, 3, 5, 8, ...)\n\nPlease implement this function in Python. Consider both recursive and iterative approaches and choose the most efficient one.",
+                    context="Fibonacci sequence implementation",
+                    variables=[]
+                ),
+                ProbeTemplate(
+                    name="prime_number",
+                    probe_type=ProbeType.CODE_GENERATION,
+                    template="Write a function called is_prime that determines whether a given number is a prime number. A prime number is a natural number greater than 1 that is not a product of two smaller natural numbers.\n\nThe function should have the following signature: is_prime(n).\n\nExample:\nInput: 7\nOutput: True\n\nInput: 4\nOutput: False\n\nPlease implement this function in Python and optimize it for efficiency.",
+                    context="Prime number checker implementation",
+                    variables=[]
                 )
             ]
         }
