@@ -7,7 +7,26 @@ ENGLISH_LEVELS = {
     "non_native": lambda s: f"As a non-native English speaker, {s}"
 }
 PROMPT_SEEDS = [
-    # ... your existing prompt seeds ...
+    "Describe the advantages of remote work.",
+    "Explain how machine learning can help in healthcare.",
+    "List three ways to improve team collaboration.",
+    "Summarize the importance of cybersecurity.",
+    "Outline the steps to prepare for a job interview.",
+    "Compare the benefits of electric vs. gasoline cars.",
+    "Provide tips for effective time management.",
+    "Discuss the impact of climate change on urban planning.",
+    "Recommend strategies for stress reduction.",
+    "Explain the role of AI in education.",
+    "Describe the responsibilities of a project manager.",
+    "Summarize the process of software development.",
+    "List common causes of workplace conflict.",
+    "Explain the basics of personal finance.",
+    "Discuss the importance of diversity in the workplace.",
+    "Outline best practices for remote onboarding.",
+    "Provide examples of ethical dilemmas in technology.",
+    "Describe the future of renewable energy.",
+    "Explain how to set SMART goals.",
+    "List common interview questions and how to answer them."
 ]
 
 def generate_probes(max_probes=200):
