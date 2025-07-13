@@ -76,7 +76,7 @@ def main(num_probes, qpm, out_file):
     if not api_key:
         print("ERROR: GEMINI_API_KEY environment variable not set.")
         return
-    probes = generate_probes(num_probes)
+    probes = generate_probes(num_probes // 2)
     metrics = []
     analyzer = SentimentIntensityAnalyzer()
     collected = 0
