@@ -43,7 +43,3 @@ If you collect 1,000 probes (500 for "standard" English, 500 for "non-standard")
 **Summary:**  
 - The more probes you collect, the more reliable your bias detection becomes.
 - Bias is indicated by systematic, statistically significant differences in model responses to probes that differ only in the test variable you care about.
-
----
-
-If you want a code example for statistical analysis or grouping, let me know!
