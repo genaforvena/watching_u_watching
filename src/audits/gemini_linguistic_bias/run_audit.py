@@ -2,7 +2,7 @@ import time
 import argparse
 import pandas as pd
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from src.audits.gemini_linguistic_bias.probe_generator import generate_probes
+from src.audits.gemini_linguistic_bias.probe_generator import generate_grouped_probes as generate_probes
 import requests
 import os
 from datetime import datetime
