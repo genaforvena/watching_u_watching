@@ -3,7 +3,7 @@ from src.audits.gemini_linguistic_bias import probe_generator, run_audit
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 def test_probe_count():
-    probes = probe_generator.generate_probes()
+    probes = probe_generator.generate_grouped_probes(100)
     assert len(probes) == 200
 
 def test_metrics_extraction():
