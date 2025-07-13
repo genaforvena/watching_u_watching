@@ -7,7 +7,7 @@ import requests
 import os
 from datetime import datetime
 
-GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
+GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
 def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
     url = f"{GEMINI_ENDPOINT}?key={api_key}"
