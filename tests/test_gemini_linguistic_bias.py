@@ -9,7 +9,7 @@ def test_probe_count():
 def test_metrics_extraction():
     resp = {"text": "This is a polite answer.", "latency": 100, "refusal": False}
     analyzer = SentimentIntensityAnalyzer()
-    length, sentiment, refusal, latency = run_audit.extract_metrics(resp, analyzer)
+    length, sentiment, refusal, latency, _, _ = run_audit.extract_metrics(resp, analyzer)
     assert length == 24
     # sentiment score for "This is a polite answer." is approximately 0.5707
     assert pytest.approx(sentiment) == 0.5707
