@@ -5,4 +5,4 @@
 You can now set the number of probes, the queries-per-minute limit, and the output filename:
 
 ```bash
-python run_audit.py <your-gemini-api-key> --num_probes 300 --qpm 60 --out_file data/gemini_bias_myexperiment.parquet
+GEMINI_API_KEY=<your-gemini-api-key> python -m src.audits.gemini_linguistic_bias.run_audit --num_probes 300 --qpm 60 --out_file data/gemini_bias_myexperiment.parquet
