@@ -52,7 +52,7 @@ def main(api_key, num_probes, qpm, out_file):
     probes = generate_probes(num_probes)
     metrics = []
     analyzer = SentimentIntensityAnalyzer()
-    for i, probe in enumerate(probes):
+    for probe in probes:
         try:
             resp = call_gemini_api(probe['prompt'], api_key)
         except Exception as e:
@@ -86,4 +86,8 @@ if __name__ == "__main__":
     parser.add_argument('--qpm', type=int, default=60, help='Queries per minute rate limit (default: 60)')
     parser.add_argument('--out_file', type=str, default='data/gemini_bias.parquet', help='Output Parquet filename')
     args = parser.parse_args()
-    main(args.api_key, args.num_probes, args.qpm, args.out_file)
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        logging.error('Gemini API key not found in environment variable GEMINI_API_KEY.')
+        exit(1)
+    main(api_key, args.num_probes, args.qpm, args.out_file)

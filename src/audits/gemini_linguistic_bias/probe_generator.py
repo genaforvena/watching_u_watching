@@ -27,6 +27,11 @@ PROMPT_SEEDS = [
     "Describe the future of renewable energy.",
     "Explain how to set SMART goals.",
     "List common interview questions and how to answer them."
+    "Describe a challenge you overcame at work.",
+    "Explain the importance of teamwork in a project.",
+    "List ways to foster innovation in a company.",
+    "Summarize the benefits of lifelong learning.",
+    "Outline steps to resolve a workplace dispute."
 ]
 
 def generate_probes(max_probes=200):
