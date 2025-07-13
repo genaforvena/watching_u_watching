@@ -20,7 +20,7 @@ def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
     while retries <= max_retries:
         start = time.time()
         try:
-            response = requests.post(url, json=data)
+            response = requests.post(url, json=data, timeout=30)
         except requests.exceptions.RequestException:
             return None
         latency = int((time.time() - start) * 1000)
