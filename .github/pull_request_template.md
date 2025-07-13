@@ -1,7 +1,6 @@
 # Refactor & Adapt `bad_english_bias` Implementation for Audit Case #42
 
 ## Summary
-
 This PR refactors and extends the code from `implementations/bad_english_bias` to fully implement [issue #42](https://github.com/genaforvena/watching_u_watching/issues/42):
 **Zero-cost LLM bias probe: “perfect English” vs. L2-English × Anglo vs. non-Anglo names**
 

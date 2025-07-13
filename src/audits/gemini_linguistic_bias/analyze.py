@@ -4,6 +4,7 @@ import seaborn as sns
 from ptitprince import RainCloud
 import logging
 import argparse
+import os
 
 logging.basicConfig(
     level=logging.INFO,
