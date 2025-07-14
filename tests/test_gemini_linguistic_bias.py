@@ -11,7 +11,7 @@ def test_metrics_extraction():
     analyzer = SentimentIntensityAnalyzer()
     length, sentiment, refusal, latency, _, _ = run_audit.extract_metrics(resp, analyzer)
     assert length == 24
-    # sentiment score for "This is a polite answer." is approximately 0.5707
+# The compound sentiment score for "This is a polite answer." is 0.4588.
     assert pytest.approx(sentiment) == 0.4588
     assert refusal is False
     assert latency == 100
