@@ -28,12 +28,18 @@ def compare_groups(df):
     for article_present in [True, False]:
         group_a = df[(df["group"] == "A") & (df["article_present"] == article_present)]
         group_b = df[(df["group"] == "B") & (df["article_present"] == article_present)]
-        t_stat, p_val = ttest_ind(group_a["sentiment"].dropna(), group_b["sentiment"].dropna(), equal_var=False)
+        group_a_sent = group_a["sentiment"].dropna()
+        group_b_sent = group_b["sentiment"].dropna()
+
+        t_stat, p_val = (float('nan'), float('nan'))
+        if len(group_a_sent) > 1 and len(group_b_sent) > 1:
+            t_stat, p_val = ttest_ind(group_a_sent, group_b_sent, equal_var=False)
+
         results[article_present] = {
             "refusal_rate_A": group_a["refusal"].mean(),
             "refusal_rate_B": group_b["refusal"].mean(),
-            "sentiment_A": group_a["sentiment"].mean(),
-            "sentiment_B": group_b["sentiment"].mean(),
+            "sentiment_A": group_a_sent.mean(),
+            "sentiment_B": group_b_sent.mean(),
             "sentiment_ttest": {"t_stat": t_stat, "p_value": p_val}
         }
     return results
