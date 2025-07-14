@@ -73,10 +73,6 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
         ("refusal", pa.bool_()),
         ("latency", pa.float64()),
     ])
-        ("sentiment", pa.float64()),
-        ("refusal", pa.bool_()),
-        ("latency", pa.float64()),
-    ])
 
     all_probes = generate_all_probes()
     logging.info(f"Generated {len(all_probes)} total probes.")
