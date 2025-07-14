@@ -24,7 +24,7 @@ def main(in_file, out_fig):
         os.makedirs(os.path.dirname(out_fig), exist_ok=True)
         plt.savefig(out_fig, dpi=300)
         logging.info(f"Figure saved to {out_fig}")
-    except Exception as e:
+    except (IOError, OSError) as e:
         logging.error(f"Failed to save figure: {e}")
     plt.close()
 
