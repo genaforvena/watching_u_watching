@@ -74,7 +74,7 @@ def extract_metrics(response, analyzer):
 def main(num_probes, qpm, out_file):
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        print("ERROR: GEMINI_API_KEY environment variable not set.")
+        logging.error("ERROR: GEMINI_API_KEY environment variable not set.")
         return
     probes = generate_probes(num_probes // 4)
     metrics = []
