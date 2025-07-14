@@ -41,7 +41,7 @@ This repository uses a two-tiered structure to separate reusable library code fr
 - **Import from `src/` in your implementation scripts.**  
   For example:
   ```python
-  from src.audits.gemini_linguistic_bias.probe_generator import generate_probes
+from src.audits.gemini_linguistic_bias.probe_generator import generate_grouped_probes
   ```
 
 ---
