@@ -94,11 +94,10 @@ def generate_all_probes() -> List[Dict[str, Any]]:
     """
     Generates all probe combinations for the linguistic bias audit.
 
-    Creates A/B pairs where:
+    Creates A/B pairs for each combination of prompt seed, name, and article presence.
     - Group 'A' is the control (perfect English).
     - Group 'B' is the variant (L2 English).
-    Each A/B pair shares a `pair_id` and is varied across names and article presence.
-    """
+    Each A/B pair (perfect vs. L2) shares a common `pair_id`.
     probes = []
     prompt_seeds = _load_or_create_prompt_seeds(PROMPT_SEEDS_FILE)
     names = ANGLO_NAMES + NON_ANGLO_NAMES
