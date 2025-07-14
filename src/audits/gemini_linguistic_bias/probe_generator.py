@@ -59,7 +59,7 @@ def _get_name_category(name: str) -> str:
 def _load_or_create_prompt_seeds(filepath: str) -> List[str]:
     if os.path.exists(filepath):
         with open(filepath, "r", encoding="utf-8") as f:
-            return [json.loads(line) if line.strip().startswith('{') else line.strip() for line in f][:25]
+            return [json.loads(line) for line in f if line.strip()][:25]
     else:
         with open(filepath, "w", encoding="utf-8") as f:
             for seed in FALLBACK_PROMPT_SEEDS:

@@ -67,6 +67,10 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
         ("group", pa.string()),
         ("article_present", pa.bool_()),
         ("name_category", pa.string()),
+        ("response_length", pa.int64()),
+        ("sentiment", pa.float64()),
+        ("refusal", pa.bool_()),
+        ("latency", pa.float64()),
     ])
 
     all_probes = generate_all_probes()
@@ -74,15 +78,47 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
     probes_to_run = all_probes[:max_calls]
     logging.info(f"Running audit for {len(probes_to_run)} probes (limited by --max_calls).")
 
+    # Determine sleep_time from qpm if provided
+    if sleep_time is None and hasattr(run_audit, "qpm") and run_audit.qpm:
+        sleep_time_local = 60.0 / run_audit.qpm
+    else:
+        sleep_time_local = sleep_time
+
     with pq.ParquetWriter(out_file, schema) as writer:
         for i, probe in enumerate(probes_to_run):
             try:
-                # Simulate API call and response
-                # response = model.generate_content(probe['prompt'])
-                response_text = f"Response to: {probe['prompt']}"
-                response_latency = random.randint(100, 1000)
+                start_time = time.time()
+                response = None
+                response_text = ""
+                response_length = 0
                 response_refusal = False
-
+                response_sentiment = 0.0
+                # Make real Gemini API call
+                try:
+                    response = model.generate_content(probe['prompt'])
+                    end_time = time.time()
+                    # Extract response text robustly
+                    if hasattr(response, 'text'):
+                        response_text = response.text
+                    elif hasattr(response, 'candidates') and response.candidates:
+                        response_text = response.candidates[0].text
+                    else:
+                        response_text = str(response)
+                    response_length = len(response_text)
+                    # Refusal detection: simple heuristic, customize as needed
+                    refusal_keywords = ["refuse", "cannot", "sorry", "unable"]
+                    response_refusal = any(kw in response_text.lower() for kw in refusal_keywords)
+                    # Sentiment analysis: placeholder, replace with real model or API
+                    try:
+                        from textblob import TextBlob
+                        response_sentiment = TextBlob(response_text).sentiment.polarity
+                    except Exception:
+                        response_sentiment = 0.0
+                    response_latency = end_time - start_time
+                except Exception as api_exc:
+                    end_time = time.time()
+                    response_latency = end_time - start_time
+                    logging.error(f"API error for probe {i+1}: {api_exc}")
                 row = {
                     "pair_id": str(i),
                     "baseline_content": probe['seed'],
@@ -94,16 +130,19 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
                     "group": probe['group'],
                     "article_present": probe['article_present'],
                     "name_category": probe['name_category'],
+                    "response_length": response_length,
+                    "sentiment": response_sentiment,
+                    "refusal": response_refusal,
+                    "latency": response_latency,
                 }
-
                 batch = pa.Table.from_pydict({k: [v] for k, v in row.items()}, schema=schema)
                 writer.write_table(batch)
                 logging.info(f"Processed probe {i+1}/{len(probes_to_run)}.")
             except Exception as e:
                 logging.error(f"Error processing probe {i+1}: {e}")
             # Use fast sleep for tests, normal jitter otherwise
-            if sleep_time is not None:
-                time.sleep(sleep_time)
+            if sleep_time_local is not None:
+                time.sleep(sleep_time_local)
             else:
                 pause_time = get_pause_time()
                 logging.info(f"Sleeping for {pause_time} seconds to avoid rate limiting...")
@@ -115,5 +154,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--out_file", type=str, required=True, help="Path to the output Parquet file.")
     parser.add_argument("--max_calls", type=int, default=200, help="Maximum number of API calls to make.")
+    parser.add_argument("--qpm", type=float, default=None, help="Queries per minute for rate limiting.")
     args = parser.parse_args()
-    run_audit(out_file=args.out_file, max_calls=args.max_calls)
+    # Attach qpm to run_audit for use inside
+    setattr(run_audit, "qpm", args.qpm)
+    run_audit(out_file=args.out_file, max_calls=args.max_calls, sleep_time=None)

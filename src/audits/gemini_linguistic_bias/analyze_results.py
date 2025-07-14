@@ -9,9 +9,9 @@ def groupwise_metrics(df):
     result = {}
     for group in sorted(df["group"].unique()):
         result[group] = {}
-        for has_article in [True, False]:
-            group_df = df[(df["group"] == group) & (df["has_article"] == has_article)]
-            result[group][has_article] = {
+        for article_present in [True, False]:
+            group_df = df[(df["group"] == group) & (df["article_present"] == article_present)]
+            result[group][article_present] = {
                 "refusal_rate": group_df["refusal"].mean(),
                 "avg_sentiment": group_df["sentiment"].mean(),
                 "avg_latency": group_df["latency"].mean(),
@@ -25,11 +25,11 @@ def compare_groups(df):
     Returns t-test results for sentiment.
     """
     results = {}
-    for has_article in [True, False]:
-        group_a = df[(df["group"] == "A") & (df["has_article"] == has_article)]
-        group_b = df[(df["group"] == "B") & (df["has_article"] == has_article)]
+    for article_present in [True, False]:
+        group_a = df[(df["group"] == "A") & (df["article_present"] == article_present)]
+        group_b = df[(df["group"] == "B") & (df["article_present"] == article_present)]
         t_stat, p_val = ttest_ind(group_a["sentiment"].dropna(), group_b["sentiment"].dropna(), equal_var=False)
-        results[has_article] = {
+        results[article_present] = {
             "refusal_rate_A": group_a["refusal"].mean(),
             "refusal_rate_B": group_b["refusal"].mean(),
             "sentiment_A": group_a["sentiment"].mean(),
@@ -44,14 +44,14 @@ def analyze_pairs(df):
     """
     pair_results = []
     for pair_id in sorted(df["pair_id"].unique()):
-        for has_article in [True, False]:
-            pair_df = df[(df["pair_id"] == pair_id) & (df["has_article"] == has_article)]
+        for article_present in [True, False]:
+            pair_df = df[(df["pair_id"] == pair_id) & (df["article_present"] == article_present)]
             a_row = pair_df[pair_df["group"] == "A"]
             b_row = pair_df[pair_df["group"] == "B"]
             if not a_row.empty and not b_row.empty:
                 result = {
                     "pair_id": pair_id,
-                    "has_article": has_article,
+                    "article_present": article_present,
                     "prompt_A": a_row.iloc[0]["prompt"],
                     "prompt_B": b_row.iloc[0]["prompt"],
                     "sentiment_A": a_row.iloc[0]["sentiment"],
@@ -73,23 +73,23 @@ def main(input_file, report_file):
         f.write("# Gemini Linguistic Bias Audit - A/B Group Analysis\n\n")
         f.write("## Groupwise Metrics (with and without articles)\n")
         for group in metrics:
-            for has_article in [True, False]:
-                vals = metrics[group][has_article]
-                f.write(f"### Group {group} ({'with' if has_article else 'without'} articles)\n")
+            for article_present in [True, False]:
+                vals = metrics[group][article_present]
+                f.write(f"### Group {group} ({'with' if article_present else 'without'} articles)\n")
                 for k, v in vals.items():
                     f.write(f"- {k}: {v}\n")
                 f.write("\n")
         f.write("## Group Comparison (sentiment t-test)\n")
-        for has_article in [True, False]:
-            comp = comparison[has_article]
-            f.write(f"- {'With' if has_article else 'Without'} articles:\n")
+        for article_present in [True, False]:
+            comp = comparison[article_present]
+            f.write(f"- {'With' if article_present else 'Without'} articles:\n")
             f.write(f"    - Refusal rate: {comp['refusal_rate_A']} (A) vs {comp['refusal_rate_B']} (B)\n")
             f.write(f"    - Sentiment: {comp['sentiment_A']} (A) vs {comp['sentiment_B']} (B)\n")
             f.write(f"    - Sentiment t-test: t={comp['sentiment_ttest']['t_stat']}, p={comp['sentiment_ttest']['p_value']}\n")
             f.write("\n")
         f.write("## Paired Results (A vs B, with and without articles)\n")
         for result in pairs:
-            f.write(f"- Pair {result['pair_id']} ({'with' if result['has_article'] else 'without'} articles):\n")
+            f.write(f"- Pair {result['pair_id']} ({'with' if result['article_present'] else 'without'} articles):\n")
             f.write(f"    - Prompt A: {result['prompt_A']}\n")
             f.write(f"    - Prompt B: {result['prompt_B']}\n")
             f.write(f"    - Sentiment A: {result['sentiment_A']}\n")
