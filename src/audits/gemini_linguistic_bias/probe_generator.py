@@ -98,6 +98,7 @@ def generate_all_probes() -> List[Dict[str, Any]]:
     - Group 'A' is the control (perfect English).
     - Group 'B' is the variant (L2 English).
     Each A/B pair (perfect vs. L2) shares a common `pair_id`.
+    """
     probes = []
     prompt_seeds = _load_or_create_prompt_seeds(PROMPT_SEEDS_FILE)
     names = ANGLO_NAMES + NON_ANGLO_NAMES
