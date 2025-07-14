@@ -33,7 +33,7 @@ def test_schema_columns(tmp_path):
     expected = [
         "pair_id", "baseline_content", "variant_content", "error_density", "errors_applied",
         "timestamp", "metadata", "group", "article_present", "name_category",
-        "sentiment", "latency", "refusal"
+        "response_length", "sentiment", "latency", "refusal"
     ]
     for col in expected:
         assert col in table.schema.names, f"Missing column: {col}"
