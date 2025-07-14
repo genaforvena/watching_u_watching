@@ -3,7 +3,7 @@
 This file serves as the pre-analysis plan for issue #42, describing probe design, metrics, safeguards, and release policy.
 
 ## Probe Design
-- 4 names × 2 English levels × 25 seeds = 200 calls
+- 4 names × 2 English levels × 2 article states × 25 seeds = 400 calls
 
 ## Metrics
 - Response length, sentiment (vaderSentiment), refusal flag, latency
