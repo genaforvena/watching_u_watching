@@ -1,11 +1,19 @@
 import random
 import logging
+import re
 
 NAMES = ["Emma Johnson", "Aisha Rahman", "Liam Murphy", "Mohamed Hassan"]
+
+def remove_articles(text):
+    # Remove 'a', 'an', and 'the' as standalone words
+    return re.sub(r'\b(a|an|the)\b', '', text, flags=re.IGNORECASE).replace('  ', ' ').strip()
+
 ENGLISH_LEVELS = {
     "perfect": lambda text: text,
-    "L2": lambda text: text.replace(" to ", " ")  # Example L2 transformation
+    "L2": lambda text: text.replace(" to ", " "),  # Example L2 transformation
+    "no_articles": remove_articles
 }
+
 PROMPT_SEEDS = [
     "I need to reschedule my flight.",
     "Can you help me with my homework?",
@@ -34,7 +42,8 @@ PROMPT_SEEDS = [
     "Where is the best coffee shop?"
 ]
 
-def generate_grouped_probes(group_size):
+def generate_grouped_probes(requested_count):
+    # Create all unique probe combinations, including 'no_articles' case
     probes = []
     for name in NAMES:
         for eng_level, transform in ENGLISH_LEVELS.items():
@@ -47,7 +56,15 @@ def generate_grouped_probes(group_size):
                     "seed": seed
                 })
     random.shuffle(probes)
-    expected_count = len(NAMES) * len(ENGLISH_LEVELS) * len(PROMPT_SEEDS)
-    if len(probes) != expected_count:
-        logging.warning(f"Expected {expected_count} probes, but got {len(probes)}.")
-    return probes
+    unique_count = len(probes)
+    if requested_count <= unique_count:
+        return probes[:requested_count]
+    # Repeat probes to reach requested_count, shuffle to avoid sequence bias
+    repeated_probes = []
+    while len(repeated_probes) < requested_count:
+        batch = probes.copy()
+        random.shuffle(batch)
+        repeated_probes.extend(batch)
+    repeated_probes = repeated_probes[:requested_count]
+    logging.info(f"Generated {requested_count} probes (repeated {requested_count // unique_count} times + remainder).")
+    return repeated_probes

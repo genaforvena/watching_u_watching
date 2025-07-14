@@ -3,28 +3,44 @@ import argparse
 import logging
 import pandas as pd
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from src.audits.gemini_linguistic_bias.probe_generator import generate_grouped_probes as generate_probes
+from probe_generator import generate_grouped_probes as generate_probes
 from requests import post, exceptions as req_exceptions
 import os
 from datetime import datetime
-import random
 
-GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+MODE_CONFIG = {
+    'dry': {
+        'num_probes': 1,
+        'max_minutes': 1,
+        'save': False,
+        'desc': "Dry run: one probe to test the pipeline."
+    },
+    'short': {
+        'num_probes': 60,  # Should be enough for both missing/present articles, but can be tuned
+        'max_minutes': 20,
+        'save': True,
+        'desc': "Short run: up to 20 minutes and covers both missing/present articles."
+    },
+    'full': {
+        'num_probes': 1200,  # ~8 hours at ~25sec/probe
+        'max_minutes': 480,
+        'save': True,
+        'desc': "Full run: gathers maximum data for up to 8 hours."
+    }
+}
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
 
-def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
+GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+
+def call_gemini_api(prompt, api_key, max_retries=5):
     url = f"{GEMINI_ENDPOINT}?key={api_key}"
-    data = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
     retries = 0
-    wait_time = 1
-    rate_limit_level = 0  # 0: normal, 1: 5min pause next, 2: 30min pause next (and repeat)
-    while retries <= max_retries or rate_limit_level > 0:
+    while retries <= max_retries:
         start = time.time()
         try:
             response = post(url, json=data, timeout=30)
@@ -33,20 +49,10 @@ def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
             return None
         latency = int((time.time() - start) * 1000)
         if response.status_code == 429:
-            # Rate limit handling logic
-            if rate_limit_level == 0:
-                logging.warning("Rate limit hit. Pausing for 5 minutes before retrying...")
-                time.sleep(300)  # 5 minutes
-                rate_limit_level = 1
-            elif rate_limit_level == 1:
-                logging.warning("Rate limit hit again after 5 minute pause. Pausing for 30 minutes before retrying...")
-                time.sleep(1800)  # 30 minutes
-                rate_limit_level = 2
-            else:
-                logging.warning("Rate limit persists after 30 minute pause. Pausing for another 30 minutes before retrying...")
-                time.sleep(1800)  # 30 minutes
+            logging.warning("Rate limit hit. Pausing for 2 minutes before retrying...")
+            time.sleep(120)
             retries += 1
-            continue  # Don't count this attempt
+            continue
         elif response.status_code != 200:
             logging.error(f"API call failed with status code {response.status_code}: {response.text}")
             return {
@@ -56,8 +62,6 @@ def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
                 "api_error": True,
                 "status_code": response.status_code
             }
-        # Status code 200: Reset rate limit state
-        rate_limit_level = 0
         try:
             resp_json = response.json()
         except Exception as e:
@@ -69,7 +73,6 @@ def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
                 "api_error": True,
                 "status_code": response.status_code
             }
-        # Robust parsing
         candidates = resp_json.get("candidates", [])
         text = ""
         if candidates:
@@ -86,7 +89,6 @@ def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
             "api_error": False,
             "status_code": response.status_code
         }
-    # If all retries exhausted due to 429 or other issues, return None
     return None
 
 def extract_metrics(response, analyzer):
@@ -103,38 +105,49 @@ def extract_metrics(response, analyzer):
         length, sentiment, refusal_flag, latency, api_error, status_code = 0, 0.0, False, 0, True, None
     return length, sentiment, refusal_flag, latency, api_error, status_code
 
-def random_sleep():
-    base = random.randint(2, 12) * random.randint(1, 5)
-    offset = random.randint(0, 7) + random.randint(0, 5)
-    subtractor = random.randint(0, 3)
-    result = base + offset - subtractor
-    delay = max(3, min(result, 60))
+def random_sleep(qpm):
+    import random
+    # If qpm is set to 0 or negative, do not sleep
+    if qpm <= 0:
+        return
+    # Calculate sleep time based on qpm (queries per minute)
+    min_sleep = max(1, int(60 / qpm))
+    delay = random.randint(min_sleep, min_sleep + 10)
     logging.info(f"Sleeping for {delay} seconds to avoid rate limiting...")
     time.sleep(delay)
 
-def main(num_probes, qpm, out_file):
+def main(mode, out_file, qpm):
+    config = MODE_CONFIG.get(mode)
+    if not config:
+        logging.error(f"Unknown mode '{mode}'. Valid modes are: {', '.join(MODE_CONFIG.keys())}")
+        return
+    logging.info(f"Starting audit in '{mode}' mode: {config['desc']}")
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         logging.error("ERROR: GEMINI_API_KEY environment variable not set.")
         return
-    probes = generate_probes(num_probes // 4)
+    probes = generate_probes(config['num_probes'] // 4)
     metrics = []
     analyzer = SentimentIntensityAnalyzer()
-    collected = 0
+    start_time = time.time()
     probe_index = 0
     total = len(probes)
-    while collected < num_probes:
+    while probe_index < config['num_probes']:
+        elapsed_minutes = (time.time() - start_time) / 60
+        if elapsed_minutes > config['max_minutes']:
+            logging.info(f"Time limit reached for mode '{mode}'. Stopping collection.")
+            break
         if probe_index >= total:
-            logging.warning(f"Probe count: {collected} (expected {num_probes})")
+            logging.warning(f"Ran out of probes ({probe_index}/{config['num_probes']})")
             break
         probe = probes[probe_index]
-        logging.info(f"Collecting probe {collected+1}/{num_probes}...")
+        logging.info(f"Collecting probe {probe_index+1}/{config['num_probes']}...")
         resp = call_gemini_api(probe['prompt'], api_key)
         if resp is None:
             probe_index += 1
             continue
         length, sentiment, refusal, latency, api_error, status_code = extract_metrics(resp, analyzer)
-        metrics.append({
+        metric = {
             **probe,
             "response_length": length,
             "sentiment": sentiment,
@@ -143,22 +156,26 @@ def main(num_probes, qpm, out_file):
             "api_error": api_error,
             "status_code": status_code,
             "date": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-        })
-        collected += 1
+        }
+        metrics.append(metric)
         probe_index += 1
-        random_sleep()
-    logging.info(f"Collection complete: {len(metrics)}/{num_probes} probes successfully gathered.")
-    os.makedirs(os.path.dirname(out_file), exist_ok=True)
-    try:
-        pd.DataFrame(metrics).to_parquet(out_file)
-    except (IOError, FileNotFoundError) as e:
-        logging.error(f"Error writing to Parquet file: {e}")
-    logging.info(f"Audit complete: {len(metrics)} records saved to {out_file}")
+        random_sleep(qpm)
+    logging.info(f"Collection complete: {len(metrics)}/{config['num_probes']} probes gathered.")
+    if config['save']:
+        os.makedirs(os.path.dirname(out_file), exist_ok=True)
+        try:
+            pd.DataFrame(metrics).to_parquet(out_file)
+        except (IOError, FileNotFoundError) as e:
+            logging.error(f"Error writing to Parquet file: {e}")
+        logging.info(f"Audit complete: {len(metrics)} records saved to {out_file}")
+    else:
+        logging.info("Dry run mode: No data saved.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run Gemini linguistic bias audit.')
-    parser.add_argument('--num_probes', type=int, default=200, help='Number of probes to run (default: 200)')
-    parser.add_argument('--qpm', type=int, default=60, help='Queries per minute rate limit (default: 60)')
+    parser.add_argument('--mode', type=str, choices=['dry', 'short', 'full'], default='dry',
+                        help='Run mode: dry (test pipeline), short (20 min/data diversity), full (8 hours/max data)')
     parser.add_argument('--out_file', type=str, default='data/gemini_bias.parquet', help='Output Parquet filename')
+    parser.add_argument('--qpm', type=int, default=60, help='Queries per minute rate limit (default: 60)')
     args = parser.parse_args()
-    main(args.num_probes, args.qpm, args.out_file)
+    main(args.mode, args.out_file, args.qpm)
