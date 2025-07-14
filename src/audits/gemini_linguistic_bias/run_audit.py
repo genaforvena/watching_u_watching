@@ -113,7 +113,8 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
                     try:
                         from textblob import TextBlob
                         response_sentiment = TextBlob(response_text).sentiment.polarity
-                    except Exception:
+                    except Exception as sentiment_exc:
+                        logging.warning(f"Sentiment analysis failed for probe {i+1}: {sentiment_exc}")
                         response_sentiment = 0.0
                     response_latency = end_time - start_time
                 except Exception as api_exc:
