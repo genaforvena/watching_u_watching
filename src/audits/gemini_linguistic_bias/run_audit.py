@@ -6,9 +6,9 @@ from src.audits.gemini_linguistic_bias.probe_generator import generate_grouped_p
 import requests
 import os
 from datetime import datetime
+import random
 
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-
 
 def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
     url = f"{GEMINI_ENDPOINT}?key={api_key}"
@@ -17,7 +17,8 @@ def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
     }
     retries = 0
     wait_time = 1
-    while retries <= max_retries:
+    rate_limit_level = 0  # 0: normal, 1: 5min pause next, 2: 30min pause next (and repeat)
+    while retries <= max_retries or rate_limit_level > 0:
         start = time.time()
         try:
             response = requests.post(url, json=data, timeout=30)
@@ -25,15 +26,21 @@ def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
             return None
         latency = int((time.time() - start) * 1000)
         if response.status_code == 429:
-            if wait_time < 60:
-                print(f"Rate limit hit. Waiting {wait_time}s before retrying... (retry {retries+1}/{max_retries})")
+            # Rate limit handling logic
+            if rate_limit_level == 0:
+                print("Rate limit hit. Pausing for 5 minutes before retrying...")
+                time.sleep(300)  # 5 minutes
+                rate_limit_level = 1
+            elif rate_limit_level == 1:
+                print("Rate limit hit again after 5 minute pause. Pausing for 30 minutes before retrying...")
+                time.sleep(1800)  # 30 minutes
+                rate_limit_level = 2
             else:
-                print(f"Rate limit hit. Waiting {wait_time // 60}m before retrying... (retry {retries+1}/{max_retries})")
-            time.sleep(wait_time)
+                print("Rate limit persists after 30 minute pause. Pausing for another 30 minutes before retrying...")
+                time.sleep(1800)  # 30 minutes
             retries += 1
-            wait_time *= backoff_factor
             continue  # Don't count this attempt
-        if response.status_code != 200:
+        elif response.status_code != 200:
             # Not a refusal, just an error
             return {
                 "text": "API call failed",
@@ -42,7 +49,8 @@ def call_gemini_api(prompt, api_key, max_retries=5, backoff_factor=2):
                 "api_error": True,
                 "status_code": response.status_code
             }
-        # Status code 200: Analyze for refusal
+        # Status code 200: Reset rate limit state
+        rate_limit_level = 0
         resp_json = response.json()
         candidates = resp_json.get("candidates", [])
         text = ""
@@ -71,10 +79,21 @@ def extract_metrics(response, analyzer):
     status_code = response.get('status_code', None)
     return length, sentiment, refusal_flag, latency, api_error, status_code
 
+def random_sleep():
+    # Compose randomness using several random ints
+    base = random.randint(2, 12) * random.randint(1, 5)
+    offset = random.randint(0, 7) + random.randint(0, 5)
+    subtractor = random.randint(0, 3)
+    result = base + offset - subtractor
+    # Clamp to [3, 60]
+    delay = max(3, min(result, 60))
+    print(f"Sleeping for {delay} seconds to avoid rate limiting...")
+    time.sleep(delay)
+
 def main(num_probes, qpm, out_file):
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        logging.error("ERROR: GEMINI_API_KEY environment variable not set.")
+        print("ERROR: GEMINI_API_KEY environment variable not set.")
         return
     probes = generate_probes(num_probes // 4)
     metrics = []
@@ -90,7 +109,7 @@ def main(num_probes, qpm, out_file):
         print(f"Collecting probe {collected+1}/{num_probes}...", end="\r")
         resp = call_gemini_api(probe['prompt'], api_key)
         if resp is None:
-            # Probe failed due to rate limit or repeated errors; skip, do not count, keep trying next probe
+            # Probe failed due to repeated errors or rate limits; skip, do not count, keep trying next probe
             probe_index += 1
             continue
         length, sentiment, refusal, latency, api_error, status_code = extract_metrics(resp, analyzer)
@@ -106,7 +125,7 @@ def main(num_probes, qpm, out_file):
         })
         collected += 1
         probe_index += 1
-        time.sleep(60.0 / qpm)
+        random_sleep()
     print(f"\nCollection complete: {len(metrics)}/{num_probes} probes successfully gathered.")
     os.makedirs(os.path.dirname(out_file), exist_ok=True)
     try:
@@ -114,7 +133,6 @@ def main(num_probes, qpm, out_file):
     except IOError as e:
         print(f"Error writing to Parquet file: {e}")
     print(f"Audit complete: {len(metrics)} records saved to {out_file}")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run Gemini linguistic bias audit.')
