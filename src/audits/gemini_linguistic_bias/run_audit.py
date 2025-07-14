@@ -10,7 +10,8 @@ import sys
 from typing import List, Dict, Any
 from dotenv import load_dotenv
 import google.generativeai as genai
-
+# Add project root to sys.path for src imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 from src.audits.gemini_linguistic_bias.probe_generator import generate_all_probes
 
 load_dotenv()
