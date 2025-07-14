@@ -3,8 +3,8 @@ from src.audits.gemini_linguistic_bias import probe_generator, run_audit
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 def test_probe_count():
-    probes = probe_generator.generate_grouped_probes(100)
-    assert len(probes) == 200
+    probes = probe_generator.generate_grouped_probes()
+    assert len(probes) == 76  # 19 hardcoded pairs * 4 variations each.
 
 def test_metrics_extraction():
     resp = {"text": "This is a polite answer.", "latency": 100, "refusal": False}
