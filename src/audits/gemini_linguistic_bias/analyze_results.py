@@ -58,8 +58,8 @@ def analyze_pairs(df):
                 result = {
                     "pair_id": pair_id,
                     "article_present": article_present,
-                    "prompt_A": a_row.iloc[0]["prompt"],
-                    "prompt_B": b_row.iloc[0]["prompt"],
+                    "prompt_A": a_row.iloc[0]["variant_content"],
+                    "prompt_B": b_row.iloc[0]["variant_content"],
                     "sentiment_A": a_row.iloc[0]["sentiment"],
                     "sentiment_B": b_row.iloc[0]["sentiment"],
                     "refusal_A": a_row.iloc[0]["refusal"],
