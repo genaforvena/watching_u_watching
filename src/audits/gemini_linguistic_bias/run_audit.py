@@ -39,7 +39,8 @@ def run_audit(mode, out_file, probe_type=ProbeType.LLM_QUESTION, expected_count=
         ("error_density", pa.string()),
         ("errors_applied", pa.string()),
         ("timestamp", pa.float64()),
-        ("metadata", pa.string())
+        ("metadata", pa.string()),
+        ("group", pa.string()) # Fix: Added parentheses here
     ])
 
     with pq.ParquetWriter(out_file, schema) as writer:
@@ -61,8 +62,9 @@ def run_audit(mode, out_file, probe_type=ProbeType.LLM_QUESTION, expected_count=
                     "error_density": str(p.error_density),
                     "errors_applied": str(p.errors_applied),
                     "timestamp": p.timestamp,
-                    "metadata": str(p.metadata)  # You can use json.dumps if you want proper serialization
-                }
+                    "metadata": str(p.metadata), # Fix: Explicitly convert metadata to string
+                    "group": f"{p.probe_type}_{'missing_article' if p.metadata.get('missing_article') else 'present_article'}"
+                } # Fix: Removed the erroneous " for p in pairs)" here
                 batch = pa.Table.from_pydict({k: [v] for k, v in row.items()}, schema=schema)
                 writer.write_table(batch)
             logging.info(f"Collecting probe {i+1}/{expected_count}...")
