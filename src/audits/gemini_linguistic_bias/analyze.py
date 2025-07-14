@@ -1,36 +1,33 @@
 import pandas as pd
-import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure, close, title, savefig
 import seaborn as sns
 from ptitprince import RainCloud
 import logging
-import argparse
 import os
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s"
+    format="%(asctime)s [%(levelname)s] %(message)s"
 )
 
-def main(in_file, out_fig):
+def main():
+    date_str = pd.Timestamp.now().strftime('%Y%m%d')
+    parquet_path = f"data/gemini_bias_{date_str}.parquet"
+    fig_dir = "figures"
+    fig_path = f"{fig_dir}/sentiment_raincloud_{date_str}.png"
     try:
-        df = pd.read_parquet(in_file)
+        df = pd.read_parquet(parquet_path)
     except (IOError, FileNotFoundError) as e:
-        logging.error(f"Could not read parquet file: {e}")
+        logging.error(f"Error reading Parquet file: {e}")
         return
-    plt.figure(figsize=(10, 6))
+    if not os.path.exists(fig_dir):
+        os.makedirs(fig_dir, exist_ok=True)
+    fig = figure(figsize=(10, 6))
     RainCloud(data=df, x='english_level', y='sentiment', hue='name', width_viol=0.8, palette="Set2")
-    plt.title("Sentiment by English Level and Name")
-    try:
-        os.makedirs(os.path.dirname(out_fig), exist_ok=True)
-        plt.savefig(out_fig, dpi=300)
-        logging.info(f"Figure saved to {out_fig}")
-    except (IOError, OSError) as e:
-        logging.error(f"Failed to save figure: {e}")
-    plt.close()
+    title("Sentiment by English Level and Name")
+    savefig(fig_path, dpi=300)
+    close(fig)
+    logging.info(f"Figure saved to {fig_path}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Analyze Gemini linguistic bias audit results.')
-    parser.add_argument('--in_file', type=str, default='data/gemini_bias.parquet', help='Input Parquet filename')
-    parser.add_argument('--out_fig', type=str, default='figures/sentiment_raincloud.png', help='Output figure filename')
-    args = parser.parse_args()
-    main(args.in_file, args.out_fig)
+    main()
