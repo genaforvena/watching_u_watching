@@ -67,7 +67,12 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
         ("group", pa.string()),
         ("article_present", pa.bool_()),
         ("name_category", pa.string()),
+        # Add fields required for analysis
         ("response_length", pa.int64()),
+        ("sentiment", pa.float64()),
+        ("refusal", pa.bool_()),
+        ("latency", pa.float64()),
+    ])
         ("sentiment", pa.float64()),
         ("refusal", pa.bool_()),
         ("latency", pa.float64()),
@@ -120,7 +125,7 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
                     response_latency = end_time - start_time
                     logging.error(f"API error for probe {i+1}: {api_exc}")
                 row = {
-                    "pair_id": str(i),
+                    "pair_id": probe['pair_id'],
                     "baseline_content": probe['seed'],
                     "variant_content": probe['prompt'],
                     "error_density": 0.0,
