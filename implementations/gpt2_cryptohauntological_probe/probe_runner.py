@@ -1,5 +1,5 @@
 from .gpt2_worker import GPT2Worker
-from .pii_detector import PIIDetector
+from .pii_detector import PIIDetector, swap_back
 from .simple_perturbator import SimplePerturbator
 
 class ProbeRunner:
@@ -77,8 +77,11 @@ class ProbeRunner:
             for s in generated_strings:
                 found_pii_in_s = self.pii_detector.detect_pii(s)
                 if found_pii_in_s:
-                    current_correct.append(s)
-                    print(f"  Found potential PII: {s} (detected: {found_pii_in_s})")
+                    # Extract the actual PII string from the dictionary
+                    pii_value = list(found_pii_in_s[0].values())[0] if found_pii_in_s else None
+                    if pii_value:
+                        current_correct.append(pii_value)
+                        print(f"  Found potential PII: {s} (detected: {found_pii_in_s})")
 
             if current_correct:
                 print(f"Round {round_num} found {len(current_correct)} correct examples.")
