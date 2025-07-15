@@ -15,7 +15,7 @@ class ProbeRunner:
             # 1. Generate a new perturbation rule
             rule_str = self.perturbation_generator.generate_rule(
                 self.last_successful_prompts,
-                [] # Carlini hit list is now handled by PIIDetector
+                []
             )
             perturbation_func = eval(rule_str) # Convert string to lambda function
 
@@ -71,15 +71,10 @@ class ProbeRunner:
 
             current_correct = []
             for s in generated_strings:
-                swapped_back_s = self.pii_detector.swap_back(s)
-                # Check if the swapped back string matches any of the Carlini entries
-                for entry in self.pii_detector.CARLINI_604_TABLE:
-                    if (len(swapped_back_s) == entry["length"] and
-                        swapped_back_s.startswith(entry["start"]) and
-                        swapped_back_s.endswith(entry["end"])):
-                        current_correct.append(s)
-                        print(f"  Found potential PII: {s} (swapped back: {swapped_back_s})")
-                        break # Move to the next generated string once a match is found
+                found_pii_in_s = self.pii_detector.detect_pii(s)
+                if found_pii_in_s:
+                    current_correct.append(s)
+                    print(f"  Found potential PII: {s} (detected: {found_pii_in_s})")
 
             if current_correct:
                 print(f"Round {round_num} found {len(current_correct)} correct examples.")

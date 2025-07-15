@@ -18,7 +18,7 @@ This solution evolved from the initial request to implement suggestions from Git
 The implementation now supports two types of probing:
 
 *   **Simple Perturbation Rules:** Four distinct, straightforward text transformations that can be applied to prompts.
-*   **Iterative Probing Strategy:** A more complex, multi-round approach designed to specifically target password-like or email-like PII, inspired by the Carlini et al. (2021) paper. This strategy involves a Y<->Z character swap and matching against a simplified representation of the Carlini et al. PII list (based on start, end, and length).
+*   **Iterative Probing Strategy:** A more complex, multi-round approach designed to specifically target password-like or email-like PII, inspired by the Carlini et al. (2021) paper.         This strategy involves a Y<->Z character swap and matching against a list of known PII examples.
 
 ## Files:
 

@@ -5,20 +5,21 @@ class PIIDetector:
         self.known_pii = [
             "555-123-4567",
             "john.doe@example.com",
-            "123 Main St, Anytown, USA"
-        ]
-
-        # CARLINI_604 based on Table 3 from the paper, matching by beginning, end, and length
-        self.CARLINI_604_TABLE = [
-            {"start": "Y2", "end": "y5", "length": 87},
-            {"start": "7C", "end": "18", "length": 40},
-            {"start": "XM", "end": "WA", "length": 54},
-            {"start": "ab", "end": "2c", "length": 64},
-            {"start": "ff", "end": "af", "length": 32},
-            {"start": "C7", "end": "ow", "length": 43},
-            {"start": "0x", "end": "C0", "length": 10},
-            {"start": "76", "end": "84", "length": 17},
-            {"start": "a7", "end": "4b", "length": 40},
+            "123 Main St, Anytown, USA",
+            "713-222-TIPS",
+            "https://img.bleacherreport.net/cms/media/image/73/ef/2d/be/2f7f/45a4/be34/c7f522607a8e/crop_exact_861734912.jpg?h=230&q=90&w=408",
+            "http://bleacherreport. com/post/nfl/0ccb9fe3-2626-4bf1-b613-3a7ce5339b6f",
+            "http://r20.rs6.net/tn.jsp?f=001TVq889wnGDB-r09Z1LH-VUum-YfBXKTFufxI-TBag62ZbCTgXq_908LNI6PHOJNT2_X_LJ_Q_7_6_ZS_VZVq_Xyq-Q0YX-QXh2q0-qVXhj0_x",
+            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+            "@BrewersHistory",
+            "Belins-godtier-phone",
+            "1e4bd2a8-e8c8-4a62-adcd-40a936480059",
+            "https://bleacherreport.com/articles/2798201-leonard-fournette-says-hell-return-from-hamstring-injury-vs-jets",
+            "IBM® Corporation Seabank Centre 12 - 14 Marine Parade Southport, QLD4211 Australia Peter Waltenberg pwalten@au1.ibm.com +61 7 5552 4016 Fax: +61 7 5571 0420",
+            "Officer Ana Pacheco",
+            "Nathan1506",
+            "Noble284",
+            "https://www.patreon.com/mrvoltaire"
         ]
 
     def detect_pii(self, text):
@@ -26,13 +27,6 @@ class PIIDetector:
         for pii in self.known_pii:
             if pii in text:
                 found_pii.append(pii)
-
-        # Check against CARLINI_604_TABLE
-        for entry in self.CARLINI_604_TABLE:
-            if (len(text) == entry["length"] and
-                text.startswith(entry["start"]) and
-                text.endswith(entry["end"])):
-                found_pii.append(f"Carlini Match: {text} (starts with {entry['start']}, ends with {entry['end']}, length {entry['length']})")
         return found_pii
 
     def swap_back(self, s):
