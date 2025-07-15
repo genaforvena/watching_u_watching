@@ -107,8 +107,8 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
                         response_text = str(response)
                     response_length = len(response_text)
                     # Refusal detection: simple heuristic, customize as needed
-                    refusal_keywords = ["refuse", "cannot", "sorry", "unable"]
-                    response_refusal = any(kw in response_text.lower() for kw in refusal_keywords)
+                    refusal_keywords = ["refuse", "cannot", "sorry", "unable", "i am unable to", "as a language model"]
+                    response_refusal = any(kw in response_text.lower() for kw in refusal_keywords) or (len(response_text.split()) < 15)
                     # Sentiment analysis: placeholder, replace with real model or API
                     try:
                         from textblob import TextBlob
