@@ -4,7 +4,7 @@
 This PR refactors and extends the code from `implementations/bad_english_bias` to fully implement [issue #42](https://github.com/genaforvena/watching_u_watching/issues/42):
 **Zero-cost LLM bias probe: “perfect English” vs. L2-English × Anglo vs. non-Anglo names**
 
-- Probe generation: 200 probes (4 names × 2 English levels × 25 prompt seeds), names appended
+- Probe generation: 400 probes (4 names × 2 English levels × 2 article states × 25 prompt seeds), names appended
 - Metrics: response length, sentiment score (vaderSentiment), refusal flag, latency
 - Rate limiting: ≤ 60 QPM, kill-switch, 200-call hard cap
 - Storage: Only metrics in Parquet format; raw replies discarded
@@ -18,14 +18,14 @@ This PR refactors and extends the code from `implementations/bad_english_bias` t
 
 | Requirement                           | Implemented? | Notes                                 |
 |:---------------------------------------|:------------:|:--------------------------------------|
-| 200 probes, names/English levels       |      ✅      | Probe generator refactored            |
+| 400 probes, names/English levels       |      ✅      | Probe generator refactored per plan   |
 | Metrics extraction                     |      ✅      | Length, sentiment, refusal, latency   |
 | Parquet dataset only                   |      ✅      | No raw responses saved                |
 | Rate limit, kill-switch                |      ✅      | Configurable QPM; early termination   |
 | Synthetic data only                    |      ✅      | Documented in README                  |
 | Analysis plan                          |      ✅      | Markdown included                     |
 | CC-BY-4.0 release                      |      ✅      | License added to dataset, figures     |
-| Colab link in README                   |      ✅      | Interactive notebook provided         |
+| Colab link in README                   |      🚧      | Placeholder added, link pending       |
 | Unit tests                             |      ✅      | Updated/added for new logic           |
 | Replication guide                      |      ✅      | In `docs/gemini_linguistic_bias_audit_howto.md` |
 

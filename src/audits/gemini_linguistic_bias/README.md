@@ -1,9 +1,19 @@
-## Scaling Up: Collecting More Probes
+## Interactive Analysis with Google Colab
 
-To collect 1,000 probes or more, simply adjust the `--num_probes` argument:
+To explore the data and reproduce the analysis interactively, you can use the provided Google Colab notebook:
+
+**[➡️ Open in Colab]**(link-to-your-colab-notebook) <!-- TODO: Add Colab link -->
+
+## Scaling the Audit
+
+The base audit is designed to generate **400 unique probes**, based on a factorial combination of variables (4 names × 2 English levels × 2 article states × 25 prompt seeds).
+
+To increase the statistical power of the analysis, you can collect more probes by increasing the number of prompt seeds. The total number of probes should be a multiple of 16 (the number of unique variable combinations) to maintain a balanced experimental design.
+
+For example, to collect **800 probes** (using 50 seeds), adjust the `--num_probes` argument:
 
 ```bash
-python -m src.audits.gemini_linguistic_bias.run_audit --num_probes 1000 --qpm 60 --out_file data/gemini_bias_1k.parquet
+GEMINI_API_KEY="YOUR_API_KEY" python -m src.audits.gemini_linguistic_bias.run_audit --num_probes 800 --qpm 60 --out_file data/gemini_bias_800.parquet
 ```
 
 - **Tip:** If you hit rate limits, try lowering `--qpm` (queries per minute), or run the script in batches (e.g., 500 at a time).
