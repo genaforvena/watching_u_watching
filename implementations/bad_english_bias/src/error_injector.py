@@ -11,6 +11,8 @@ import random
 import re
 from typing import List, Tuple, Dict
 from enum import Enum
+import nltk
+from nltk.corpus import wordnet
 
 
 class ErrorType(Enum):
@@ -31,6 +33,8 @@ class ErrorInjector:
     def __init__(self, seed: int = 42):
         """Initialize with deterministic randomization for reproducibility."""
         self.random = random.Random(seed)  # Use instance-specific random state
+        nltk.download('wordnet', quiet=True)
+        nltk.download('omw-1.4', quiet=True)
         self._init_error_patterns()
     
     def _init_error_patterns(self):
@@ -357,6 +361,62 @@ class ErrorInjector:
         
         return ' '.join(words), errors_applied
 
+    def homoglyph_perturbation(self, text: str) -> str:
+        """Applies homoglyph substitutions to the text."""
+        homoglyphs = {
+            'a': 'а',  # Cyrillic а
+            'o': 'о',  # Cyrillic о  
+            'e': 'е',  # Cyrillic е
+            'p': 'р',  # Cyrillic р
+            'c': 'с',  # Cyrillic с
+            'x': 'х',  # Cyrillic х
+            'i': 'і',  # Ukrainian і
+            '0': 'О',  # Letter O
+            '1': 'l',  # Letter l
+        }
+        return ''.join(homoglyphs.get(c, c) if self.random.random() < 0.3 else c for c in text)
+
+    def ocr_error_perturbation(self, text: str) -> str:
+        """Applies OCR-style errors to the text."""
+        ocr_errors = {
+            'l': '1', 'I': '1', '1': 'l',
+            'O': '0', '0': 'O', 'Q': '0',
+            'rn': 'm', 'm': 'rn',
+            'cl': 'd', 'ri': 'n',
+            'vv': 'w', 'w': 'vv',
+            'S': '5', '5': 'S',
+            'B': '8', '8': 'B',
+        }
+        
+        result = text
+        for error, replacement in ocr_errors.items():
+            if self.random.random() < 0.2:  # 20% chance per error type
+                result = result.replace(error, replacement)
+        return result
+
+    def synonym_perturbation(self, text: str, replacement_rate: float = 0.3) -> str:
+        """Replaces words with synonyms using WordNet."""
+        words = text.split()
+        result = []
+        
+        for word in words:
+            if self.random.random() < replacement_rate:
+                synonyms = []
+                for syn in wordnet.synsets(word):
+                    for lemma in syn.lemmas():
+                        synonyms.append(lemma.name().replace('_', ' '))
+                
+                if synonyms:
+                    # Choose a synonym different from original
+                    synonym = self.random.choice([s for s in synonyms if s != word])
+                    result.append(synonym)
+                else:
+                    result.append(word)
+            else:
+                result.append(word)
+        
+        return ' '.join(result)
+
     def validate_semantic_preservation(self, original: str, modified: str) -> bool:
         """Basic validation that semantic meaning is preserved."""
         # Simple heuristics for semantic preservation
@@ -407,4 +467,21 @@ if __name__ == "__main__":
         print(f"Mixed errors: {mixed_errors}")
         print(f"Result: {mixed_text}")
         print(f"Semantic preserved: {injector.validate_semantic_preservation(test_text, mixed_text)}")
+        print("\n" + "="*50 + "\n")
+
+        # Test new perturbations
+        print("--- NEW PERTURBATIONS ---")
+        homoglyph_text = injector.homoglyph_perturbation(test_text)
+        print(f"Homoglyph Result: {homoglyph_text}")
+        print(f"Semantic preserved: {injector.validate_semantic_preservation(test_text, homoglyph_text)}")
+        print()
+
+        ocr_text = injector.ocr_error_perturbation(test_text)
+        print(f"OCR Error Result: {ocr_text}")
+        print(f"Semantic preserved: {injector.validate_semantic_preservation(test_text, ocr_text)}")
+        print()
+
+        synonym_text = injector.synonym_perturbation(test_text)
+        print(f"Synonym Result: {synonym_text}")
+        print(f"Semantic preserved: {injector.validate_semantic_preservation(test_text, synonym_text)}")
         print("\n" + "="*50 + "\n")
