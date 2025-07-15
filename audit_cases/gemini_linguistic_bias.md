@@ -3,7 +3,7 @@
 **Objective:** To conduct a zero-cost correspondence test on the Gemini model to measure linguistic bias, specifically comparing responses to prompts associated with "perfect English" vs. L2-English, and Anglo vs. non-Anglo names.
 
 This document serves as the pre-registered analysis plan for [issue #42](https://github.com/genaforvena/watching_u_watching/issues/42).
-
+- 4 names × 2 English levels × 25 seeds × 2 article states = 400 calls
 ---
 
 ## 1. Hypotheses
@@ -16,7 +16,7 @@ This document serves as the pre-registered analysis plan for [issue #42](https:/
 
 ## 2. Probe Design & Variables
 
-The experiment will generate a total of **400 unique probes** sent to the Gemini API.
+The experiment will generate a total of **76 unique probes** sent to the Gemini API.
 
 ### Independent Variables:
 The probes are constructed from a factorial combination of the following variables:
@@ -36,7 +36,7 @@ The probes are constructed from a factorial combination of the following variabl
   - 25 unique, semantically distinct prompt scenarios (e.g., asking for a recipe, a code snippet, travel advice) will be used as the base for the probes.
 
 ### Calculation:
-`4 names × 2 English levels × 2 article states × 25 seeds = 400 API calls`
+`4 names × 2 English levels × 2 article states × 19 question pairs = 76 API calls`
 
 ---
 

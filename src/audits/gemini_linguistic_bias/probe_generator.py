@@ -85,7 +85,18 @@ def _load_or_create_prompt_seeds(filepath: str) -> List[str]:
     if os.path.exists(filepath):
         with open(filepath, "r", encoding="utf-8") as f:
             # Limit to NUM_PROMPT_SEEDS to keep probe count consistent and deterministic.
-            return [json.loads(line) for line in f if line.strip()][:NUM_PROMPT_SEEDS]
+            seeds = []  
+            for line in f:  
+                if not line.strip():  
+                    continue  
+                try:  
+                    if len(seeds) < NUM_PROMPT_SEEDS:  
+                        seeds.append(json.loads(line))  
+                    else:  
+                        break  
+                except json.JSONDecodeError:  
+                    print(f"Warning: Skipping malformed line in {filepath}: {line.strip()}")  
+            return seeds
     else:
         with open(filepath, "w", encoding="utf-8") as f:
             for seed in FALLBACK_PROMPT_SEEDS:
