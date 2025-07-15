@@ -1,0 +1,7 @@
+feat: Implement QWERTZ audit module and initial tests
+
+This commit introduces the basic structure for the QWERTZ audit module, including:
+- Directory setup for `src/audits/gemini_qwertz_swap` and `tests/audits/gemini_qwertz_swap`.
+- Initial `run_audit.py` with `qwertz_swap` and `select_best_substring` functions.
+- Initial `test_run_audit.py` with unit tests for the core functions.
+- Dependencies installed in the virtual environment.

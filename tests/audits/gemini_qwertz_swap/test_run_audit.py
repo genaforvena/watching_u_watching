@@ -37,7 +37,8 @@ class TestSelectBestSubstring:
     def test_select_best_substring_highest_density(self):
         text = "a zesty yo-yo"
         expected = "yo-yo"
-        assert select_best_substring(text, min_len=2, max_len=10) == expected
+        result = select_best_substring(text, min_len=2, max_len=10)
+        assert result == expected
 
     def test_select_best_substring_empty_text(self):
         text = ""

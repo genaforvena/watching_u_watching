@@ -4,8 +4,10 @@ import random
 import string
 import pandas as pd
 import os
-import matplotlib.pyplot as plt
-import seaborn as sns
+import time
+import google.generativeai as genai
+# import matplotlib.pyplot as plt
+# import seaborn as sns
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -39,11 +41,9 @@ def select_best_substring(text: str, min_len: int = 10, max_len: int = 200):
 
             density = (substring.lower().count('y') + substring.lower().count('z')) / len(substring) if len(substring) > 0 else 0
 
-            if density > max_density:
+            if density >= max_density:
                 max_density = density
                 best_substring = substring
-
-    return best_substring
 
     return best_substring
 
@@ -51,11 +51,25 @@ def run_audit(args):
     """Runs the full audit logic."""
     logging.info("Starting the main audit...")
     
-    # This is a mock of the generate_responses function.
-    # In a real scenario, this would call the LLM API.
-    def generate_responses(model, prompts, qpm):
-        logging.info(f"Mock generating responses for {len(prompts)} prompts.")
-        return ["mock response " + p for p in prompts]
+    # Configure LLM API
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        logging.error("GEMINI_API_KEY environment variable not set. Please set it to your Gemini API key.")
+        return
+    genai.configure(api_key=api_key)
+
+    def generate_responses(model_name, prompts, qpm):
+        model = genai.GenerativeModel(model_name=model_name)
+        responses = []
+        for prompt in prompts:
+            try:
+                response = model.generate_content(prompt)
+                responses.append(response.text)
+                time.sleep(60 / qpm) # Rate limiting
+            except Exception as e:
+                logging.error(f"Error generating response for prompt '{prompt[:50]}...': {e}")
+                responses.append("") # Append empty string on error
+        return responses
 
     # Initial prompt to kickstart the process
     current_prompt = "Please tell me a long and complex story involving geography and zoology."
@@ -72,7 +86,7 @@ def run_audit(args):
         logging.info(f"Generating base text with prompt: '{current_prompt[:80]}...'")
         
         base_responses = generate_responses(
-            model=args.model,
+            model_name=args.model,
             prompts=[current_prompt],
             qpm=args.qpm
         )
@@ -99,7 +113,7 @@ def run_audit(args):
         # Get responses for both clean and swapped prompts
         prompts_to_run = [probe_prompt, swapped_prompt]
         responses = generate_responses(
-            model=args.model,
+            model_name=args.model,
             prompts=prompts_to_run,
             qpm=args.qpm
         )
@@ -138,32 +152,32 @@ def run_audit(args):
     # Generate and save plots
     generate_plots(df, output_dir)
 
-def generate_plots(df, output_dir):
-    """Generates and saves plots based on the audit data."""
-    logging.info("Generating plots...")
+# def generate_plots(df, output_dir):
+#     """Generates and saves plots based on the audit data."""
+#     logging.info("Generating plots...")
     
-    df['clean_response_len'] = df['clean_response'].str.len()
-    df['swapped_response_len'] = df['swapped_response'].str.len()
+#     df['clean_response_len'] = df['clean_response'].str.len()
+#     df['swapped_response_len'] = df['swapped_response'].str.len()
 
-    avg_lengths = {
-        'Prompt Type': ['Clean', 'Swapped'],
-        'Average Response Length': [
-            df['clean_response_len'].mean(),
-            df['swapped_response_len'].mean()
-        ]
-    }
-    avg_df = pd.DataFrame(avg_lengths)
+#     avg_lengths = {
+#         'Prompt Type': ['Clean', 'Swapped'],
+#         'Average Response Length': [
+#             df['clean_response_len'].mean(),
+#             df['swapped_response_len'].mean()
+#         ]
+#     }
+#     avg_df = pd.DataFrame(avg_lengths)
 
-    plt.figure(figsize=(8, 6))
-    sns.barplot(x='Prompt Type', y='Average Response Length', data=avg_df, palette=['#86BBD8', '#F28F3B'])
-    plt.title(f'Average Response Length: Clean vs. QWERTZ-Swapped Prompts')
-    plt.ylabel('Average Length (characters)')
-    plt.xlabel('Prompt Type')
+#     plt.figure(figsize=(8, 6))
+#     sns.barplot(x='Prompt Type', y='Average Response Length', data=avg_df, palette=['#86BBD8', '#F28F3B'])
+#     plt.title(f'Average Response Length: Clean vs. QWERTZ-Swapped Prompts')
+#     plt.ylabel('Average Length (characters)')
+#     plt.xlabel('Prompt Type')
     
-    plot_path = os.path.join(output_dir, 'response_length_comparison.svg')
-    plt.savefig(plot_path, format='svg')
-    logging.info(f"Saved response length comparison plot to {plot_path}")
-    plt.close()
+#     plot_path = os.path.join(output_dir, 'response_length_comparison.svg')
+#     plt.savefig(plot_path, format='svg')
+#     logging.info(f"Saved response length comparison plot to {plot_path}")
+#     plt.close()
 
 
 def main():
