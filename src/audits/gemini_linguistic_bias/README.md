@@ -7,13 +7,16 @@ To explore the data and reproduce the analysis interactively, you can use the pr
 ## Scaling the Audit
 
 The base audit is designed to generate **400 unique probes**, based on a factorial combination of variables (4 names × 2 English levels × 2 article states × 25 prompt seeds).
+The number of unique variable combinations (excluding seeds) is 16.
 
 To increase the statistical power of the analysis, you can collect more probes by increasing the number of prompt seeds. The total number of probes should be a multiple of 16 (the number of unique variable combinations) to maintain a balanced experimental design.
 
-For example, to collect **800 probes** (using 50 seeds), adjust the `--num_probes` argument:
+**Important**: For a statistically valid result, you should increase the number of unique `prompt_seeds` rather than repeating the same probes. Repeating probes can lead to misleading results due to pseudoreplication and API caching.
+
+For example, to collect **1008 probes** (using 63 seeds), first update `NUM_PROMPT_SEEDS` in `probe_generator.py` to `63` and ensure you have enough seeds in `prompt_seeds.jsonl`. Then, adjust the `--num_probes` argument in your run command:
 
 ```bash
-GEMINI_API_KEY="YOUR_API_KEY" python -m src.audits.gemini_linguistic_bias.run_audit --num_probes 800 --qpm 60 --out_file data/gemini_bias_800.parquet
+GEMINI_API_KEY="YOUR_API_KEY" python -m src.audits.gemini_linguistic_bias.run_audit --num_probes 1008 --qpm 60 --out_file data/gemini_bias_1k.parquet
 ```
 
 - **Tip:** If you hit rate limits, try lowering `--qpm` (queries per minute), or run the script in batches (e.g., 500 at a time).

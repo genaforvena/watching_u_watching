@@ -67,17 +67,20 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
         ("group", pa.string()),
         ("article_present", pa.bool_()),
         ("name_category", pa.string()),
-        # Add fields required for analysis
         ("response_length", pa.int64()),
         ("sentiment", pa.float64()),
         ("refusal", pa.bool_()),
         ("latency", pa.float64()),
     ])
 
-    all_probes = generate_all_probes()
-    logging.info(f"Generated {len(all_probes)} total probes.")
-    probes_to_run = all_probes[:max_calls]
-    logging.info(f"Running audit for {len(probes_to_run)} probes (limited by --max_calls).")
+    # Generate probes, repeating if needed to reach max_calls
+    base_probes = generate_all_probes(num_prompt_seeds=min(max_calls, 1000))
+    if not base_probes:
+        logging.error("No probes generated. Check probe generator.")
+        sys.exit(1)
+    # Repeat probes if needed to reach max_calls
+    probes_to_run = (base_probes * ((max_calls // len(base_probes)) + 1))[:max_calls]
+    logging.info(f"Generated {len(base_probes)} unique probes. Running audit for {len(probes_to_run)} probes (repeats as needed to reach --max_calls).")
 
     # Determine sleep_time from qpm if provided
     if sleep_time is None and hasattr(run_audit, "qpm") and run_audit.qpm:
