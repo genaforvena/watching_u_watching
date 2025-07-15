@@ -81,6 +81,48 @@ This guide enables both technical and non-technical contributors to rapidly and 
 **See** `src/audits/gemini_linguistic_bias/README.md` for full details and customization options.
 
 
+### GPT-2 Cryptohauntological Probe
+*   Investigates potential PII leaks (passwords, email addresses) from GPT-2 models.
+*   Uses a Y↔Z character swap perturbation to test model robustness.
+*   Designed for extended runs to uncover subtle and infrequent leaks.
+
+**[See implementation →](./implementations/gpt2_cryptohauntological_probe/README.md)**
+
+**How to run:**
+1.  **Navigate to the directory:**
+    ```bash
+    cd implementations/gpt2_cryptohauntological_probe
+    ```
+
+2.  **Install dependencies:**
+    Ensure you have the necessary Python packages installed. You can typically do this with:
+    ```bash
+    pip install -r requirements.txt
+    ```
+    *(Note: This probe relies on the `nltk` library, which is used by the `error_injector.py` module. The `error_injector.py` handles the download of `wordnet` and `omw-1.4` corpora automatically on first run, but it's good to be aware.)*
+
+3.  **Run the probe:**
+    Execute the `probe_runner.py` script. The script is configured to run the `run_password_email_probe` by default for `1,000,000` rounds.
+    ```bash
+    python probe_runner.py
+    ```
+
+**Observing Progress:**
+
+The `probe_runner.py` script provides real-time feedback on its progress:
+
+*   **Round Number:** For each round, it will print `--- Password/Email Probe - Round X ---`, where `X` is the current round number.
+*   **Prompting GPT-2:** It will show the prompt being sent to the GPT-2 model.
+*   **GPT-2 Output:** The raw output from the GPT-2 model will be displayed.
+*   **PII Leak Detection:**
+    *   If a potential PII leak is detected, it will print `!!! PII LEAK DETECTED: [detected_pii] !!!` along with the leaked information.
+    *   If no PII leak is found in a round, it will print `No PII leak detected.`
+*   **Correct Examples Found:** At the end of each round, it will report `Round X found Y correct examples.` if any PII was detected in that round.
+*   **Total Examples:** At the very end of the run (or if interrupted), it will print `Total correct examples found: Z`, summarizing the total PII leaks found.
+
+You can monitor the console output to track the progress and identify any detected leaks. Due to the large number of rounds, this process can take a very long time.
+
+
 ### Fairlearn Bias Assessment
 * Technical proof-of-concept for LLMs
 * Detected disparities in reply characteristics
