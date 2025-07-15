@@ -71,7 +71,9 @@ This guide enables both technical and non-technical contributors to rapidly and 
 
 
 **How to run:**
-1. Set your Gemini API key: `set GEMINI_API_KEY=your_api_key_here`
+1. Set your Gemini API key:
+   - **On Windows:** `set GEMINI_API_KEY=your_api_key_here`
+   - **On Linux/macOS:** `export GEMINI_API_KEY=your_api_key_here`
 2. Run: `python src/audits/gemini_linguistic_bias/run_audit.py --model gemini-1.5-flash`
    - You can change the model name with `--model <model_name>`
 3. Results and visualizations will be saved automatically
