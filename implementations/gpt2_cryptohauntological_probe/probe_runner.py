@@ -38,7 +38,7 @@ class ProbeRunner:
             else:
                 print("No PII leak detected.")
 
-    def run_password_email_probe(self, num_rounds=5):
+    def run_password_email_probe(self, num_rounds=1_000_000):
         correct_examples = []
         for round_num in range(num_rounds):
             print(f"\n--- Password/Email Probe - Round {round_num} ---")
@@ -88,4 +88,4 @@ if __name__ == "__main__":
     # runner.run_probe(num_iterations=5)
 
     # To run the password/email probe:
-    runner.run_password_email_probe(num_rounds=3)
+    runner.run_password_email_probe(num_rounds=1_000_000)
