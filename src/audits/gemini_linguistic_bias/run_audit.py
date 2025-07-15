@@ -102,6 +102,7 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
         
         try:
             response = model_instance.generate_content(prompt)
+            logger.info("Received response from model.")
             latency = time.time() - start
             
             if response.candidates:
@@ -170,7 +171,7 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
     }
 
 # ------------------ Main Audit Loop ------------------
-def run_audit_loop(api_key: str, model_id: str, num_turns: int, max_calls: int = float('inf'), dry_run: int = 0):
+def run_audit_loop(api_key: str, model_id: str, num_turns: int, qpm_delay: float, max_calls: int = float('inf'), dry_run: int = 0):
     """
     Runs the multi-turn, self-iterating audit for LLM linguistic bias.
     
@@ -200,6 +201,7 @@ def run_audit_loop(api_key: str, model_id: str, num_turns: int, max_calls: int =
         # Collect sentences from this turn's replies for the *next* turn's probes
         next_turn_candidates = [] 
 
+        current_round_results = []
         for probe_with_articles in current_probes:
             # Check dry_run and max_calls caps before processing each probe pair
             if dry_run > 0 and total_probes_processed >= dry_run:
@@ -217,7 +219,7 @@ def run_audit_loop(api_key: str, model_id: str, num_turns: int, max_calls: int =
             logger.debug(f"Turn {turn_number} | Probe ID: {base_probe_id} | Sending (with articles): {probe_with_articles[:100]}...")
             llm_reply_data_with_articles = get_llm_reply(probe_with_articles, model_instance)
             total_api_calls += 1
-            all_audit_results.append({
+            current_round_results.append({
                 'probe_id': base_probe_id,
                 'turn_number': turn_number,
                 'probe_text': probe_with_articles,
@@ -259,8 +261,18 @@ def run_audit_loop(api_key: str, model_id: str, num_turns: int, max_calls: int =
                 next_turn_candidates.extend(article_sentences_for_next_turn)
                 # Also add to the global pool for potential fallback
                 all_generated_article_sentences.extend(article_sentences_for_next_turn)
-            # Proactive Rate Limiting: Delay after each probe pair (2 API calls, or 1 if no articles)
-            time.sleep(qpm_delay)
+        # Append to parquet file after each round
+        if current_round_results:
+            df = pd.DataFrame(current_round_results)
+            if os.path.exists(RESULTS_FILE_PATH):
+                # Append to existing file
+                df_existing = pd.read_parquet(RESULTS_FILE_PATH)
+                df_combined = pd.concat([df_existing, df], ignore_index=True)
+                df_combined.to_parquet(RESULTS_FILE_PATH, index=False)
+            else:
+                df.to_parquet(RESULTS_FILE_PATH, index=False)
+        # Proactive Rate Limiting: Delay after each probe pair (2 API calls, or 1 if no articles)
+        time.sleep(qpm_delay)
         
         # Break outer loop if inner loop broke due to caps
         if (dry_run > 0 and total_probes_processed >= dry_run) or \
@@ -293,9 +305,6 @@ def run_audit_loop(api_key: str, model_id: str, num_turns: int, max_calls: int =
                 current_probes = INITIAL_PROMPTS.copy()
                 logger.warning(f"Turn {turn_number} completed. No valid article-containing sentences generated or available. Restarting with INITIAL_PROMPTS.")
 
-    # Save results after all turns are complete or caps are hit
-    df = pd.DataFrame(all_audit_results)
-    df.to_parquet(RESULTS_FILE_PATH, index=False) # index=False to avoid writing pandas index
     logger.info(f"Audit completed. Results saved to {RESULTS_FILE_PATH} with {total_api_calls} API calls.")
 
 # ------------------ Analysis ------------------
@@ -414,6 +423,7 @@ if __name__ == "__main__":
                         help='Stop after processing N probe pairs (original + no-articles). 0 means no limit. (default: 0)')
     parser.add_argument('-v', '--verbose', action='store_true', 
                         help='Enable verbose (DEBUG) logging.')
+    parser.add_argument('--only_analyze', help='Only run analysis on existing results, do not execute the audit loop.', action='store_true')
     
     args = parser.parse_args()
 
@@ -422,6 +432,11 @@ if __name__ == "__main__":
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
+
+    if args.only_analyze:
+        logger.info("Running analysis on existing results only.")
+        analyze_results()
+        exit(0)
 
     # Set random seeds for reproducibility
     random.seed(args.seed)
@@ -458,5 +473,5 @@ if __name__ == "__main__":
         nltk.download('vader_lexicon')
 
 
-    run_audit_loop(api_key, args.model, args.rounds, max_calls=args.max_calls, dry_run=args.dry_run)
+    run_audit_loop(api_key, args.model, args.rounds, qpm_delay, max_calls=args.max_calls, dry_run=args.dry_run)
     analyze_results()
