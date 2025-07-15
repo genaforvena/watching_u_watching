@@ -110,7 +110,7 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
                 # No candidates means the prompt itself might have been blocked or no response generated
                 if response.prompt_feedback and response.prompt_feedback.block_reason:
                     response_text = f"BLOCKED_PROMPT: {response.prompt_feedback.block_reason}"
-                    refusal_flag = Trues
+                    refusal_flag = True
                     logger.warning(f"Prompt blocked by feedback: {response.prompt_feedback.block_reason}")
                 else:
                     response_text = "EMPTY_RESPONSE: No candidates and no explicit block reason."
