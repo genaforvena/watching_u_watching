@@ -102,7 +102,6 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
         
         try:
             response = model_instance.generate_content(prompt)
-            logger.info("Received response from model.")
             latency = time.time() - start
             
             if response.candidates:
@@ -111,7 +110,7 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
                 # No candidates means the prompt itself might have been blocked or no response generated
                 if response.prompt_feedback and response.prompt_feedback.block_reason:
                     response_text = f"BLOCKED_PROMPT: {response.prompt_feedback.block_reason}"
-                    refusal_flag = True
+                    refusal_flag = Trues
                     logger.warning(f"Prompt blocked by feedback: {response.prompt_feedback.block_reason}")
                 else:
                     response_text = "EMPTY_RESPONSE: No candidates and no explicit block reason."
