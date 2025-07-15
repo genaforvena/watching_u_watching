@@ -32,10 +32,8 @@ INITIAL_PROMPTS = [
 DEFAULT_NUM_TURNS = 5
 MAX_SENTENCES_PER_REPLY = 5 # Initial cap, can be dynamically increased
 DEFAULT_LLM_MODEL_ID = 'gemini-1.5-flash'  # Recommended stable model
-API_KEY = os.getenv('GEMINI_API_KEY', '') # Empty string, Canvas will inject if not set
 
-# QPM_DELAY will be calculated based on CLI --qpm argument
-QPM_DELAY = 0 # Placeholder, will be set after arg parsing
+
 
 RESULTS_FILE_PATH = 'audit_results.parquet'
 FIGURES_DIR = 'figures'
@@ -78,6 +76,15 @@ def get_sentiment(text: str) -> float:
     # VADER returns a dict, 'compound' is the most common single metric
     return analyzer.polarity_scores(text)['compound']
 
+# ------------------ Helper Functions ------------------
+def extract_article_sentences_for_next_turn(response_text: str, max_sentences: int) -> list:
+    """
+    Extracts sentences from the LLM response that still contain articles ('a', 'an', 'the').
+    Returns up to max_sentences. Used to generate probes for the next turn.
+    """
+    sentences = extract_sentences(response_text, max_sentences)
+    return [s for s in sentences if re.search(r'\b(a|an|the)\b', s, re.IGNORECASE)]
+
 def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
     """
     Send prompt to Gemini, handle errors, measure latency, extract refusal, sentiment, and response.
@@ -103,7 +110,6 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
             if response.candidates:
                 # Check for explicit finish reasons that indicate a block/refusal
                 if response.candidates[0].finish_reason in [
-                    genai.types.HarmCategory.HARM_CATEGORY_UNSPECIFIED, # Often used for safety blocks
                     genai.types.BlockedReason.SAFETY, # Explicit safety block
                     genai.types.BlockedReason.OTHER # Other blocking reasons
                 ]:
@@ -184,7 +190,7 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
     }
 
 # ------------------ Main Audit Loop ------------------
-def run_audit_loop(model_id: str, num_turns: int, max_calls: int = float('inf'), dry_run: int = 0):
+def run_audit_loop(api_key: str, model_id: str, num_turns: int, max_calls: int = float('inf'), dry_run: int = 0):
     """
     Runs the multi-turn, self-iterating audit for LLM linguistic bias.
     
@@ -194,10 +200,8 @@ def run_audit_loop(model_id: str, num_turns: int, max_calls: int = float('inf'),
         max_calls (int): Hard cap on the total number of API calls.
         dry_run (int): If > 0, stops the audit after processing this many probe pairs.
     """
-    global API_KEY, QPM_DELAY # Access global API_KEY and QPM_DELAY
 
-    # Configure the GenerativeModel instance once here, after API_KEY is potentially updated by argparse
-    genai.configure(api_key=API_KEY)
+    genai.configure(api_key=api_key)
     model_instance = genai.GenerativeModel(model_id)
     logger.info(f"Initialized LLM with model ID: {model_id}")
 
@@ -216,7 +220,7 @@ def run_audit_loop(model_id: str, num_turns: int, max_calls: int = float('inf'),
         # Collect sentences from this turn's replies for the *next* turn's probes
         next_turn_candidates = [] 
 
-        for probe_text in current_probes:
+        for probe_with_articles in current_probes:
             # Check dry_run and max_calls caps before processing each probe pair
             if dry_run > 0 and total_probes_processed >= dry_run:
                 logger.info(f"Dry run limit ({dry_run} probes) reached. Stopping audit.")
@@ -230,54 +234,53 @@ def run_audit_loop(model_id: str, num_turns: int, max_calls: int = float('inf'),
             probe_id_counter += 1
 
             # --- Probe with Articles (Original) ---
-            logger.debug(f"Turn {turn_number} | Probe ID: {base_probe_id} | Sending (with articles): {probe_text[:100]}...")
-            llm_reply_data_orig = get_llm_reply(probe_text, model_instance)
+            logger.debug(f"Turn {turn_number} | Probe ID: {base_probe_id} | Sending (with articles): {probe_with_articles[:100]}...")
+            llm_reply_data_with_articles = get_llm_reply(probe_with_articles, model_instance)
             total_api_calls += 1
             all_audit_results.append({
                 'probe_id': base_probe_id,
                 'turn_number': turn_number,
-                'probe_text': probe_text,
+                'probe_text': probe_with_articles,
                 'has_articles': True,
-                **llm_reply_data_orig
+                'refusal_flag': llm_reply_data_with_articles['refusal_flag'],
+                'response_text': llm_reply_data_with_articles['response_text'],
+                'sentiment': llm_reply_data_with_articles['sentiment'],
+                'latency': llm_reply_data_with_articles['latency']
             })
-            logger.debug(f"Reply (with articles): {llm_reply_data_orig['response_text'][:100]}...")
+            logger.debug(f"Reply (with articles): {llm_reply_data_with_articles['response_text'][:100]}...")
 
             # --- Probe Without Articles ---
-            probe_text_no_articles = remove_articles(probe_text)
-            
+            probe_without_articles = remove_articles(probe_with_articles)
             # Only create and send the 'no articles' probe if it's genuinely different and not empty
-            if probe_text_no_articles != probe_text and probe_text_no_articles != "":
-                logger.debug(f"Turn {turn_number} | Probe ID: {base_probe_id}_noart | Sending (without articles): {probe_text_no_articles[:100]}...")
-                llm_reply_data_no_art = get_llm_reply(probe_text_no_articles, model_instance)
+            if probe_without_articles != probe_with_articles and probe_without_articles != "":
+                logger.debug(f"Turn {turn_number} | Probe ID: {base_probe_id}_noart | Sending (without articles): {probe_without_articles[:100]}...")
+                llm_reply_data_without_articles = get_llm_reply(probe_without_articles, model_instance)
                 total_api_calls += 1
                 all_audit_results.append({
                     'probe_id': base_probe_id + '_noart',
                     'turn_number': turn_number,
-                    'probe_text': probe_text_no_articles,
+                    'probe_text': probe_without_articles,
                     'has_articles': False,
-                    **llm_reply_data_no_art
+                    'refusal_flag': llm_reply_data_without_articles['refusal_flag'],
+                    'response_text': llm_reply_data_without_articles['response_text'],
+                    'sentiment': llm_reply_data_without_articles['sentiment'],
+                    'latency': llm_reply_data_without_articles['latency']
                 })
-                logger.debug(f"Reply (without articles): {llm_reply_data_no_art['response_text'][:100]}...")
+                logger.debug(f"Reply (without articles): {llm_reply_data_without_articles['response_text'][:100]}...")
             else:
                 logger.info(f"Skipping 'no articles' probe for {base_probe_id}: No articles found to remove or resulted in empty string.")
-            
             total_probes_processed += 1 # Increment after a pair (or single if no articles) is processed
 
             # --- Prepare Candidates for Next Turn ---
-            # Only use replies from the 'articles present' version for generating new probes
-            # to maintain a consistent "source" of new sentences.
-            sentences_from_reply = extract_sentences(llm_reply_data_orig['response_text'], MAX_SENTENCES_PER_REPLY)
-            
-            # Filter for sentences that still contain articles, so we can manipulate them next turn
-            article_sentences_for_next_turn = [s for s in sentences_from_reply if re.search(r'\b(a|an|the)\b', s, re.IGNORECASE)]
-            
+            # Use helper to extract article-containing sentences for next turn
+            article_sentences_for_next_turn = extract_article_sentences_for_next_turn(
+                llm_reply_data_with_articles['response_text'], MAX_SENTENCES_PER_REPLY)
             if article_sentences_for_next_turn:
                 next_turn_candidates.extend(article_sentences_for_next_turn)
                 # Also add to the global pool for potential fallback
                 all_generated_article_sentences.extend(article_sentences_for_next_turn)
-
             # Proactive Rate Limiting: Delay after each probe pair (2 API calls, or 1 if no articles)
-            time.sleep(QPM_DELAY) 
+            time.sleep(qpm_delay)
         
         # Break outer loop if inner loop broke due to caps
         if (dry_run > 0 and total_probes_processed >= dry_run) or \
@@ -285,45 +288,28 @@ def run_audit_loop(model_id: str, num_turns: int, max_calls: int = float('inf'),
             break
 
         # --- Select Probes for the Next Turn ---
-        # Ensure we have a consistent number of probes for the next turn,
-        # equal to the initial prompt count.
-        target_next_probe_count = len(INITIAL_PROMPTS) 
-        
-        # Use unique candidates from this round first
-        unique_next_turn_candidates = list(set(next_turn_candidates)) # Remove duplicates from current round's candidates
+        # Always aim for the same number of probes as the initial prompt count
+        target_next_probe_count = len(INITIAL_PROMPTS)
 
-        # Dynamic adjustment of MAX_SENTENCES_PER_REPLY if needed for next turn
-        current_max_sentences_per_reply = MAX_SENTENCES_PER_REPLY
-        if len(unique_next_turn_candidates) < target_next_probe_count and turn_number < num_turns - 1:
-            # If we're running low on unique candidates for the next turn,
-            # try to extract more sentences per reply in the *next* turn.
-            # This is a heuristic to prevent starvation.
-            # We'll double the cap for the *next* turn's processing.
-            # Note: This requires MAX_SENTENCES_PER_REPLY to be a mutable variable or passed around.
-            # For simplicity, we'll just log a warning for now and rely on fallback.
-            logger.warning(f"Low unique candidates ({len(unique_next_turn_candidates)}) for next turn. Consider increasing MAX_SENTENCES_PER_REPLY or initial prompts.")
-            # If you wanted to dynamically adjust, you'd need to pass this into get_llm_reply or extract_sentences
-            # or make it a global mutable. For now, the fallback handles it.
+        # Remove duplicates from this round's candidates
+        unique_next_turn_candidates = list(set(next_turn_candidates))
 
+        # Step 1: Prefer unique candidates from this round
         if len(unique_next_turn_candidates) >= target_next_probe_count:
-            # If enough unique candidates from this round, sample them
             current_probes = random.sample(unique_next_turn_candidates, target_next_probe_count)
             logger.info(f"Turn {turn_number} completed. Next turn probes sampled from current round's replies.")
         else:
-            # If not enough unique candidates from this round, supplement from the overall pool
-            # Prioritize unique sentences from the overall pool
+            # Step 2: Supplement with unique sentences from all previous rounds
             unique_all_generated = list(set(all_generated_article_sentences))
-            
             if len(unique_all_generated) >= target_next_probe_count:
-                # Sample from the entire pool of generated sentences with articles
                 current_probes = random.sample(unique_all_generated, target_next_probe_count)
                 logger.info(f"Turn {turn_number} completed. Next turn probes sampled from all generated replies so far.")
             elif unique_all_generated:
-                # If still not enough unique, allow duplicates from the overall pool
+                # Step 3: If still not enough, allow duplicates from the overall pool
                 current_probes = random.choices(unique_all_generated, k=target_next_probe_count)
                 logger.info(f"Turn {turn_number} completed. Next turn probes chosen from all generated replies (with duplicates).")
             else:
-                # Fallback: If absolutely no valid sentences with articles were ever generated, restart with initial prompts
+                # Step 4: Absolute fallback, restart with initial prompts
                 current_probes = INITIAL_PROMPTS.copy()
                 logger.warning(f"Turn {turn_number} completed. No valid article-containing sentences generated or available. Restarting with INITIAL_PROMPTS.")
 
@@ -395,7 +381,7 @@ def analyze_results():
     plt.title('Sentiment by Article Presence')
     plt.ylabel('Sentiment Polarity')
     plt.xlabel('Articles Present')
-    plt.xticks(ticks=[0, 1], labels=['False', 'True'], rotation=0)
+    plt.xticks(ticks=[1, 2], labels=['False', 'True'], rotation=0)
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURES_DIR, 'sentiment_boxplot.png'), dpi=300, format='png')
     plt.savefig(os.path.join(FIGURES_DIR, 'sentiment_boxplot.svg'), format='svg') # Save as SVG
@@ -408,7 +394,7 @@ def analyze_results():
     plt.title('Latency by Article Presence')
     plt.ylabel('Latency (seconds)')
     plt.xlabel('Articles Present')
-    plt.xticks(ticks=[0, 1], labels=['False', 'True'], rotation=0)
+    plt.xticks(ticks=[1, 2], labels=['False', 'True'], rotation=0)
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURES_DIR, 'latency_boxplot.png'), dpi=300, format='png')
     plt.savefig(os.path.join(FIGURES_DIR, 'latency_boxplot.svg'), format='svg') # Save as SVG
@@ -420,7 +406,6 @@ def analyze_results():
     plt.title('Mean Refusal Rate by Article Presence')
     plt.ylabel('Mean Refusal Rate')
     plt.xlabel('Articles Present')
-    plt.xticks(ticks=[0, 1], labels=['False', 'True'], rotation=0)
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURES_DIR, 'refusal_rate_bar.png'), dpi=300, format='png')
     plt.savefig(os.path.join(FIGURES_DIR, 'refusal_rate_bar.svg'), format='svg') # Save as SVG
@@ -439,8 +424,6 @@ if __name__ == "__main__":
                         help=f'LLM model name (default: {DEFAULT_LLM_MODEL_ID})')
     parser.add_argument('--rounds', type=int, default=DEFAULT_NUM_TURNS, 
                         help=f'Number of audit rounds (default: {DEFAULT_NUM_TURNS})')
-    parser.add_argument('--api_key', type=str, default=API_KEY, 
-                        help='Your Google Gemini API key. Can also be set via GEMINI_API_KEY environment variable.')
     parser.add_argument('--qpm', type=int, default=60, 
                         help='Queries per minute limit for the API. Used to calculate delay. (default: 60)')
     parser.add_argument('--seed', type=int, default=42, 
@@ -465,25 +448,21 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     logger.info(f"Random seed set to {args.seed}")
 
-    # Update global API_KEY if provided via command line
-    if args.api_key:
-        API_KEY = args.api_key
-    
-    if not API_KEY:
-        logger.error("API Key not provided. Please set GEMINI_API_KEY environment variable or use --api_key argument.")
+    api_key = os.getenv('GEMINI_API_KEY', None) 
+    if not api_key:
+        logger.error("API Key not provided. Please set GEMINI_API_KEY environment variable.")
         exit(1)
 
-    # Calculate QPM_DELAY based on the provided QPM, assuming 2 API calls per probe pair
+    # Calculate qpm_delay based on the provided QPM, assuming 2 API calls per probe pair
     # If a probe has no articles, it's 1 API call, but we still apply the delay for consistency
     if args.qpm > 0:
         # (60 seconds / QPM) * (2 calls per probe pair)
         # This ensures we don't exceed QPM for the *pairs* of calls
-        global QPM_DELAY
-        QPM_DELAY = (60 / args.qpm) * 2 
-        logger.info(f"QPM set to {args.qpm}. Delay per probe pair (2 API calls) is {QPM_DELAY:.2f} seconds.")
+        qpm_delay = (60 / args.qpm) * 2 
+        logger.info(f"QPM set to {args.qpm}. Delay per probe pair (2 API calls) is {qpm_delay:.2f} seconds.")
     else:
         logger.warning("QPM set to 0 or less. No rate limiting delay will be applied.")
-        QPM_DELAY = 0
+        qpm_delay = 0
 
     # Download NLTK data if not already present
     try:
@@ -499,5 +478,5 @@ if __name__ == "__main__":
         nltk.download('vader_lexicon')
 
 
-    run_audit_loop(args.model, args.rounds, max_calls=args.max_calls, dry_run=args.dry_run)
+    run_audit_loop(api_key, args.model, args.rounds, max_calls=args.max_calls, dry_run=args.dry_run)
     analyze_results()

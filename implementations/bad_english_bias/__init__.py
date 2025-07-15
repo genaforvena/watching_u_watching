@@ -1,2 +1,1 @@
-from src.audits.gemini_linguistic_bias.probe_generator import generate_all_probes as generate_probes
-from src.audits.gemini_linguistic_bias.run_audit import run_audit as run_audit_main
+from src.audits.gemini_linguistic_bias.run_audit import run_audit_loop as run_audit_main
