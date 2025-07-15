@@ -92,9 +92,6 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
     """
     max_retries = 5
     backoff_time = 1  # seconds
-    
-    # Regex for common refusal phrases (case-insensitive, word boundaries)
-    refusal_pattern = re.compile(r"\b(?:sorry|cannot|can't|unable|not able|apologies|i am not able to)\b", re.IGNORECASE)
 
     for attempt in range(max_retries):
         start = time.time()
@@ -108,24 +105,7 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
             latency = time.time() - start
             
             if response.candidates:
-                # Check for explicit finish reasons that indicate a block/refusal
-                if response.candidates[0].finish_reason in [
-                    genai.types.BlockedReason.SAFETY, # Explicit safety block
-                    genai.types.BlockedReason.OTHER # Other blocking reasons
-                ]:
-                    response_text = f"BLOCKED_RESPONSE: Finish reason - {response.candidates[0].finish_reason}"
-                    refusal_flag = True
-                    logger.warning(f"Candidate blocked with finish reason: {response.candidates[0].finish_reason}")
-                elif response.candidates[0].content and response.candidates[0].content.parts:
-                    response_text = response.candidates[0].content.parts[0].text
-                    # Check for refusal phrases in the actual response text
-                    if refusal_pattern.search(response_text):
-                        refusal_flag = True
-                        logger.info(f"Refusal phrase detected in response: {response_text[:50]}...")
-                else:
-                    response_text = "EMPTY_RESPONSE: Candidate content is empty or malformed."
-                    refusal_flag = True
-                    logger.warning("Empty or malformed candidate content received.")
+                response_text = response.candidates[0].content.parts[0].text
             else:
                 # No candidates means the prompt itself might have been blocked or no response generated
                 if response.prompt_feedback and response.prompt_feedback.block_reason:
