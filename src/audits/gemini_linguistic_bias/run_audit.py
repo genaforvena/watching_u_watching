@@ -187,7 +187,6 @@ def run_audit_loop(api_key: str, model_id: str, num_turns: int, qpm_delay: float
     logger.info(f"Initialized LLM with model ID: {model_id}")
 
     current_probes = INITIAL_PROMPTS.copy()
-    all_audit_results = []
     probe_id_counter = 0
     total_api_calls = 0
     total_probes_processed = 0 # Counter for dry_run
@@ -238,7 +237,7 @@ def run_audit_loop(api_key: str, model_id: str, num_turns: int, qpm_delay: float
                 logger.debug(f"Turn {turn_number} | Probe ID: {base_probe_id}_noart | Sending (without articles): {probe_without_articles[:100]}...")
                 llm_reply_data_without_articles = get_llm_reply(probe_without_articles, model_instance)
                 total_api_calls += 1
-                all_audit_results.append({
+                current_round_results.append({
                     'probe_id': base_probe_id + '_noart',
                     'turn_number': turn_number,
                     'probe_text': probe_without_articles,
@@ -253,6 +252,7 @@ def run_audit_loop(api_key: str, model_id: str, num_turns: int, qpm_delay: float
                 logger.info(f"Skipping 'no articles' probe for {base_probe_id}: No articles found to remove or resulted in empty string.")
             total_probes_processed += 1 # Increment after a pair (or single if no articles) is processed
 
+            time.sleep(qpm_delay)
             # --- Prepare Candidates for Next Turn ---
             # Use helper to extract article-containing sentences for next turn
             article_sentences_for_next_turn = extract_article_sentences_for_next_turn(
@@ -272,7 +272,6 @@ def run_audit_loop(api_key: str, model_id: str, num_turns: int, qpm_delay: float
             else:
                 df.to_parquet(RESULTS_FILE_PATH, index=False)
         # Proactive Rate Limiting: Delay after each probe pair (2 API calls, or 1 if no articles)
-        time.sleep(qpm_delay)
         
         # Break outer loop if inner loop broke due to caps
         if (dry_run > 0 and total_probes_processed >= dry_run) or \
