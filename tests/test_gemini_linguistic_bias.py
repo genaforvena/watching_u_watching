@@ -105,9 +105,10 @@ def test_extract_sentences_filtering():
 
 def test_extract_sentences_max_limit():
     """Tests max_sentences limit."""
-    text = "S1. S2. S3. S4. S5. S6. S7."
-    assert len(extract_sentences(text, 3)) == 0
-    assert extract_sentences(text, 3) == []
+    text = "This is sentence one. This is sentence two. This is sentence three."
+    result = extract_sentences(text, 2)
+    assert len(result) == 2
+    assert result == ["This is sentence one.", "This is sentence two."]
 
 def test_extract_sentences_empty_input():
     """Tests empty input for sentence extraction."""
