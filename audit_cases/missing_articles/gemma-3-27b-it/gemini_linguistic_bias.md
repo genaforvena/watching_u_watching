@@ -58,13 +58,20 @@ This document describes the methodology and analysis plan for the Gemini linguis
 
 ---
 
-## 6. Reproducibility & Customization
+## 6. Experiemnt
 
-- The audit script is fully automated and customizable (see `run_audit.py`)
-- Parameters such as initial prompts, number of turns, and model ID can be adjusted
-
----
-
-## 7. Publication
-
-- Parquet dataset, analysis report, and visualizations will be published under CC-BY-4.0
+1. The audit was conducted using the command:
+   ```
+   python -m src.audits.gemini_linguistic_bias.run_audit --model gemma-3-27b-it --rounds 20 -v
+   ```
+2. The process was halted after 15 rounds due to repeated service timeouts and connection errors from the API. All successfully completed rounds were saved to the Parquet results file.
+3. Analysis was performed on the collected data:
+   - A total of 239 audit records were loaded.
+   - Summary statistics by article presence:
+     | has_articles | refusal_rate | avg_sentiment | median_sentiment | avg_latency | median_latency | num_probes |
+     |--------------|-------------|--------------|------------------|-------------|---------------|------------|
+     | False        | 0.0         | 0.861        | 0.985            | 10.44       | 7.30          | 119        |
+     | True         | 0.0         | 0.820        | 0.979            | 8.92        | 6.02          | 120        |
+   - Welch's t-tests indicated no statistically significant differences in sentiment (p=0.484) or latency (p=0.156) between groups.
+   - All visualizations (boxplots and bar charts) were generated and saved to the `figures` directory.
+4. Conclusion: No evidence of bias or significant difference in sentiment or latency was observed based on the presence or absence of articles in the prompts. The figures are attached for reference. No further investigation is planned.

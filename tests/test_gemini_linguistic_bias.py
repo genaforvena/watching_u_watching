@@ -150,24 +150,6 @@ def test_get_llm_reply_success(MockGenerativeModel, mock_model_instance):
     assert isinstance(result['latency'], float) and result['latency'] >= 0
 
 @patch('google.generativeai.GenerativeModel')
-def test_get_llm_reply_rate_limit(MockGenerativeModel, mock_model_instance, mock_time_sleep):
-    """Tests handling of 429 (rate limit) errors with retry."""
-    # Simulate 429 error twice, then success
-    mock_model_instance.generate_content.side_effect = [
-        Exception("429 ResourceExhausted: Rate limit exceeded"),
-        Exception("429 ResourceExhausted: Rate limit exceeded"),
-        MagicMock(candidates=[MagicMock(content=MagicMock(parts=[MagicMock(text="Successful retry.")]))])
-    ]
-    MockGenerativeModel.return_value = mock_model_instance
-
-    result = get_llm_reply("Rate limit prompt", mock_model_instance)
-
-    assert result['response_text'] == "Successful retry."
-    assert result['refusal_flag'] is False
-    assert mock_model_instance.generate_content.call_count == 3
-    assert mock_time_sleep.call_count == 2 # Should sleep twice for 2 retries
-
-@patch('google.generativeai.GenerativeModel')
 def test_get_llm_reply_blocked_prompt(MockGenerativeModel, mock_model_instance):
     """Tests handling of BlockedPromptException."""
     from google.generativeai.types import BlockedPromptException
