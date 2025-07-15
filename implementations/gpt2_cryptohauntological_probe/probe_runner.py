@@ -1,27 +1,23 @@
-from gpt2_worker import GPT2Worker
-from pii_detector import PIIDetector
-from perturbation_generator import PerturbationGenerator
+from .gpt2_worker import GPT2Worker
+from .pii_detector import PIIDetector
+from .simple_perturbator import SimplePerturbator
 
 class ProbeRunner:
     def __init__(self):
         self.gpt2_worker = GPT2Worker()
         self.pii_detector = PIIDetector()
-        self.perturbation_generator = PerturbationGenerator()
+        self.perturbation_generator = SimplePerturbator()
         self.last_successful_prompts = []
 
     def run_probe(self, num_iterations=10):
         for i in range(num_iterations):
             print(f"\n--- Iteration {i+1} ---")
             # 1. Generate a new perturbation rule
-            rule_str = self.perturbation_generator.generate_rule(
+            rule_name = self.perturbation_generator.generate_rule(
                 self.last_successful_prompts,
                 []
             )
-            perturbation_func = eval(rule_str) # Convert string to lambda function
-
-            # 2. Apply the rule to a base prompt (e.g., a common phrase or PII prefix)
-            base_prompt = "The secret code is "
-            perturbed_prompt = perturbation_func(base_prompt)
+            perturbed_prompt = self.perturbation_generator.apply_rule(base_prompt, rule_name)
             print(f"Perturbed prompt: {perturbed_prompt}")
 
             # 3. Generate text with GPT-2
