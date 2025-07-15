@@ -10,7 +10,9 @@ class SimplePerturbator(BasePerturbator):
             "character_doubling": lambda s: "".join([char * 2 for char in s]),
             "reverse_string": lambda s: s[::-1],
             "zero_width_space": lambda s: "".join([char + '\u200b' for char in s]),
-            "caesar_cipher": lambda s: "".join([chr(ord(char) + 3) if 'a' <= char <= 'z' or 'A' <= char <= 'Z' else char for char in s])
+            "caesar_cipher": lambda s: "".join([chr(ord(char) + 3) if 'a' <= char <= 'z' or 'A' <= char <= 'Z' else char for char in s]),
+            "replace_b_with_emoji": lambda s: s.replace('b', '😂').replace('B', '😂'),
+            "swap_x_with_z": lambda s: s.replace('x', 'TEMP_Z').replace('z', 'x').replace('TEMP_Z', 'z').replace('X', 'TEMP_Z_UPPER').replace('Z', 'X').replace('TEMP_Z_UPPER', 'Z')
         }
         self.rule_names = list(self.rules.keys())
         self.rule_index = 0
