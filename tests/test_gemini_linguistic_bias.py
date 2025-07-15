@@ -1,43 +1,38 @@
-import os
-import sys
-import pyarrow.parquet as pq
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.audits.gemini_linguistic_bias.probe_generator import generate_all_probes, ENGLISH_LEVELS, _remove_article, _get_name_category
+import pytest
+import pandas as pd
+from src.audits.gemini_linguistic_bias.run_audit import remove_articles, extract_sentences, get_sentiment, run_audit_loop, RESULTS_FILE_PATH
 
-def test_probe_count():
-    probes = generate_all_probes()
-    assert len(probes) == 400, f"Expected 400 probes, got {len(probes)}"
+def test_remove_articles_basic():
+    assert remove_articles("The quick brown fox jumps over a lazy dog.") == "quick brown fox jumps over lazy dog."
+    assert remove_articles("An apple a day keeps the doctor away.") == "apple day keeps doctor away."
+    assert remove_articles("This sentence has no articles.") == "This sentence has no articles."
 
-def test_article_present_count():
-    probes = generate_all_probes()
-    missing = [p for p in probes if not p['article_present']]
-    assert len(missing) == 200, f"Expected 200 probes with article_present=False, got {len(missing)}"
+def test_extract_sentences_basic():
+    text = "Hello world. This is a test. Short. Another sentence!"
+    sentences = extract_sentences(text, 3)
+    assert len(sentences) == 3
+    assert all(len(s) > 10 for s in sentences)
 
-def test_l2_shorter_than_perfect():
-    probes = generate_all_probes()
-    for seed in set(p['seed'] for p in probes):
-        for name in set(p['name'] for p in probes):
-            for article_present in [True, False]:
-                perfect = next((p for p in probes if p['seed']==seed and p['name']==name and p['english_level']=='perfect' and p['article_present']==article_present), None)
-                l2 = next((p for p in probes if p['seed']==seed and p['name']==name and p['english_level']=='l2' and p['article_present']==article_present), None)
-                if perfect and l2:
-                    assert l2['prompt'] != perfect['prompt'], f"L2 prompt identical to perfect for seed: {seed}, name: {name}, article_present: {article_present}"
+def test_get_sentiment():
+    assert get_sentiment("I love this!") > 0
+    assert get_sentiment("I hate this!") < 0
 
-def test_schema_columns(tmp_path):
-    out_file = tmp_path / "test_out.parquet"
-    import os
-    os.environ["GOOGLE_API_KEY"] = "dummy"
-    from src.audits.gemini_linguistic_bias.run_audit import run_audit
-    run_audit(str(out_file), max_calls=10, sleep_time=0)
-    table = pq.read_table(out_file)
-    expected = [
-        "pair_id", "baseline_content", "variant_content", "error_density", "errors_applied",
-        "timestamp", "metadata", "group", "article_present", "name_category",
-        "response_length", "sentiment", "latency", "refusal"
-    ]
-    for col in expected:
-        assert col in table.schema.names, f"Missing column: {col}"
-    assert str(table.schema.field('article_present').type) == 'bool', "article_present should be bool"
+def test_run_audit_loop_creates_file(tmp_path, monkeypatch):
+    # Patch RESULTS_FILE_PATH to tmp_path
+    import src.audits.gemini_linguistic_bias.run_audit as audit_mod
+    audit_mod.RESULTS_FILE_PATH = str(tmp_path / "audit_results.parquet")
+    # Patch get_llm_reply to avoid real API calls
+    audit_mod.get_llm_reply = lambda prompt: {
+        'response_text': f"Reply to: {prompt}",
+        'refusal_flag': False,
+        'sentiment': 0.5,
+        'latency': 0.1
+    }
+    audit_mod.run_audit_loop()
+    df = pd.read_parquet(audit_mod.RESULTS_FILE_PATH)
+    assert 'probe_id' in df.columns
+    assert 'has_articles' in df.columns
+    assert 'sentiment' in df.columns
     assert str(table.schema.field('name_category').type) == 'string', "name_category should be string"
 
 def test_article_removal_logic():

@@ -1,43 +1,46 @@
-## Interactive Analysis with Google Colab
 
-To explore the data and reproduce the analysis interactively, you can use the provided Google Colab notebook:
+# Gemini Linguistic Bias Audit
 
-**[➡️ Open in Colab]**(link-to-your-colab-notebook) <!-- TODO: Add Colab link -->
+This audit quantitatively assesses the impact of article presence versus absence on LLM output (refusal rate, sentiment, latency) using a self-iterating, paired testing methodology.
 
-## Scaling the Audit
+## How It Works
 
-The base audit is designed to generate **400 unique probes**, based on a factorial combination of variables (4 names × 2 English levels × 2 article states × 25 prompt seeds).
-The number of unique variable combinations (excluding seeds) is 16.
+1. **Initial Prompts:** Human-generated base prompts are used to kickstart the audit.
+2. **Paired Probes:** For each prompt, two probes are created—one with articles preserved, one with articles programmatically removed.
+3. **LLM Response Collection:** Each probe is sent to the LLM (e.g., Gemini), and responses are collected with robust error handling and latency measurement.
+4. **Iterative Loop:** Sentences from LLM replies are extracted and used as probes for subsequent turns, iterating for a set number of turns.
+5. **Result Storage:** All results are saved to a Parquet file for analysis.
+6. **Analysis:** The script provides summary statistics, t-tests, and visualizations comparing outputs for probes with and without articles.
 
-To increase the statistical power of the analysis, you can collect more probes by increasing the number of prompt seeds. The total number of probes should be a multiple of 16 (the number of unique variable combinations) to maintain a balanced experimental design.
+## Usage
 
-**Important**: For a statistically valid result, you should increase the number of unique `prompt_seeds` rather than repeating the same probes. Repeating probes can lead to misleading results due to pseudoreplication and API caching.
-
-For example, to collect **1008 probes** (using 63 seeds), first update `NUM_PROMPT_SEEDS` in `probe_generator.py` to `63` and ensure you have enough seeds in `prompt_seeds.jsonl`. Then, adjust the `--num_probes` argument in your run command:
-
-```bash
-GEMINI_API_KEY="YOUR_API_KEY" python -m src.audits.gemini_linguistic_bias.run_audit --num_probes 1008 --qpm 60 --out_file data/gemini_bias_1k.parquet
-```
-
-- **Tip:** If you hit rate limits, try lowering `--qpm` (queries per minute), or run the script in batches (e.g., 500 at a time).
-- **Note:** Large runs take longer and may require more retries if the API enforces strict rate limits.
-
-After collection, analyze your results as usual:
+Set your API key as an environment variable:
 
 ```bash
-python -m src.audits.gemini_linguistic_bias.analyze_results --input_file data/gemini_bias_1k.parquet --report_file data/gemini_bias_1k_report.md
+set GEMINI_API_KEY=your_api_key_here
 ```
 
----
+Run the audit script:
 
-## How Does Probe Data Reveal Bias?
+```bash
+python src/audits/gemini_linguistic_bias/run_audit.py
+```
 
-### **What is a probe?**
-A probe is a standardized test prompt sent to the model. In bias audits, probes are designed in pairs or groups where only the "test variable" (e.g., name, grammar, dialect, scenario) differs between them. Everything else is controlled.
+Results will be saved to `audit_results.parquet` and visualizations as PNG files.
 
-### **How do probe results show bias?**
-- **Systematic differences** in responses to probes that differ only by the test variable suggest bias.
-- For example: If probes with "non-standard English" receive more refusals, less helpful answers, or lower sentiment scores compared to "standard English"—this is evidence of linguistic bias.
+## Customization
+
+- Edit `INITIAL_PROMPTS` in `run_audit.py` to change the starting prompts.
+- Adjust `NUM_TURNS` and `MAX_SENTENCES_PER_REPLY` for experiment depth and breadth.
+- Change `LLM_MODEL_ID` for different models.
+
+## Analysis
+
+The script automatically analyzes results, comparing refusal rates, sentiment, and latency for probes with and without articles. It generates summary statistics, t-tests, and visualizations.
+
+## Methodological Note
+
+This study focuses solely on the impact of article presence/absence in model-generated sentences and does not control for other contextual factors of the sentences themselves.
 - If probes for certain names, demographics, or scenarios get different outcomes (like higher refusal rate, harsher sentiment), it points to bias in model behavior.
 
 ### **How to correlate probe outcomes with bias**

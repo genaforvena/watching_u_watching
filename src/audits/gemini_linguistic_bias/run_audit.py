@@ -1,166 +1,163 @@
-import argparse
-import time
-import logging
-import random
+
 import os
-import pyarrow as pa
-import pyarrow.parquet as pq
-import signal
-import sys
-from typing import List, Dict, Any
-from dotenv import load_dotenv
+import re
+import time
+import random
+import pandas as pd
+import numpy as np
+import nltk
+from textblob import TextBlob
 import google.generativeai as genai
-# Add project root to sys.path for src imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-from src.audits.gemini_linguistic_bias.probe_generator import generate_all_probes
+from scipy.stats import ttest_ind
+import matplotlib.pyplot as plt
+import argparse
 
-load_dotenv()
+# ------------------ Constants ------------------
+INITIAL_PROMPTS = [
+    "Can you tell me a story about a brave knight?",
+    "What is the capital of France?",
+    "Describe a sunset over the ocean.",
+    "Write a poem about friendship."
+]
+NUM_TURNS = 5
+MAX_SENTENCES_PER_REPLY = 5
+DEFAULT_LLM_MODEL_ID = 'gemini-1.5-flash'  # Default model
+API_KEY = os.getenv('GEMINI_API_KEY', 'YOUR_API_KEY_HERE')
+RESULTS_FILE_PATH = 'audit_results.parquet'
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+# ------------------ Utility Functions ------------------
+def remove_articles(text: str) -> str:
+    """
+    Remove English articles ('a', 'an', 'the') using regex with word boundaries.
+    """
+    pattern = r'\b(a|an|the)\b'
+    return re.sub(pattern, '', text, flags=re.IGNORECASE).replace('  ', ' ').strip()
 
-# Retain the original get_pause_time function
-def get_pause_time():
-    # Improved jitter: combine several random ints for more natural randomness
-    base = random.randint(3, 15)
-    mul = random.randint(1, 5)
-    add = random.randint(0, 20)
-    sub = random.randint(0, 10)
-    div = max(1, random.randint(1, 6))
-    mod = random.randint(1, 7)
-    # Compose the pause time with multiple operations
-    pause = ((base * mul + add - sub) // div) % (mod * 10) + 3
-    # Clamp to [3, 60] seconds
-    return min(max(pause, 3), 60)
+def extract_sentences(text: str, max_sentences: int) -> list:
+    """
+    Use nltk to split text into sentences, filter short/nonsensical ones, return up to max_sentences.
+    """
+    sentences = nltk.sent_tokenize(text)
+    filtered = [s.strip() for s in sentences if len(s.strip()) > 10]
+    return filtered[:max_sentences]
 
-# Retain the original ensure_parent_dir function
-def ensure_parent_dir(file_path):
-    parent = os.path.dirname(file_path)
-    if parent and not os.path.exists(parent):
-        os.makedirs(parent)
+def get_sentiment(text: str) -> float:
+    """
+    Use TextBlob to get sentiment polarity (-1 to 1).
+    """
+    return TextBlob(text).sentiment.polarity
 
-# Graceful kill handler
-def _sigint_handler(signum, frame):
-    logging.info("SIGINT received. Finishing current probe and exiting gracefully.")
-    sys.exit(0)
+def get_llm_reply(prompt: str, model_id: str) -> dict:
+    """
+    Send prompt to Gemini, handle errors, measure latency, extract refusal, sentiment, and response.
+    """
+    genai.configure(api_key=API_KEY)
+    model = genai.GenerativeModel(model_id)
+    max_retries = 5
+    backoff = 1
+    for attempt in range(max_retries):
+        start = time.time()
+        try:
+            response = model.generate_content(prompt)
+            latency = time.time() - start
+            response_text = response.text if hasattr(response, 'text') else str(response)
+            refusal_flag = ('sorry' in response_text.lower() or 'cannot' in response_text.lower())
+            sentiment = get_sentiment(response_text)
+            return {
+                'response_text': response_text,
+                'refusal_flag': refusal_flag,
+                'sentiment': sentiment,
+                'latency': latency
+            }
+        except Exception as e:
+            if '429' in str(e):
+                time.sleep(backoff + random.uniform(0, 0.5))
+                backoff *= 2
+                continue
+            return {
+                'response_text': '',
+                'refusal_flag': True,
+                'sentiment': 0.0,
+                'latency': 0.0
+            }
 
-signal.signal(signal.SIGINT, _sigint_handler)
+# ------------------ Main Audit Loop ------------------
+def run_audit_loop(model_id: str):
+    current_probes = INITIAL_PROMPTS.copy()
+    all_audit_results = []
+    probe_id_counter = 0
+    for turn_number in range(NUM_TURNS):
+        next_turn_probes = []
+        for probe_text in current_probes:
+            probe_id = f"turn{turn_number}_probe{probe_id_counter}"
+            probe_id_counter += 1
+            # With articles
+            llm_reply_data = get_llm_reply(probe_text, model_id)
+            all_audit_results.append({
+                'probe_id': probe_id,
+                'turn_number': turn_number,
+                'probe_text': probe_text,
+                'has_articles': True,
+                **llm_reply_data
+            })
+            # Without articles
+            probe_text_no_articles = remove_articles(probe_text)
+            if probe_text_no_articles != probe_text:
+                llm_reply_data_no_articles = get_llm_reply(probe_text_no_articles, model_id)
+                all_audit_results.append({
+                    'probe_id': probe_id + '_noart',
+                    'turn_number': turn_number,
+                    'probe_text': probe_text_no_articles,
+                    'has_articles': False,
+                    **llm_reply_data_no_articles
+                })
+            # Next turn probes (from reply)
+            sentences_from_reply = extract_sentences(llm_reply_data['response_text'], MAX_SENTENCES_PER_REPLY)
+            next_turn_probes.extend(sentences_from_reply)
+            # Optionally add sentences from no-articles branch
+            # sentences_from_reply_noart = extract_sentences(llm_reply_data_no_articles['response_text'], MAX_SENTENCES_PER_REPLY) if probe_text_no_articles != probe_text else []
+            # next_turn_probes.extend(sentences_from_reply_noart)
+        current_probes = next_turn_probes
+    # Save results
+    df = pd.DataFrame(all_audit_results)
+    df.to_parquet(RESULTS_FILE_PATH)
 
-def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
-    logging.info(f"Starting linguistic bias audit. Output file: {out_file}, Max calls: {max_calls}")
-    ensure_parent_dir(out_file)
+# ------------------ Analysis ------------------
+def analyze_results():
+    df = pd.read_parquet(RESULTS_FILE_PATH)
+    summary = df.groupby('has_articles').agg({
+        'refusal_flag': ['mean', 'median'],
+        'sentiment': ['mean', 'median'],
+        'latency': ['mean', 'median']
+    })
+    print('Summary by has_articles:')
+    print(summary)
+    # T-test for sentiment
+    t_stat, p_val = ttest_ind(
+        df[df['has_articles']]['sentiment'],
+        df[~df['has_articles']]['sentiment'],
+        nan_policy='omit'
+    )
+    print(f"Sentiment t-test: t={t_stat:.3f}, p={p_val:.3g}")
+    # Visualizations
+    plt.figure(figsize=(10,6))
+    df.boxplot(column='sentiment', by='has_articles')
+    plt.title('Sentiment by Article Presence')
+    plt.savefig('sentiment_boxplot.png')
+    df.boxplot(column='latency', by='has_articles')
+    plt.title('Latency by Article Presence')
+    plt.savefig('latency_boxplot.png')
+    df.groupby('has_articles')['refusal_flag'].mean().plot(kind='bar')
+    plt.title('Refusal Rate by Article Presence')
+    plt.savefig('refusal_rate_bar.png')
+    # Report
+    print("This study focuses solely on the impact of article presence/absence in model-generated sentences and does not control for other contextual factors of the sentences themselves.")
 
-    google_api_key = os.getenv("GOOGLE_API_KEY")
-    if not google_api_key:
-        logging.error("GOOGLE_API_KEY environment variable not set.")
-        sys.exit(1)
-    genai.configure(api_key=google_api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
-
-    schema = pa.schema([
-        ("pair_id", pa.string()),
-        ("baseline_content", pa.string()),
-        ("variant_content", pa.string()),
-        ("error_density", pa.float64()),
-        ("errors_applied", pa.int64()),
-        ("timestamp", pa.string()),
-        ("metadata", pa.string()),
-        ("group", pa.string()),
-        ("article_present", pa.bool_()),
-        ("name_category", pa.string()),
-        ("response_length", pa.int64()),
-        ("sentiment", pa.float64()),
-        ("refusal", pa.bool_()),
-        ("latency", pa.float64()),
-    ])
-
-    # Generate probes, repeating if needed to reach max_calls
-    base_probes = generate_all_probes(num_prompt_seeds=min(max_calls, 1000))
-    if not base_probes:
-        logging.error("No probes generated. Check probe generator.")
-        sys.exit(1)
-    # Repeat probes if needed to reach max_calls
-    probes_to_run = (base_probes * ((max_calls // len(base_probes)) + 1))[:max_calls]
-    logging.info(f"Generated {len(base_probes)} unique probes. Running audit for {len(probes_to_run)} probes (repeats as needed to reach --max_calls).")
-
-    # Determine sleep_time from qpm if provided
-    if sleep_time is None and hasattr(run_audit, "qpm") and run_audit.qpm:
-        sleep_time_local = 60.0 / run_audit.qpm
-    else:
-        sleep_time_local = sleep_time
-
-    with pq.ParquetWriter(out_file, schema) as writer:
-        for i, probe in enumerate(probes_to_run):
-            try:
-                start_time = time.time()
-                response = None
-                response_text = ""
-                response_length = None
-                response_refusal = None
-                response_sentiment = None
-                # Make real Gemini API call
-                try:
-                    response = model.generate_content(probe['prompt'])
-                    end_time = time.time()
-                    # Extract response text robustly
-                    if hasattr(response, 'text'):
-                        response_text = response.text
-                    elif hasattr(response, 'candidates') and response.candidates:
-                        response_text = response.candidates[0].text
-                    else:
-                        response_text = str(response)
-                    response_length = len(response_text)
-                    # Refusal detection: simple heuristic, customize as needed
-                    refusal_keywords = ["refuse", "cannot", "sorry", "unable", "i am unable to", "as a language model"]
-                    response_refusal = any(kw in response_text.lower() for kw in refusal_keywords) or (len(response_text.split()) < 15)
-                    # Sentiment analysis: placeholder, replace with real model or API
-                    try:
-                        from textblob import TextBlob
-                        response_sentiment = TextBlob(response_text).sentiment.polarity
-                    except Exception as sentiment_exc:
-                        logging.warning(f"Sentiment analysis failed for probe {i+1}: {sentiment_exc}")
-                        response_sentiment = 0.0
-                    response_latency = end_time - start_time
-                except Exception as api_exc:
-                    end_time = time.time()
-                    response_latency = end_time - start_time
-                    logging.error(f"API error for probe {i+1}: {api_exc}")
-                row = {
-                    "pair_id": probe['pair_id'],
-                    "baseline_content": probe['seed'],
-                    "variant_content": probe['prompt'],
-                    "error_density": 0.0,
-                    "errors_applied": 0,
-                    "timestamp": str(time.time()),
-                    "metadata": str(probe),
-                    "group": probe['group'],
-                    "article_present": probe['article_present'],
-                    "name_category": probe['name_category'],
-                    "response_length": response_length,
-                    "sentiment": response_sentiment,
-                    "refusal": response_refusal,
-                    "latency": response_latency,
-                }
-                batch = pa.Table.from_pydict({k: [v] for k, v in row.items()}, schema=schema)
-                writer.write_table(batch)
-                logging.info(f"Processed probe {i+1}/{len(probes_to_run)}.")
-            except Exception as e:
-                logging.error(f"Error processing probe {i+1}: {e}")
-            # Use fast sleep for tests, normal jitter otherwise
-            if sleep_time_local is not None:
-                time.sleep(sleep_time_local)
-            else:
-                pause_time = get_pause_time()
-                logging.info(f"Sleeping for {pause_time} seconds to avoid rate limiting...")
-                time.sleep(pause_time)
-
-    logging.info(f"Audit complete: {len(probes_to_run)} records saved to {out_file}")
-
+# ------------------ Entrypoint ------------------
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--out_file", type=str, required=True, help="Path to the output Parquet file.")
-    parser.add_argument("--max_calls", type=int, default=200, help="Maximum number of API calls to make.")
-    parser.add_argument("--qpm", type=float, default=None, help="Queries per minute for rate limiting.")
+    parser = argparse.ArgumentParser(description="Run Gemini Linguistic Bias Audit")
+    parser.add_argument('--model', type=str, default=DEFAULT_LLM_MODEL_ID, help='LLM model name (default: gemini-1.5-flash)')
     args = parser.parse_args()
-    # Attach qpm to run_audit for use inside
-    setattr(run_audit, "qpm", args.qpm)
-    run_audit(out_file=args.out_file, max_calls=args.max_calls, sleep_time=None)
+    nltk.download('punkt')
+    run_audit_loop(args.model)
+    analyze_results()
