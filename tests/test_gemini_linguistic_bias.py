@@ -133,17 +133,21 @@ def test_get_llm_reply_success(MockGenerativeModel, mock_model_instance):
     """Tests successful API call."""
     # Configure the mock model instance to return a successful response
     mock_response = MagicMock()
-    mock_response.candidates = [MagicMock()]
-    mock_response.candidates[0].finish_reason = None # No specific finish reason
-    mock_response.candidates[0].content = MagicMock(parts=[MagicMock(text="This is a test response.")])
-    mock_response.prompt_feedback = MagicMock(block_reason=None)
-
-    # genai.configure is now called outside, so we only need to mock the instance
-    MockGenerativeModel.return_value = mock_model_instance 
+    # Mocking the .text property is a robust way to simulate a valid response
+    type(mock_response).text = "This is a test response."
+    mock_response.candidates = [MagicMock()]  # Ensure candidates list is not empty for other checks
+    mock_model_instance.generate_content.return_value = mock_response
 
     result = get_llm_reply("Test prompt", mock_model_instance)
 
+    # Assert that the mock was called correctly
     mock_model_instance.generate_content.assert_called_once_with("Test prompt")
+
+    # Assert that the function processed the response correctly
+    assert result['response_text'] == "This is a test response."
+    assert result['refusal_flag'] is False
+    assert isinstance(result['sentiment'], float)
+    assert isinstance(result['latency'], float) and result['latency'] >= 0
 
 @patch('google.generativeai.GenerativeModel')
 def test_get_llm_reply_rate_limit(MockGenerativeModel, mock_model_instance, mock_time_sleep):
