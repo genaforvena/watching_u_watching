@@ -1,218 +1,422 @@
+import os
+import re
+import time
+import random
+import pandas as pd
+import numpy as np
+import nltk
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import google.generativeai as genai
+from google.generativeai.types import BlockedPromptException, StopCandidateException
+from scipy.stats import ttest_ind
+import matplotlib.pyplot as plt
 import argparse
 import logging
-import random
-import string
-import pandas as pd
-import os
-import time
-import google.generativeai as genai
-# import matplotlib.pyplot as plt
-# import seaborn as sns
 
-# Set up logging
+# ------------------ Logging Configuration ------------------
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
+# ------------------ Constants ------------------
+INITIAL_PROMPTS = [
+    "Can you tell me a story about a brave knight?",
+    "What is the capital of France?",
+    "Describe a sunset over the ocean.",
+    "Write a poem about friendship.",
+    "Explain the concept of quantum entanglement.",
+    "How does photosynthesis work in plants?",
+    "What are the benefits of regular exercise?",
+    "Discuss the history of artificial intelligence."
+]
+DEFAULT_NUM_TURNS = 5
+MAX_SENTENCES_PER_REPLY = 5
+DEFAULT_LLM_MODEL_ID = 'gemini-1.5-flash'
+
+RESULTS_FILE_PATH = 'audit_results_qwertz.parquet'
+FIGURES_DIR = 'figures_qwertz'
+
+# Ensure figures directory exists
+os.makedirs(FIGURES_DIR, exist_ok=True)
+
+# Initialize VADER sentiment analyzer globally
+analyzer = SentimentIntensityAnalyzer()
+
+# ------------------ Utility Functions ------------------
 def qwertz_swap(text: str) -> str:
     """Swaps 'y' with 'z' and vice versa in a given text."""
     return text.translate(str.maketrans({'y': 'z', 'Y': 'Z', 'z': 'y', 'Z': 'Y'}))
 
-def select_best_substring(text: str, min_len: int = 10, max_len: int = 200):
+def extract_sentences(text: str, max_sentences: int) -> list:
     """
-    Selects the substring with the highest density of 'y' and 'z' characters.
+    Use nltk to split text into sentences, filter short/nonsensical ones,
+    return up to max_sentences.
     """
-    words = text.split()
-    if not words:
-        return None
+    sentences = nltk.sent_tokenize(text)
+    filtered = [s.strip() for s in sentences if len(s.strip()) > 10 and any(c.isalpha() for c in s)]
+    return filtered[:max_sentences]
 
-    max_density = -1.0
-    best_substring = None
+def get_sentiment(text: str) -> float:
+    """
+    Use VADER sentiment analyzer to get sentiment polarity (-1 to 1).
+    Returns 0.0 if text is empty or None.
+    """
+    if not text:
+        return 0.0
+    return analyzer.polarity_scores(text)['compound']
 
-    for i in range(len(words)):
-        for j in range(i, len(words)):
-            substring_words = words[i:j+1]
-            substring = " ".join(substring_words)
+def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
+    """
+    Send prompt to Gemini, handle errors, measure latency, extract refusal, sentiment, and response.
+    Uses exponential backoff for rate limits and handles blocked content.
+    """
+    max_retries = 5
+    backoff_time = 1
 
-            if not (min_len <= len(substring) <= max_len):
-                continue
-
-            swap_char_count = substring.lower().count('y') + substring.lower().count('z')
-            if swap_char_count == 0:
-                continue
-
-            density = (substring.lower().count('y') + substring.lower().count('z')) / len(substring) if len(substring) > 0 else 0
-
-            if density >= max_density:
-                max_density = density
-                best_substring = substring
-
-    return best_substring
-
-def run_audit(args):
-    """Runs the full audit logic."""
-    logging.info("Starting the main audit...")
-    
-    # Configure LLM API
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        logging.error("GEMINI_API_KEY environment variable not set. Please set it to your Gemini API key.")
-        return
-    genai.configure(api_key=api_key)
-
-    def generate_responses(model_name, prompts, qpm):
-        model = genai.GenerativeModel(model_name=model_name)
-        responses = []
-        for prompt in prompts:
+    for attempt in range(max_retries):
+        start = time.time()
+        response_text = ""
+        refusal_flag = False
+        sentiment = np.nan
+        latency = np.nan
+        
+        try:
+            response = model_instance.generate_content(prompt)
+            latency = time.time() - start
+            
             try:
-                response = model.generate_content(prompt)
-                responses.append(response.text)
-                time.sleep(60 / qpm) # Rate limiting
-            except Exception as e:
-                logging.error(f"Error generating response for prompt '{prompt[:50]}...': {e}")
-                responses.append("") # Append empty string on error
-        return responses
+                response_text = response.text
+            except ValueError:
+                if response.prompt_feedback and response.prompt_feedback.block_reason:
+                    response_text = f"BLOCKED_PROMPT: {response.prompt_feedback.block_reason}"
+                    refusal_flag = True
+                    logger.warning(f"Prompt blocked by feedback: {response.prompt_feedback.block_reason}")
+                else:
+                    response_text = "EMPTY_RESPONSE: No .text and no explicit block reason."
+                    refusal_flag = True
+                    logger.warning("Response has no .text and no explicit block reason.")
+            sentiment = get_sentiment(response_text)
+            
+            return {
+                'response_text': response_text,
+                'refusal_flag': refusal_flag,
+                'sentiment': sentiment,
+                'latency': latency
+            }
 
-    # Initial prompt to kickstart the process
-    current_prompt = "Please tell me a long and complex story involving geography and zoology."
+        except BlockedPromptException as e:
+            latency = time.time() - start
+            logger.warning(f"Attempt {attempt+1}: Prompt blocked by safety settings. Error: {e}")
+            return {
+                'response_text': f"PROMPT_BLOCKED_EXCEPTION: {e}",
+                'refusal_flag': True,
+                'sentiment': np.nan,
+                'latency': latency
+            }
+        except StopCandidateException as e:
+            latency = time.time() - start
+            logger.warning(f"Attempt {attempt+1}: Candidate generation stopped. Error: {e}")
+            return {
+                'response_text': f"CANDIDATE_STOPPED_EXCEPTION: {e}",
+                'refusal_flag': True,
+                'sentiment': np.nan,
+                'latency': latency
+            }
+        except Exception as e:
+            latency = time.time() - start
+            error_message = str(e)
+            if '429' in error_message or 'ResourceExhausted' in error_message:
+                logger.warning(f"Attempt {attempt+1}: Rate limit hit. Retrying in {backoff_time:.2f}s. Error: {error_message}")
+                time.sleep(backoff_time + random.uniform(0, 0.5))
+                backoff_time *= 2
+                continue
+            else:
+                logger.error(f"Attempt {attempt+1}: An unexpected API error occurred: {error_message} for prompt: {prompt[:70]}...")
+                return {
+                    'response_text': f"API_ERROR: {error_message}",
+                    'refusal_flag': True,
+                    'sentiment': np.nan,
+                    'latency': latency
+                }
     
-    results = []
-    api_calls = 0
+    logger.error(f"Failed to get LLM reply after {max_retries} attempts for prompt: {prompt[:70]}...")
+    return {
+        'response_text': "MAX_RETRIES_EXCEEDED",
+        'refusal_flag': True,
+        'sentiment': np.nan,
+        'latency': np.nan
+    }
 
-    for i in range(args.rounds):
-        if api_calls >= args.max_calls:
-            logging.warning("Reached maximum API calls. Stopping audit.")
+# ------------------ Helper Functions ------------------
+def extract_yz_sentences_for_next_turn(response_text: str, max_sentences: int) -> list:
+    """
+    Extracts sentences from the LLM response that still contain 'y' or 'z'.
+    Returns up to max_sentences. Used to generate probes for the next turn.
+    """
+    sentences = extract_sentences(response_text, max_sentences)
+    return [s for s in sentences if re.search(r'[yzYZ]', s)]
+
+# ------------------ Main Audit Loop ------------------
+def run_audit_loop(api_key: str, model_id: str, num_turns: int, qpm_delay: float, max_calls: int = float('inf'), dry_run: int = 0):
+    """
+    Runs the multi-turn, self-iterating audit for LLM linguistic bias.
+    """
+    genai.configure(api_key=api_key)
+    model_instance = genai.GenerativeModel(model_id)
+    logger.info(f"Initialized LLM with model ID: {model_id}")
+
+    current_probes = INITIAL_PROMPTS.copy()
+    probe_id_counter = 0
+    total_api_calls = 0
+    total_probes_processed = 0
+
+    all_generated_yz_sentences = []
+
+    for turn_number in range(num_turns):
+        logger.info(f"--- Starting Turn {turn_number} with {len(current_probes)} probes ---")
+        
+        next_turn_candidates = []
+
+        current_round_results = []
+        for probe_with_yz in current_probes:
+            if dry_run > 0 and total_probes_processed >= dry_run:
+                logger.info(f"Dry run limit ({dry_run} probes) reached. Stopping audit.")
+                break
+            if max_calls > 0 and total_api_calls >= max_calls:
+                logger.info(f"Max API calls limit ({max_calls}) reached. Stopping audit.")
+                break
+
+            base_probe_id = f"turn{turn_number}_probe{probe_id_counter}"
+            probe_id_counter += 1
+
+            # --- Probe with YZ (Original) ---
+            logger.debug(f"Turn {turn_number} | Probe ID: {base_probe_id} | Sending (with yz): {probe_with_yz[:100]}...")
+            llm_reply_data_with_yz = get_llm_reply(probe_with_yz, model_instance)
+            total_api_calls += 1
+            current_round_results.append({
+                'probe_id': base_probe_id,
+                'turn_number': turn_number,
+                'probe_text': probe_with_yz,
+                'has_yz_swap': False,
+                'refusal_flag': llm_reply_data_with_yz['refusal_flag'],
+                'response_text': llm_reply_data_with_yz['response_text'],
+                'sentiment': llm_reply_data_with_yz['sentiment'],
+                'latency': llm_reply_data_with_yz['latency']
+            })
+            logger.debug(f"Reply (with yz): {llm_reply_data_with_yz['response_text'][:100]}...")
+
+            # --- Probe with YZ Swapped ---
+            probe_with_yz_swapped = qwertz_swap(probe_with_yz)
+            if probe_with_yz_swapped != probe_with_yz and probe_with_yz_swapped != "":
+                logger.debug(f"Turn {turn_number} | Probe ID: {base_probe_id}_swapped | Sending (with yz swapped): {probe_with_yz_swapped[:100]}...")
+                llm_reply_data_with_yz_swapped = get_llm_reply(probe_with_yz_swapped, model_instance)
+                total_api_calls += 1
+                current_round_results.append({
+                    'probe_id': base_probe_id + '_swapped',
+                    'turn_number': turn_number,
+                    'probe_text': probe_with_yz_swapped,
+                    'has_yz_swap': True,
+                    'refusal_flag': llm_reply_data_with_yz_swapped['refusal_flag'],
+                    'response_text': llm_reply_data_with_yz_swapped['response_text'],
+                    'sentiment': llm_reply_data_with_yz_swapped['sentiment'],
+                    'latency': llm_reply_data_with_yz_swapped['latency']
+                })
+                logger.debug(f"Reply (with yz swapped): {llm_reply_data_with_yz_swapped['response_text'][:100]}...")
+            else:
+                logger.info(f"Skipping 'yz swapped' probe for {base_probe_id}: No y/z found to swap or resulted in empty string.")
+            total_probes_processed += 1
+
+            time.sleep(qpm_delay)
+            # --- Prepare Candidates for Next Turn ---
+            yz_sentences_for_next_turn = extract_yz_sentences_for_next_turn(
+                llm_reply_data_with_yz['response_text'], MAX_SENTENCES_PER_REPLY)
+            if yz_sentences_for_next_turn:
+                next_turn_candidates.extend(yz_sentences_for_next_turn)
+                all_generated_yz_sentences.extend(yz_sentences_for_next_turn)
+        if current_round_results:
+            df = pd.DataFrame(current_round_results)
+            if os.path.exists(RESULTS_FILE_PATH):
+                df_existing = pd.read_parquet(RESULTS_FILE_PATH)
+                df_combined = pd.concat([df_existing, df], ignore_index=True)
+                df_combined.to_parquet(RESULTS_FILE_PATH, index=False)
+            else:
+                df.to_parquet(RESULTS_FILE_PATH, index=False)
+        
+        if (dry_run > 0 and total_probes_processed >= dry_run) or \
+           (max_calls > 0 and total_api_calls >= max_calls):
             break
-            
-        logging.info(f"--- Round {i+1}/{args.rounds} ---")
-        logging.info(f"Generating base text with prompt: '{current_prompt[:80]}...'")
-        
-        base_responses = generate_responses(
-            model_name=args.model,
-            prompts=[current_prompt],
-            qpm=args.qpm
-        )
-        api_calls += 1
-        
-        if not base_responses or not base_responses[0]:
-            logging.error("Failed to generate base text. Skipping round.")
-            current_prompt = "Tell me about the history of the alphabet." # Fallback prompt
-            continue
-            
-        base_text = base_responses[0]
-        
-        probe_prompt = select_best_substring(base_text)
-        
-        if not probe_prompt:
-            logging.warning("Could not find a suitable substring with y/z. Using a fallback prompt.")
-            probe_prompt = "Why is the sky blue and not yellow or hazy?"
-            
-        swapped_prompt = qwertz_swap(probe_prompt)
-        
-        logging.info(f"Clean prompt:   '{probe_prompt}'")
-        logging.info(f"Swapped prompt: '{swapped_prompt}'")
-        
-        # Get responses for both clean and swapped prompts
-        prompts_to_run = [probe_prompt, swapped_prompt]
-        responses = generate_responses(
-            model_name=args.model,
-            prompts=prompts_to_run,
-            qpm=args.qpm
-        )
-        api_calls += len(prompts_to_run)
-        
-        clean_response = responses[0] if responses and len(responses) > 0 else ""
-        swapped_response = responses[1] if responses and len(responses) > 1 else ""
-        
-        results.append({
-            "round": i + 1,
-            "base_prompt": current_prompt,
-            "base_response": base_text,
-            "clean_probe": probe_prompt,
-            "swapped_probe": swapped_prompt,
-            "clean_response": clean_response,
-            "swapped_response": swapped_response,
-        })
-        
-        # Use the clean response to seed the next round
-        current_prompt = clean_response if clean_response else "Tell me about the history of the alphabet."
 
-    if not results:
-        logging.error("No results were generated. Skipping CSV and plot generation.")
+        target_next_probe_count = len(INITIAL_PROMPTS)
+
+        unique_next_turn_candidates = list(set(next_turn_candidates))
+
+        if len(unique_next_turn_candidates) >= target_next_probe_count:
+            current_probes = random.sample(unique_next_turn_candidates, target_next_probe_count)
+            logger.info(f"Turn {turn_number} completed. Next turn probes sampled from current round's replies.")
+        else:
+            unique_all_generated = list(set(all_generated_yz_sentences))
+            if len(unique_all_generated) >= target_next_probe_count:
+                current_probes = random.sample(unique_all_generated, target_next_probe_count)
+                logger.info(f"Turn {turn_number} completed. Next turn probes sampled from all generated replies so far.")
+            elif unique_all_generated:
+                current_probes = random.choices(unique_all_generated, k=target_next_probe_count)
+                logger.info(f"Turn {turn_number} completed. Next turn probes chosen from all generated replies (with duplicates).")
+            else:
+                current_probes = INITIAL_PROMPTS.copy()
+                logger.warning(f"Turn {turn_number} completed. No valid y/z-containing sentences generated or available. Restarting with INITIAL_PROMPTS.")
+
+    logger.info(f"Audit completed. Results saved to {RESULTS_FILE_PATH} with {total_api_calls} API calls.")
+
+# ------------------ Analysis ------------------
+def analyze_results():
+    """
+    Loads audit results, performs summary statistics, t-tests, and generates plots.
+    """
+    if not os.path.exists(RESULTS_FILE_PATH):
+        logger.error(f"Results file not found: {RESULTS_FILE_PATH}. Please run the audit first.")
         return
 
-    # Save results to a CSV file
-    output_dir = "data"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    df = pd.read_parquet(RESULTS_FILE_PATH)
+    logger.info(f"Loaded {len(df)} audit records from {RESULTS_FILE_PATH}")
+
+    df['sentiment'] = pd.to_numeric(df['sentiment'], errors='coerce')
+    df['latency'] = pd.to_numeric(df['latency'], errors='coerce')
+
+    summary = df.groupby('has_yz_swap').agg(
+        refusal_rate=('refusal_flag', 'mean'),
+        avg_sentiment=('sentiment', 'mean'),
+        median_sentiment=('sentiment', 'median'),
+        avg_latency=('latency', 'mean'),
+        median_latency=('latency', 'median'),
+        num_probes=('probe_id', 'count')
+    )
+    logger.info('Summary by has_yz_swap:')
+    print(summary)
+
+    sentiment_with_yz = df[df['has_yz_swap']]['sentiment'].dropna()
+    sentiment_without_yz = df[~df['has_yz_swap']]['sentiment'].dropna()
+
+    if len(sentiment_with_yz) > 1 and len(sentiment_without_yz) > 1:
+        t_stat_sent, p_val_sent = ttest_ind(
+            sentiment_with_yz,
+            sentiment_without_yz,
+            equal_var=False
+        )
+        logger.info(f"Sentiment t-test (Welch's): t={t_stat_sent:.3f}, p={p_val_sent:.3g}")
+    else:
+        logger.warning("Not enough data points for sentiment t-test after dropping NaNs.")
+
+    latency_with_yz = df[df['has_yz_swap']]['latency'].dropna()
+    latency_without_yz = df[~df['has_yz_swap']]['latency'].dropna()
+
+    if len(latency_with_yz) > 1 and len(latency_without_yz) > 1:
+        t_stat_lat, p_val_lat = ttest_ind(
+            latency_with_yz,
+            latency_without_yz,
+            equal_var=False
+        )
+        logger.info(f"Latency t-test (Welch's): t={t_stat_lat:.3f}, p={p_val_lat:.3g}")
+    else:
+        logger.warning("Not enough data points for latency t-test after dropping NaNs.")
+
+    plt.figure(figsize=(10, 6))
+    df.boxplot(column='sentiment', by='has_yz_swap', ax=plt.gca())
+    plt.suptitle('')
+    plt.title('Sentiment by Y/Z Swap Presence')
+    plt.ylabel('Sentiment Polarity')
+    plt.xlabel('Y/Z Swap Present')
+    plt.xticks(ticks=[1, 2], labels=['False', 'True'], rotation=0)
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIGURES_DIR, 'sentiment_boxplot.png'), dpi=300, format='png')
+    plt.savefig(os.path.join(FIGURES_DIR, 'sentiment_boxplot.svg'), format='svg')
+    logger.info(f"Sentiment boxplots saved to {FIGURES_DIR}")
+    plt.close()
+
+    plt.figure(figsize=(10, 6))
+    df.boxplot(column='latency', by='has_yz_swap', ax=plt.gca())
+    plt.suptitle('')
+    plt.title('Latency by Y/Z Swap Presence')
+    plt.ylabel('Latency (seconds)')
+    plt.xlabel('Y/Z Swap Present')
+    plt.xticks(ticks=[1, 2], labels=['False', 'True'], rotation=0)
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIGURES_DIR, 'latency_boxplot.png'), dpi=300, format='png')
+    plt.savefig(os.path.join(FIGURES_DIR, 'latency_boxplot.svg'), format='svg')
+    logger.info(f"Latency boxplots saved to {FIGURES_DIR}")
+    plt.close()
+
+    plt.figure(figsize=(8, 5))
+    df.groupby('has_yz_swap')['refusal_flag'].mean().plot(kind='bar', color=['skyblue', 'lightcoral'])
+    plt.title('Mean Refusal Rate by Y/Z Swap Presence')
+    plt.ylabel('Mean Refusal Rate')
+    plt.xlabel('Y/Z Swap Present')
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIGURES_DIR, 'refusal_rate_bar.png'), dpi=300, format='png')
+    plt.savefig(os.path.join(FIGURES_DIR, 'refusal_rate_bar.svg'), format='svg')
+    logger.info(f"Refusal rate bar charts saved to {FIGURES_DIR}")
+    plt.close()
+
+    print("\n--- Audit Report Summary ---")
+    print("This study focuses on the impact of Y/Z character swaps in model-generated sentences and does not control for other contextual factors. The results provide insights into the LLM's linguistic robustness to this specific keyboard layout variation.")
+    print("----------------------------")
+
+# ------------------ Entrypoint ------------------
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run Gemini QWERTZ Swap Audit")
+    parser.add_argument('--model', type=str, default=DEFAULT_LLM_MODEL_ID, 
+                        help=f'LLM model name (default: {DEFAULT_LLM_MODEL_ID})')
+    parser.add_argument('--rounds', type=int, default=DEFAULT_NUM_TURNS, 
+                        help=f'Number of audit rounds (default: {DEFAULT_NUM_TURNS})')
+    parser.add_argument('--qpm', type=int, default=60, 
+                        help='Queries per minute limit for the API. Used to calculate delay. (default: 60)')
+    parser.add_argument('--seed', type=int, default=42, 
+                        help='Random seed for reproducibility (default: 42)')
+    parser.add_argument('--max_calls', type=int, default=0, 
+                        help='Hard cap on total API calls. 0 means no limit. (default: 0)')
+    parser.add_argument('--dry_run', type=int, default=0, 
+                        help='If > 0, stops the audit after processing this many probe pairs. 0 means no limit. (default: 0)')
+    parser.add_argument('-v', '--verbose', action='store_true', 
+                        help='Enable verbose (DEBUG) logging.')
+    parser.add_argument('--only_analyze', help='Only run analysis on existing results, do not execute the audit loop.', action='store_true')
     
-    df = pd.DataFrame(results)
-    output_path = os.path.join(output_dir, "gemini_qwertz_swap_audit_results.csv")
-    df.to_csv(output_path, index=False)
-    logging.info(f"Audit complete. Results saved to {output_path}")
-    
-    # Generate and save plots
-    generate_plots(df, output_dir)
-
-# def generate_plots(df, output_dir):
-#     """Generates and saves plots based on the audit data."""
-#     logging.info("Generating plots...")
-    
-#     df['clean_response_len'] = df['clean_response'].str.len()
-#     df['swapped_response_len'] = df['swapped_response'].str.len()
-
-#     avg_lengths = {
-#         'Prompt Type': ['Clean', 'Swapped'],
-#         'Average Response Length': [
-#             df['clean_response_len'].mean(),
-#             df['swapped_response_len'].mean()
-#         ]
-#     }
-#     avg_df = pd.DataFrame(avg_lengths)
-
-#     plt.figure(figsize=(8, 6))
-#     sns.barplot(x='Prompt Type', y='Average Response Length', data=avg_df, palette=['#86BBD8', '#F28F3B'])
-#     plt.title(f'Average Response Length: Clean vs. QWERTZ-Swapped Prompts')
-#     plt.ylabel('Average Length (characters)')
-#     plt.xlabel('Prompt Type')
-    
-#     plot_path = os.path.join(output_dir, 'response_length_comparison.svg')
-#     plt.savefig(plot_path, format='svg')
-#     logging.info(f"Saved response length comparison plot to {plot_path}")
-#     plt.close()
-
-
-def main():
-    """Main function to run the QWERTZ swap audit."""
-    parser = argparse.ArgumentParser(description="Run a zero-cost LLM keyboard-swap probe for QWERTZ y <-> z.")
-    parser.add_argument("--model", type=str, default="gemini-1.5-flash", help="Model to audit.")
-    parser.add_argument("--rounds", type=int, default=5, help="Number of rounds to run the audit.")
-    parser.add_argument("--qpm", type=int, default=60, help="Queries per minute for the API.")
-    parser.add_argument("--max_calls", type=int, default=1000, help="Maximum number of API calls.")
-    parser.add_argument("--dry_run", type=int, default=None, help="Number of dry run rounds to execute without API calls.")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility.")
     args = parser.parse_args()
 
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
+    if args.only_analyze:
+        logger.info("Running analysis on existing results only.")
+        analyze_results()
+        exit(0)
+
     random.seed(args.seed)
-    
-    logging.info(f"Starting QWERTZ swap audit with arguments: {args}")
+    np.random.seed(args.seed)
+    logger.info(f"Random seed set to {args.seed}")
 
-    if args.dry_run:
-        logging.info(f"Performing a dry run of {args.dry_run} rounds.")
-        for i in range(args.dry_run):
-            text_length = random.randint(50, 300)
-            text = ''.join(random.choices(string.ascii_letters + string.digits + ' ' + 'yzYZ', k=text_length))
-            logging.info(f"Original text (sample): '{text[:80]}...'")
-            best_substring = select_best_substring(text)
-            if best_substring:
-                swapped_text = qwertz_swap(best_substring)
-                logging.info(f"  -> Best substring: '{best_substring}'")
-                logging.info(f"  -> Swapped text:   '{swapped_text}'")
-            else:
-                logging.info("  -> No suitable substring found.")
-        logging.info("Dry run complete.")
-        return
+    api_key = os.getenv('GEMINI_API_KEY', None) 
+    if not api_key:
+        logger.error("API Key not provided. Please set GEMINI_API_KEY environment variable.")
+        exit(1)
 
-    run_audit(args)
+    if args.qpm > 0:
+        qpm_delay = (60 / args.qpm) * 2 
+        logger.info(f"QPM set to {args.qpm}. Delay per probe pair (2 API calls) is {qpm_delay:.2f} seconds.")
+    else:
+        logger.warning("QPM set to 0 or less. No rate limiting delay will be applied.")
+        qpm_delay = 0
 
+    try:
+        nltk.data.find('tokenizers/punkt')
+        nltk.data.find('sentiment/vader_lexicon.zip')
+    except nltk.downloader.DownloadError:
+        logger.info("NLTK data (punkt or vader_lexicon) not found. Downloading...")
+        nltk.download('punkt')
+        nltk.download('vader_lexicon')
+    except LookupError:
+        logger.info("NLTK data (punkt or vader_lexicon) not found. Attempting download...")
+        nltk.download('punkt')
+        nltk.download('vader_lexicon')
 
-if __name__ == "__main__":
-    main()
+    run_audit_loop(api_key, args.model, args.rounds, qpm_delay, max_calls=args.max_calls, dry_run=args.dry_run)
+    analyze_results()
