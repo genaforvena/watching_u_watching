@@ -91,9 +91,9 @@ def run_audit(out_file: str, max_calls: int = 200, sleep_time: float = None):
                 start_time = time.time()
                 response = None
                 response_text = ""
-                response_length = 0
-                response_refusal = False
-                response_sentiment = 0.0
+                response_length = None
+                response_refusal = None
+                response_sentiment = None
                 # Make real Gemini API call
                 try:
                     response = model.generate_content(probe['prompt'])
