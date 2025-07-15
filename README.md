@@ -60,13 +60,25 @@ This guide enables both technical and non-technical contributors to rapidly and 
 **[See implementation →](./implementations/berlin_housing_bias_test/IMPLEMENTATION_SUMMARY.md)**
 
 
-### Linguistic Bias Detection Framework
-* Detects discrimination against non-standard English
-* Controlled error injection while preserving meaning
-* Measures impact on response quality
-* Found 32% reduction in helpfulness for biased systems
 
-**[Explore implementation →](./implementations/bad_english_bias/)**
+### Gemini Linguistic Bias Audit
+* Quantitatively assesses the impact of article presence/absence on LLM output (refusal rate, sentiment, latency)
+* Uses a self-iterating, paired testing methodology
+* Controlled probe generation and robust analysis
+* Fully automated, scalable, and reproducible
+
+**[See audit script →](./src/audits/gemini_linguistic_bias/run_audit.py)**
+
+
+**How to run:**
+1. Set your Gemini API key:
+   - **On Windows:** `set GEMINI_API_KEY=your_api_key_here`
+   - **On Linux/macOS:** `export GEMINI_API_KEY=your_api_key_here`
+2. Run: `python src/audits/gemini_linguistic_bias/run_audit.py --model gemini-1.5-flash`
+   - You can change the model name with `--model <model_name>`
+3. Results and visualizations will be saved automatically
+
+**See** `src/audits/gemini_linguistic_bias/README.md` for full details and customization options.
 
 
 ### Fairlearn Bias Assessment
