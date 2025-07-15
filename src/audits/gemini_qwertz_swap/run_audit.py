@@ -123,12 +123,12 @@ def get_llm_reply(prompt: str, model_instance: genai.GenerativeModel) -> dict:
             }
         except Exception as e:
             latency = time.time() - start
-            error_message = str(e)
-            if '429' in error_message or 'ResourceExhausted' in error_message:
-                logger.warning(f"Attempt {attempt+1}: Rate limit hit. Retrying in {backoff_time:.2f}s. Error: {error_message}")
-                time.sleep(backoff_time + random.uniform(0, 0.5))
-                backoff_time *= 2
-                continue
+            except google.api_core.exceptions.ResourceExhausted as e:
+            latency = time.time() - start
+            logger.warning(f"Attempt {attempt+1}: Rate limit hit. Retrying in {backoff_time:.2f}s. Error: {e}")
+            time.sleep(backoff_time + random.uniform(0, 0.5))
+            backoff_time *= 2
+            continue
             else:
                 logger.error(f"Attempt {attempt+1}: An unexpected API error occurred: {error_message} for prompt: {prompt[:70]}...")
                 return {
