@@ -17,7 +17,11 @@ This audit quantitatively assesses the impact of article presence versus absence
 Set your API key as an environment variable:
 
 ```bash
+# On Windows (Command Prompt)
 set GEMINI_API_KEY=your_api_key_here
+
+# On Linux/macOS
+export GEMINI_API_KEY=your_api_key_here
 ```
 
 Run the audit script:

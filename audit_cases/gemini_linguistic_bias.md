@@ -31,7 +31,7 @@ This document describes the methodology and analysis plan for the Gemini linguis
 
 - **response_text:** The model's reply
 - **refusal_flag:** Boolean, True if the model refused to answer
-- **sentiment:** Sentiment polarity score (TextBlob, -1 to 1)
+- **sentiment:** Sentiment polarity score (vaderSentiment, -1 to 1)
 - **latency:** Time in seconds to receive the response
 
 ---

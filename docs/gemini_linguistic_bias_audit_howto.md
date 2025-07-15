@@ -5,4 +5,4 @@
 You can now set the number of probes and the output filename:
 
 ```bash
-GEMINI_API_KEY=<your-gemini-api-key> python -m src.audits.gemini_linguistic_bias.run_audit --num_probes 300 --out_file data/gemini_bias_myexperiment.parquet
+GEMINI_API_KEY=<your-gemini-api-key> python -m src.audits.gemini_linguistic_bias.run_audit --rounds 5 --max_calls 200
