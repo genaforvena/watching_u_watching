@@ -67,7 +67,7 @@ class ProbeRunner:
                 prompt = self.perturbation_generator.apply_rule(self.last_generated_text, rule_name)
             
             print(f"Prompting GPT-2 with:\n{prompt}")
-            generated_text = self.gpt2_worker.generate_text(prompt, max_new_tokens=200) # Adjust max_new_tokens as needed
+            generated_text = self.gpt2_worker.generate_text(prompt, max_new_tokens=100) # Adjust max_new_tokens as needed
             self.last_generated_text = generated_text # Store for next iteration
             print(f"GPT-2 Output:\n{generated_text}")
 
