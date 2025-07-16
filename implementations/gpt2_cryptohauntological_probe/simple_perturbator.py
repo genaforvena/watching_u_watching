@@ -14,16 +14,7 @@ class SimplePerturbator(BasePerturbator):
             "caesar_cipher": lambda s: "".join([chr(ord(char) + 3) if 'a' <= char <= 'z' or 'A' <= char <= 'Z' else char for char in s]),
             "replace_b_with_emoji": lambda s: s.replace('b', '😂').replace('B', '😂'),
             "swap_x_with_z": lambda s: s.replace('x', 'TEMP_Z').replace('z', 'x').replace('TEMP_Z', 'z').replace('X', 'TEMP_Z_UPPER').replace('Z', 'X').replace('TEMP_Z_UPPER', 'Z'),
-            "typo_char_swap": lambda s: (
-                s if len(s) < 2 else (
-                    lambda lst: (
-                        idx1 := random.randrange(len(lst) - 1),
-                        lst.__setitem__(idx1, lst[idx1+1]),
-                        lst.__setitem__(idx1+1, lst[idx1]),
-                        "".join(lst)
-                    )
-                )(list(s))
-            )(),
+            "typo_char_swap": self._typo_char_swap,
             "homoglyph_substitute": lambda s: "".join([
                 {'a': 'а', 'e': 'е', 'o': 'о', 'p': 'р', 'c': 'с', 'x': 'х',
                  'A': 'А', 'E': 'Е', 'O': 'О', 'P': 'Р', 'C': 'С', 'X': 'Х'
@@ -32,6 +23,14 @@ class SimplePerturbator(BasePerturbator):
         }
         self.rule_names = list(self.rules.keys())
         self.rule_index = 0
+
+    def _typo_char_swap(self, s: str) -> str:
+        if len(s) < 2:
+            return s
+        lst = list(s)
+        idx1 = random.randrange(len(lst) - 1)
+        lst[idx1], lst[idx1+1] = lst[idx1+1], lst[idx1]
+        return "".join(lst)
 
     def generate_rule(self, successful_prompts: list, carlini_hit_list: list) -> str:
         # For simple perturbator, we cycle through predefined rules
