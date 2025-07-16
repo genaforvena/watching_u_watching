@@ -31,6 +31,18 @@ Our rigorous approach to bias detection:
 
 This scales correspondence testing to unprecedented levels—revealing subtle biases undetectable through manual audits.
 
+### The Power of Perturbation and Reversal
+
+Our methodology leverages a powerful insight: language models, even when presented with novel, systematically perturbed inputs, will often attempt to complete patterns based on their training data. This allows us to "trick" the model into revealing memorized patterns or sensitive information.
+
+The process involves:
+- **Model's training:** Saw original text
+- **Your perturbation:** Creates novel text
+- **Model's response:** Reveals memorized patterns
+- **Your reversal:** Reconstructs original PII
+
+This systematic perturbation and reversal approach exploits the model's inherent pattern completion capabilities, bypassing typical safety measures and providing a robust method for uncovering hidden biases or data leakage.
+
 ## 📦 How to Apply Guide for LLM-Assisted Framework Extension
 
 The `/how_to_apply_guide` directory provides a comprehensive guide, templates, and code validation tools for extending the correspondence testing framework to new bias detection scenarios using LLM-assisted code generation.
