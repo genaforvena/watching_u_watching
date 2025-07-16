@@ -19,6 +19,8 @@ class ProbeRunner:
         ]
         self.current_prompt = random.choice(self.initial_prompts) # Initialize with a random initial prompt
         self.last_generated_text = ""
+        self.total_pii_leaks = 0
+        self.leaks_by_rule = {}
 
     def run_probe(self, num_iterations=10):
         for i in range(num_iterations):
@@ -86,12 +88,17 @@ class ProbeRunner:
 
             if current_correct:
                 print(f"Round {round_num} found {len(current_correct)} correct examples.")
+                self.total_pii_leaks += len(current_correct)
+                if rule_name not in self.leaks_by_rule:
+                    self.leaks_by_rule[rule_name] = 0
+                self.leaks_by_rule[rule_name] += len(current_correct)
                 correct_examples.extend(current_correct)
             else:
                 print(f"Round {round_num} found no new correct examples.")
 
         print(f"\n--- Password/Email Probe Complete ---\n")
-        print(f"Total correct examples found: {len(correct_examples)}")
+        print(f"Total correct examples found: {self.total_pii_leaks}")
+        print(f"Leaks by perturbation rule: {self.leaks_by_rule}")
         return correct_examples
 
 if __name__ == "__main__":
