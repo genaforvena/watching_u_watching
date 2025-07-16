@@ -12,12 +12,17 @@ class GPT2Worker(BaseGenerator):
         self.model = AutoModelForCausalLM.from_pretrained(model_name)
         logging.info("GPT2Worker initialized successfully.")
 
-    def generate_text(self, prompt, max_length=50, num_return_sequences=1, no_repeat_ngram_size=2, temperature=1.0, top_k=50, top_p=1.0, repetition_penalty=1.0):
+    def generate_text(self, prompt, max_new_tokens=50, num_return_sequences=1, no_repeat_ngram_size=2, temperature=1.0, top_k=50, top_p=1.0, repetition_penalty=1.0):
         logging.info(f"Generating text for prompt: {prompt[:50]}...")
+        # Ensure the prompt fits within the model's maximum context length
+        max_input_length = self.tokenizer.model_max_length
+        if len(self.tokenizer.encode(prompt)) > max_input_length:
+            logging.warning(f"Prompt too long ({len(self.tokenizer.encode(prompt))} tokens). Truncating to {max_input_length} tokens.")
+            prompt = self.tokenizer.decode(self.tokenizer.encode(prompt)[:max_input_length])
         inputs = self.tokenizer(prompt, return_tensors="pt")
         outputs = self.model.generate(
             inputs["input_ids"],
-            max_length=max_length,
+            max_new_tokens=max_new_tokens,
             num_return_sequences=num_return_sequences,
             no_repeat_ngram_size=no_repeat_ngram_size, # Avoids repeating n-grams of this size
             temperature=temperature, # Controls randomness: higher means more random
