@@ -24,40 +24,80 @@ class GPT2Pipeline(HuggingFacePipeline):
         return len(self._tokenizer.encode(text))
 
 
-class GPT2Worker:
-    MAX_TOKENS = 1024
-    MAX_HISTORY_TOKENS = 900
+MODEL_NAME = "gpt2-xl"
+MAX_CONTEXT = 1024           # hard GPT-2 limit
+MAX_NEW     = 100            # how many tokens we allow the model to add
+MAX_INPUT   = MAX_CONTEXT - MAX_NEW
 
-    def __init__(self, model_name: str = "gpt2-xl"):
+
+class GPT2Worker:
+    def __init__(self, model_name: str = MODEL_NAME):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
         hf_pipe = pipeline(
             "text-generation",
             model=model_name,
-            tokenizer=model_name,
-            max_new_tokens=self.MAX_TOKENS - self.MAX_HISTORY_TOKENS,
+            tokenizer=self.tokenizer,
+            max_new_tokens=MAX_NEW,
             temperature=0.7,
             top_k=40,
             repetition_penalty=1.2,
-            pad_token_id=50256,
+            pad_token_id=self.tokenizer.eos_token_id,
             device=0 if torch.cuda.is_available() else -1,
         )
 
-        llm = GPT2Pipeline(pipeline=hf_pipe)
+        self.llm = HuggingFacePipeline(pipeline=hf_pipe)
 
-        # Now LangChain *knows* how many GPT-2 tokens each message costs.
-        memory = ConversationTokenBufferMemory(
-            llm=llm,
-            max_token_limit=self.MAX_HISTORY_TOKENS,
-            return_messages=True,
+        # A very small prompt template that simply concatenates
+        self.prompt_template = PromptTemplate(
+            input_variables=["history", "input"],
+            template="{history}\nUser: {input}\nAssistant:"
         )
-        self.chat = ConversationChain(llm=llm, memory=memory)
+        self.chain = LLMChain(llm=self.llm, prompt=self.prompt_template)
 
-    def reply(self, prompt: str, memory=None):
+    # ------------------------------------------------------------------ #
+    def _build_history(self,
+                       history: List[Tuple[str, str]],
+                       user_query: str) -> str:
+        """
+        Return a string containing the conversation history truncated so that
+        the *whole* prompt fits into MAX_INPUT tokens.
+        Keeps the most recent turns.
+        """
+        # Build list of strings in chronological order
+        turns = []
+        for user_turn, ai_turn in history:
+            turns.append(f"User: {user_turn}\nAssistant: {ai_turn}")
+
+        # Add the current query
+        turns.append(f"User: {user_query}\nAssistant:")
+
+        # Encode the full thing once
+        full_text = "\n".join(turns)
+        token_ids = self.tokenizer.encode(full_text)
+
+        if len(token_ids) <= MAX_INPUT:
+            return "\n".join(turns[:-1])  # remove the trailing "Assistant:"
+
+        # Truncate from the front until it fits
+        # (keep at least the last turn)
+        while len(token_ids) > MAX_INPUT and len(turns) > 1:
+            turns.pop(0)
+            full_text = "\n".join(turns)
+            token_ids = self.tokenizer.encode(full_text)
+
+        return "\n".join(turns[:-1])
+
+    # ------------------------------------------------------------------ #
+    def reply(self,
+              prompt: str,
+              memory: List[Tuple[str, str]] | None = None) -> str:
         memory = memory or []
-        self.chat.memory.clear()
-        for user, ai in memory:
-            self.chat.memory.chat_memory.add_user_message(user)
-            self.chat.memory.chat_memory.add_ai_message(ai)
-        return self.chat.predict(input=prompt)
+        history_str = self._build_history(memory, prompt)
+        answer = self.chain.run(history=history_str, input=prompt)
+        return answer.strip()
 
 # --------------------------------------------------------------------------- #
 if __name__ == "__main__":
