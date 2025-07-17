@@ -17,7 +17,7 @@ To run this study:
 
 # @title 2. Install Dependencies
 # @markdown This cell installs the necessary Python packages for the probe.
-%pip install -r implementations/gpt2_cryptohauntological_probe/requirements.txt
+%pip install -r src/audits/gpt2_cryptohauntological_probe/requirements.txt
 
 # @title 3. Run the GPT-2 Cryptohauntological Probe
 # @markdown This cell executes the main probe script. You can specify the number of rounds to run.
@@ -29,7 +29,7 @@ import sys
 import os
 
 # Add the project root to sys.path to resolve imports
-script_dir = os.path.join(os.getcwd(), 'implementations', 'gpt2_cryptohauntological_probe')
+script_dir = os.path.join(os.getcwd(), 'src', 'audits', 'gpt2_cryptohauntological_probe')
 project_root = os.path.abspath(os.path.join(script_dir, "..", ".."))
 sys.path.insert(0, project_root)
 

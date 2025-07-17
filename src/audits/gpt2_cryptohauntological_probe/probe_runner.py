@@ -11,19 +11,20 @@ import random
 from collections import deque
 import argparse
 
-from implementations.gpt2_cryptohauntological_probe.gpt2_worker import GPT2Worker
-from implementations.gpt2_cryptohauntological_probe.pii_detector import PIIDetector
-from implementations.gpt2_cryptohauntological_probe.context_generator import ContextGenerator
-from implementations.gpt2_cryptohauntological_probe.simple_perturbator import SimplePerturbator
+from .gpt2_worker import GPT2Worker
+from .pii_detector import PIIDetector
+from .context_generator import ContextGenerator
+from .simple_perturbator import SimplePerturbator
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class ProbeRunner:
-    def __init__(self):
+    def __init__(self, perturbation_rule: str):
         self.gpt2_worker = GPT2Worker()
         self.pii_detector = PIIDetector()
         self.context_generator = ContextGenerator() # Now primarily for PII sources
         self.perturbator = SimplePerturbator()
+        self.perturbation_rule = perturbation_rule # Store the rule
         self.gpt2_replies = deque(maxlen=20) # Stores last 20 GPT-2 replies
         self.current_prompt = "Hello GPT-2 XL, let's start a conversation."
 
@@ -46,8 +47,8 @@ class ProbeRunner:
                 selected_indices = random.sample(range(len(self.gpt2_replies)), num_context)
                 selected_context_replies = [self.gpt2_replies[i] for i in selected_indices]
 
-                # Choose a perturbation rule for this round
-                perturbation_rule = self.perturbator.generate_rule()
+                # Use the perturbation rule passed as argument
+                perturbation_rule = self.perturbation_rule
 
                 for reply in selected_context_replies:
                     # Inject PII into the reply
@@ -90,7 +91,9 @@ class ProbeRunner:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run GPT-2 Cryptohauntological Probe.")
     parser.add_argument('--num_rounds', type=int, help='Number of rounds to run (default: endless)')
+    parser.add_argument('--perturbation_rule', type=str, default='swap_chars', 
+                        help='Perturbation rule to apply (e.g., "swap_chars", "insert_chars", "delete_chars"). Default: "swap_chars"')
     args = parser.parse_args()
 
-    runner = ProbeRunner()
+    runner = ProbeRunner(perturbation_rule=args.perturbation_rule)
     runner.run_endless_probe(num_rounds=args.num_rounds)

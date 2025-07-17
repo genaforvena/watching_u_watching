@@ -1,5 +1,5 @@
 import unittest
-from implementations.gpt2_cryptohauntological_probe.pii_detector import PIIDetector
+from src.audits.gpt2_cryptohauntological_probe.pii_detector import PIIDetector
 
 class TestPIIDetector(unittest.TestCase):
 
