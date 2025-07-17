@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 from .base_generator import BaseGenerator
 
 class GPT2Worker(BaseGenerator):
-    def __init__(self, model_name="gpt2"):
+    def __init__(self, model_name="gpt2-xl"):
         logging.info(f"Initializing GPT2Worker with model: {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name)

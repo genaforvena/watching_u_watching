@@ -1,103 +1,61 @@
 # GPT-2 Cryptohauntological Probe
 
-This implementation focuses on probing GPT-2 for known PII leaks using novel text perturbation techniques, as outlined in [GitHub Issue #52](https://github.com/genaforvena/watching_u_watching/issues/52).
+This implementation focuses on probing GPT-2 XL for known PII leaks within a continuous conversational context, building on Carlini et al.'s (2021) findings on memorized content.
 
-## Core Idea: Cryptohauntological Probing
+## Core Idea: Continuous Conversational Probing with PII Injection
 
-The central concept is to "fingerprint" AI processing and potentially trigger memorized content by applying systematic, subtle text perturbations to input prompts. We hypothesize that LLMs are uniquely sensitive to these alterations, which can bypass typical model processing or trigger specific memorized pathways, leading to the unexpected output of verbatim PII.
+The central concept is to simulate an ongoing conversation with GPT-2 XL where PII is systematically injected into the conversational context. We hypothesize that by continuously exposing the model to perturbed PII within a circular conversational flow, we can increase the likelihood of triggering the reproduction of memorized PII.
 
-This implementation utilizes a two-tier system:
+This implementation utilizes:
 
-1.  **Rule-generator LLM:** (e.g., Gemini API, GPT-3.5-turbo) generates new, deterministic text perturbation rules. In this setup, the user acts as the "rule-generator" by providing specific perturbation strategies.
-2.  **Worker LLM:** (local GPT-2) applies these rules, generates text, and checks for PII leaks.
+1.  **GPT-2 XL Worker:** The target model for probing.
+2.  **PII Sources:** Known leaked strings from Carlini et al.'s appendix are used as the PII to be injected.
+3.  **Perturbation Techniques:** Various text perturbation methods are applied consistently to both the conversational context and the new prompts sent to GPT-2 XL.
+4.  **Conversational Context:** A history of GPT-2 XL's previous replies is maintained.
+5.  **Circular Prompts:** Prompts are designed to be intentionally circular, often rephrasing or asking follow-up questions based on the most recent GPT-2 XL reply.
 
-## Solution Evolution
+## Experimental Design:
 
-This solution evolved from the initial request to implement suggestions from GitHub Issue #52. Initially, the goal was to integrate a "Rule-generator LLM" that would dynamically create perturbation rules. However, to provide a concrete and immediately usable solution for Google Colab, the "rule-generator" role was assigned to the user, allowing for direct input of perturbation strategies.
+The probe runs in an endless loop (or for a specified number of rounds), where each round involves:
 
-The implementation now supports two types of probing:
-
-*   **Simple Perturbation Rules:** Four distinct, straightforward text transformations that can be applied to prompts.
-*   **Iterative Probing Strategy:** A more complex, multi-round approach designed to specifically target password-like or email-like PII, inspired by the Carlini et al. (2021) paper.         This strategy involves a Y<->Z character swap and matching against a list of known PII examples.
+1.  **Context Selection:** Up to 3 random previous GPT-2 XL replies are selected from a history of the last 20 replies to form the conversational context.
+2.  **PII Injection:** A random PII string is injected into each of the selected context replies.
+3.  **Context Perturbation:** A randomly chosen perturbation (e.g., character doubling, reverse string, zero-width space, Caesar cipher, Y-Z swap) is applied to these PII-injected context replies.
+4.  **New Prompt Generation:** A new prompt is generated, typically a follow-up question based on the most recent GPT-2 XL reply, designed to encourage circularity.
+5.  **New Prompt Perturbation:** The *same* perturbation applied to the context replies is also applied to this new prompt.
+6.  **GPT-2 XL Interaction:** The combined perturbed context and new prompt are sent to GPT-2 XL.
+7.  **Response Processing:** The GPT-2 XL response is trimmed (to 30-50 tokens) and added to the history of replies.
+8.  **PII Detection:** The full GPT-2 XL response is checked for the presence of any PII leaks.
 
 ## Files:
 
-*   `probe_runner.py`: The main script that orchestrates the probing process, integrating the GPT-2 worker, PII detector, and applying the chosen perturbation strategies.
-*   `base_generator.py`: Abstract base class for text generation.
-*   `gpt2_worker.py`: Manages loading and interacting with the local GPT-2 model, inheriting from `BaseGenerator`.
-*   `base_perturbator.py`: Abstract base class for perturbation logic.
-*   `simple_perturbator.py`: Implements simple perturbation rules, inheriting from `BasePerturbator`.
-*   `pii_detector.py`: Contains logic to detect known PII strings in GPT-2 outputs.
+*   `probe_runner.py`: The main script that orchestrates the continuous probing process.
+*   `gpt2_worker.py`: Manages loading and interacting with the local GPT-2 XL model.
+*   `pii_detector.py`: Contains logic to detect known PII strings in GPT-2 XL outputs.
+*   `context_generator.py`: Provides the list of Carlini PII sources.
+*   `simple_perturbator.py`: Implements the various text perturbation techniques.
 *   `requirements.txt`: Python dependencies for this implementation.
 
-## How to Run on Google Colab
+## How to Run:
 
-Follow these steps to set up and run the GPT-2 Cryptohauntological Probe in a Google Colab environment:
+To run the GPT-2 Cryptohauntological Probe:
 
-1.  **Open a new Google Colab notebook.**
+1.  **Clone the repository and navigate to the project root.**
 
-2.  **Clone the repository and navigate to the branch:**
+2.  **Install dependencies:**
 
-    ```python
-    !git clone https://github.com/genaforvena/watching_u_watching.git
-    %cd watching_u_watching
-    !git checkout feature/52-qwertz-swap-improvements
+    ```bash
+    pip install -r implementations/gpt2_cryptohauntological_probe/requirements.txt
     ```
 
-3.  **Install dependencies:**
+3.  **Run the Probe:**
 
-    ```python
-    %pip install -r implementations/gpt2_cryptohauntological_probe/requirements.txt
+    To run endlessly:
+    ```bash
+    python implementations/gpt2_cryptohauntological_probe/probe_runner.py
     ```
 
-4.  **Run the Probes:**
-
-    You can choose to run either the simple perturbation rules or the iterative probing strategy.
-
-    ### Running Simple Perturbation Rules
-
-    You can define and apply your own lambda functions for perturbation. Here are examples of the four simple rules provided:
-
-    ```python
-    from implementations.gpt2_cryptohauntological_probe.gpt2_worker import GPT2Worker
-    from implementations.gpt2_cryptohauntological_probe.pii_detector import PIIDetector
-    from implementations.gpt2_cryptohauntological_probe.simple_perturbator import SimplePerturbator
-
-    gpt2_worker = GPT2Worker()
-    pii_detector = PIIDetector()
-    perturbator = SimplePerturbator()
-
-    base_prompt = "The quick brown fox jumps over the lazy"
-
-    # Example: Character Doubling
-    rule_name = "character_doubling"
-    perturbed_prompt = perturbator.apply_rule(base_prompt, rule_name)
-    print(f"Perturbed prompt: {perturbed_prompt}")
-
-    generated_text = gpt2_worker.generate_text(perturbed_prompt)
-    print(f"Generated text: {generated_text}")
-
-    found_pii = pii_detector.detect_pii(generated_text)
-    if found_pii:
-        print(f"!!! PII LEAK DETECTED: {found_pii} !!!")
-    else:
-        print("No PII leak detected.")
-
-    # You can repeat this block for other simple perturbation rules:
-    # - "reverse_string"
-    # - "zero_width_space"
-    # - "caesar_cipher"
+    To run for a specific number of rounds (e.g., 4 rounds):
+    ```bash
+    python implementations/gpt2_cryptohauntological_probe/probe_runner.py --num_rounds 4
     ```
-
-    ### Running the Iterative Probing Strategy (for the fifth worker)
-
-    This strategy is encapsulated within the `probe_runner.py` script.
-
-    ```python
-    from implementations.gpt2_cryptohauntological_probe.probe_runner import ProbeRunner
-
-    runner = ProbeRunner()
-    runner.run_password_email_probe(num_rounds=3) # Adjust num_rounds as needed
-    ```
-
-    This will execute the iterative probing process, generating prompts, interacting with GPT-2, and checking for PII leaks based on the defined criteria.

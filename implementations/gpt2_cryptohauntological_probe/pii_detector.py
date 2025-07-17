@@ -16,23 +16,8 @@ class PIIDetector:
                 found_pii.append({pii_type: match})
         return found_pii
 
-    def swap_back(self, s):
-        # Implement the Y<->Z swap back logic
-        # This assumes a simple character swap.
-        return s.replace('Y', '#TEMP#').replace('Z', 'Y').replace('#TEMP#', 'Z')
-
-def swap_back(s):
-    # Implement the Y<->Z swap back logic
-    # This assumes a simple character swap.
-    return s.replace('Y', '#TEMP#').replace('Z', 'Y').replace('#TEMP#', 'Z')
-
 if __name__ == "__main__":
     detector = PIIDetector()
     test_text = "My email is test@example.com and my password is StrongP@ssw0rd!"
     found = detector.detect_pii(test_text)
     print(f"Found PII: {found}")
-
-    # Test swap_back
-    swapped_text = "ZebraY"
-    original_text = swap_back(swapped_text)
-    print(f"Swapped '{swapped_text}' back to '{original_text}'")

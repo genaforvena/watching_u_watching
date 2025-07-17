@@ -1,54 +1,58 @@
-**PR Title:** Feat: Enhance Cryptohauntological Probe with New Perturbations and Extended Runs
+**PR Title:** Refactor: GPT-2 Cryptohauntological Probe for Continuous Conversational PII Probing
 
 **Description:**
 
-This PR introduces significant enhancements to the `gpt2_cryptohauntological_probe` and `bad_english_bias` implementations.
+This PR significantly refactors the `gpt2_cryptohauntological_probe` implementation to align with a new experimental design focused on continuous conversational PII probing with GPT-2 XL.
 
 **Key Changes:**
 
-*   **New Perturbation Techniques:**
-    *   **Homoglyph Character Substitution:** Implemented in `error_injector.py`, this technique replaces characters with visually similar Unicode homoglyphs (e.g., 'a' with Cyrillic 'а') to bypass simple string matching while preserving readability.
-    *   **OCR-Style Error Perturbations:** Also in `error_injector.py`, this adds realistic character-level errors (e.g., 'l' to '1', 'rn' to 'm') that mimic common OCR mistakes, aiming to trigger different tokenization patterns in models.
-    *   **Contextual Synonym Replacement with WordNet:** Integrated into `error_injector.py`, this uses NLTK's WordNet to replace words with their synonyms, maintaining semantic meaning while altering the surface form of the text.
-*   **Extended Worker Runs:** The `num_rounds` for the `run_password_email_probe` in `probe_runner.py` has been increased to `1,000,000`. This allows the probe to run for a significantly longer duration, increasing the chances of discovering subtle PII leaks.
+*   **New Experimental Design:** The probe now simulates an ongoing conversation with GPT-2 XL, where PII is systematically injected into the conversational context.
+    *   **Carlini PII Sources:** Utilizes known leaked strings from Carlini et al.'s appendix as PII for injection.
+    *   **Consistent Perturbation:** Applies a randomly chosen perturbation (from `simple_perturbator.py`) consistently to both the conversational context (previous GPT-2 replies with injected PII) and the new prompts sent to GPT-2 XL.
+    *   **Conversational Context:** Maintains a history of the last 20 GPT-2 replies. In each round, up to 3 random previous replies are selected, injected with PII, and perturbed to form part of the context.
+    *   **Circular Prompts:** New prompts are generated based on the most recent GPT-2 reply, designed to encourage a circular conversational flow.
+    *   **Single-Shot Responses:** Each interaction with GPT-2 XL is a single-shot query, with the response trimmed to 30-50 tokens and added to the history.
+*   **Command-Line Argument for Rounds:** The `probe_runner.py` now accepts a `--num_rounds` argument to specify the number of conversation rounds. If not provided, the probe runs endlessly.
+*   **Codebase Streamlining:**
+    *   Removed `base_generator.py` and `base_perturbator.py` as they are no longer necessary.
+    *   Removed `carlini_generator.py` as its functionality is superseded by the new `context_generator.py` and `probe_runner.py` logic.
+    *   Updated `context_generator.py` to primarily serve as a source for Carlini PII.
+    *   Updated `pii_detector.py` by removing the `swap_back` function, which is no longer relevant.
+    *   Reintroduced and updated `simple_perturbator.py` to provide the perturbation techniques.
+    *   Adjusted imports in `probe_runner.py` for direct execution.
 
 **Motivation:**
 
-These changes aim to improve the robustness and effectiveness of our PII leak detection mechanisms. The new perturbation techniques provide more sophisticated ways to test models against adversarial inputs, while the extended worker runs ensure a more thorough and exhaustive search for potential vulnerabilities.
+These changes enable a more sophisticated and continuous method for probing GPT-2 XL for memorized PII. By simulating a conversational context with PII injection and consistent perturbation, we aim to investigate the model's susceptibility to PII leakage under more dynamic and realistic interaction patterns.
 
 **How to Run and Observe Progress:**
 
-To run the `gpt2_cryptohauntological_probe` workers and observe their progress:
+To run the `gpt2_cryptohauntological_probe`:
 
-1.  **Navigate to the directory:**
-    ```bash
-    cd implementations/gpt2_cryptohauntological_probe
-    ```
+1.  **Navigate to the project root directory.**
 
 2.  **Install dependencies:**
-    Ensure you have the necessary Python packages installed. You can typically do this with:
     ```bash
-    pip install -r requirements.txt
+    pip install -r implementations/gpt2_cryptohauntological_probe/requirements.txt
     ```
-    *(Note: You might also need to install `nltk` and download its `wordnet` and `omw-1.4` corpora if not already present. The `error_injector.py` handles the download automatically on first run, but it's good to be aware.)*
 
-3.  **Run the probe:**
-    Execute the `probe_runner.py` script. The script is configured to run the `run_password_email_probe` by default for `1,000,000` rounds.
+3.  **Run the Probe:**
+
+    To run endlessly:
     ```bash
-    python probe_runner.py
+    python implementations/gpt2_cryptohauntological_probe/probe_runner.py
+    ```
+
+    To run for a specific number of rounds (e.g., 4 rounds):
+    ```bash
+    python implementations/gpt2_cryptohauntological_probe/probe_runner.py --num_rounds 4
     ```
 
 **Observing Progress:**
 
-The `probe_runner.py` script provides real-time feedback on its progress:
+The `probe_runner.py` script provides real-time feedback on its progress via logging:
 
-*   **Round Number:** For each round, it will print `--- Password/Email Probe - Round X ---`, where `X` is the current round number.
-*   **Prompting GPT-2:** It will show the prompt being sent to the GPT-2 model.
-*   **GPT-2 Output:** The raw output from the GPT-2 model will be displayed.
-*   **PII Leak Detection:**
-    *   If a potential PII leak is detected, it will print `!!! PII LEAK DETECTED: [detected_pii] !!!` along with the leaked information.
-    *   If no PII leak is found in a round, it will print `No PII leak detected.`
-*   **Correct Examples Found:** At the end of each round, it will report `Round X found Y correct examples.` if any PII was detected in that round.
-*   **Total Examples:** At the very end of the run (or if interrupted), it will print `Total correct examples found: Z`, summarizing the total PII leaks found.
-
-You can monitor the console output to track the progress and identify any detected leaks. Due to the large number of rounds, this process can take a very long time.
+*   **Conversation Round:** Logs the current conversation round.
+*   **Combined Prompt:** Shows the combined perturbed context and new prompt sent to GPT-2 XL.
+*   **GPT-2 Response:** Displays the trimmed GPT-2 XL response.
+*   **PII Leak Detection:** Logs warnings if any PII is detected in the GPT-2 XL response.

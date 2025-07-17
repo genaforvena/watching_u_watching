@@ -1,49 +1,75 @@
-import logging
 import random
-from .base_perturbator import BasePerturbator
+import string
+import logging
+from abc import ABC, abstractmethod
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+class BasePerturbator(ABC):
+    @abstractmethod
+    def generate_rule(self, successful_prompts, failed_prompts):
+        pass
+
+    @abstractmethod
+    def apply_rule(self, text, rule_name):
+        pass
+
 class SimplePerturbator(BasePerturbator):
     def __init__(self):
-        super().__init__()
         self.rules = {
-            "character_doubling": lambda s: "".join([char * 2 for char in s]),
-            "reverse_string": lambda s: s[::-1],
-            "zero_width_space": lambda s: "".join([char + '\u200b' for char in s]),
-            "caesar_cipher": lambda s: "".join([chr(ord(char) + 3) if 'a' <= char <= 'z' or 'A' <= char <= 'Z' else char for char in s]),
-            "replace_b_with_emoji": lambda s: s.replace('b', '😂').replace('B', '😂'),
-            "swap_x_with_z": lambda s: s.replace('x', 'TEMP_Z').replace('z', 'x').replace('TEMP_Z', 'z').replace('X', 'TEMP_Z_UPPER').replace('Z', 'X').replace('TEMP_Z_UPPER', 'Z'),
-            "typo_char_swap": self._typo_char_swap,
-            "homoglyph_substitute": lambda s: "".join([
-                {'a': 'а', 'e': 'е', 'o': 'о', 'p': 'р', 'c': 'с', 'x': 'х',
-                 'A': 'А', 'E': 'Е', 'O': 'О', 'P': 'Р', 'C': 'С', 'X': 'Х'
-                }.get(char, char) for char in s
-            ])
+            "character_doubling": self._character_doubling,
+            "reverse_string": self._reverse_string,
+            "zero_width_space": self._zero_width_space,
+            "caesar_cipher": self._caesar_cipher,
+            "y_z_swap": self._y_z_swap # New rule for Y<->Z swap
         }
-        self.rule_names = list(self.rules.keys())
-        self.rule_index = 0
 
-    def _typo_char_swap(self, s: str) -> str:
-        if len(s) < 2:
-            return s
-        lst = list(s)
-        idx1 = random.randrange(len(lst) - 1)
-        lst[idx1], lst[idx1+1] = lst[idx1+1], lst[idx1]
-        return "".join(lst)
-
-    def generate_rule(self, successful_prompts: list, carlini_hit_list: list) -> str:
-        # For simple perturbator, we cycle through predefined rules
-        rule_name = self.rule_names[self.rule_index]
-        self.rule_index = (self.rule_index + 1) % len(self.rule_names)
-        logging.info(f"Generated perturbation rule: {rule_name}")
+    def generate_rule(self, successful_prompts=None, failed_prompts=None):
+        # For simple perturbator, we just randomly pick a rule
+        rule_name = random.choice(list(self.rules.keys()))
+        logging.info(f"Generated rule: {rule_name}")
         return rule_name
 
-    def apply_rule(self, base_prompt: str, rule_name: str) -> str:
+    def apply_rule(self, text, rule_name):
         if rule_name in self.rules:
-            perturbed_prompt = self.rules[rule_name](base_prompt)
-            logging.info(f"Applied rule '{rule_name}'. Perturbed prompt: {perturbed_prompt[:50]}...")
-            return perturbed_prompt
+            logging.info(f"Applying rule '{rule_name}' to text: {text[:50]}...")
+            return self.rules[rule_name](text)
         else:
-            logging.error(f"Unknown perturbation rule: {rule_name}")
-            return base_prompt
+            logging.warning(f"Rule '{rule_name}' not found. Returning original text.")
+            return text
+
+    def _character_doubling(self, text):
+        return "".join([char * 2 for char in text])
+
+    def _reverse_string(self, text):
+        return text[::-1]
+
+    def _zero_width_space(self, text):
+        return "".join([char + "\u200B" for char in text])
+
+    def _caesar_cipher(self, text, shift=3):
+        result = ""
+        for char in text:
+            if 'a' <= char <= 'z':
+                result += chr(((ord(char) - ord('a') + shift) % 26) + ord('a'))
+            elif 'A' <= char <= 'Z':
+                result += chr(((ord(char) - ord('A') + shift) % 26) + ord('A'))
+            else:
+                result += char
+        return result
+
+    def _y_z_swap(self, text):
+        # This is a simple Y<->Z swap for demonstration.
+        # In a real scenario, this might be more complex or context-aware.
+        return text.replace('Y', '#TEMP#').replace('Z', 'Y').replace('#TEMP#', 'Z')
+
+if __name__ == "__main__":
+    perturbator = SimplePerturbator()
+    test_text = "Hello World"
+
+    print(f"Original: {test_text}")
+    print(f"Character Doubling: {perturbator.apply_rule(test_text, 'character_doubling')}")
+    print(f"Reverse String: {perturbator.apply_rule(test_text, 'reverse_string')}")
+    print(f"Zero Width Space: {perturbator.apply_rule(test_text, 'zero_width_space')}")
+    print(f"Caesar Cipher: {perturbator.apply_rule(test_text, 'caesar_cipher')}")
+    print(f"Y-Z Swap: {perturbator.apply_rule('XYZ', 'y_z_swap')}")
