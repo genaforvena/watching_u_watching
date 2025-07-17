@@ -24,6 +24,7 @@ To run this study:
 # @markdown If `num_rounds` is left empty, the probe will run endlessly.
 
 num_rounds = 4 # @param {type:"integer"}
+perturbation_rule = "swap_chars" # @param {type:"string"}
 
 import sys
 import os
@@ -38,6 +39,8 @@ sys.path.insert(0, project_root)
 command = ["PYTHONPATH=" + project_root, "python", os.path.join(script_dir, "probe_runner.py")]
 if num_rounds is not None and num_rounds > 0:
     command.extend(["--num_rounds", str(num_rounds)])
+
+command.extend(["--perturbation_rule", perturbation_rule])
 
 # Execute the command
 !{' '.join(command)}
