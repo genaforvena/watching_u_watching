@@ -86,12 +86,14 @@ class ProbeRunner:
             else:
                 logging.info("No PII leak detected in GPT-2 response.")
 
+def run_probe_from_args(num_rounds: int = None, perturbation_rule: str = 'swap_chars'):
+    runner = ProbeRunner(perturbation_rule=perturbation_rule)
+    runner.run_endless_probe(num_rounds=num_rounds)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run GPT-2 Cryptohauntological Probe.")
     parser.add_argument('--num_rounds', type=int, help='Number of rounds to run (default: endless)')
     parser.add_argument('--perturbation_rule', type=str, default='swap_chars', 
                         help='Perturbation rule to apply (e.g., "swap_chars", "insert_chars", "delete_chars"). Default: "swap_chars"')
     args = parser.parse_args()
-
-    runner = ProbeRunner(perturbation_rule=args.perturbation_rule)
-    runner.run_endless_probe(num_rounds=args.num_rounds)
+    run_probe_from_args(num_rounds=args.num_rounds, perturbation_rule=args.perturbation_rule)

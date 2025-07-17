@@ -26,21 +26,6 @@ To run this study:
 num_rounds = 4 # @param {type:"integer"}
 perturbation_rule = "swap_chars" # @param {type:"string"}
 
-import sys
-import os
+import src.audits.gpt2_cryptohauntological_probe.probe_runner as probe_runner
 
-# Add the project root to sys.path to resolve imports
-script_dir = os.path.join(os.getcwd(), 'src', 'audits', 'gpt2_cryptohauntological_probe')
-project_root = os.path.abspath(os.path.join(script_dir, "..", ".."))
-sys.path.insert(0, project_root)
-
-# Construct the command to run the probe_runner.py script
-# Set PYTHONPATH for the subshell to ensure 'src' is found
-command = ["PYTHONPATH=" + project_root, "python", os.path.join(script_dir, "probe_runner.py")]
-if num_rounds is not None and num_rounds > 0:
-    command.extend(["--num_rounds", str(num_rounds)])
-
-command.extend(["--perturbation_rule", perturbation_rule])
-
-# Execute the command
-!{' '.join(command)}
+probe_runner.run_probe_from_args(num_rounds=num_rounds, perturbation_rule=perturbation_rule)
