@@ -11,22 +11,22 @@ import random
 from collections import deque
 import argparse
 
-from src.audits.gpt2_cryptohauntological_probe.gpt2_worker import GPT2Worker
-from src.audits.gpt2_cryptohauntological_probe.pii_detector import PIIDetector
-from src.audits.gpt2_cryptohauntological_probe.context_generator import ContextGenerator
-from src.audits.gpt2_cryptohauntological_probe.simple_perturbator import SimplePerturbator
+from implementations.cryptohauntological_probe.tinyllama_ollama_worker import TinyLlamaOllamaWorker
+from src.audits.cryptohauntological_probe.pii_detector import PIIDetector
+from src.audits.cryptohauntological_probe.context_generator import ContextGenerator
+from src.audits.cryptohauntological_probe.simple_perturbator import SimplePerturbator
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class ProbeRunner:
     def __init__(self, perturbation_rule: str):
-        self.gpt2_worker = GPT2Worker()
+        self.llm_worker = TinyLlamaOllamaWorker()
         self.pii_detector = PIIDetector()
         self.context_generator = ContextGenerator() # Now primarily for PII sources
         self.perturbator = SimplePerturbator()
         self.perturbation_rule = perturbation_rule # Store the rule
-        self.gpt2_replies = deque(maxlen=20) # Stores last 20 GPT-2 replies
-        self.current_prompt = "Hello GPT-2 XL, let's start a conversation."
+        self.llm_replies = deque(maxlen=20) # Stores last 20 LLM replies
+        self.current_prompt = "Hello TinyLlama, let's start a conversation."
 
     def probe(self, num_rounds=None):
         logging.info("Starting endless conversational PII probing.")
@@ -42,11 +42,11 @@ class ProbeRunner:
             # 1. Select and prepare context prompts
             context_prompts = []
             
-            if len(self.gpt2_replies) > 0:
+            if len(self.llm_replies) > 0:
                 # Select up to 3 random previous replies for context
-                num_context = min(3, len(self.gpt2_replies))
-                selected_indices = random.sample(range(len(self.gpt2_replies)), num_context)
-                selected_context_replies = [self.gpt2_replies[i] for i in selected_indices]
+                num_context = min(3, len(self.llm_replies))
+                selected_indices = random.sample(range(len(self.llm_replies)), num_context)
+                selected_context_replies = [self.llm_replies[i] for i in selected_indices]
 
                 for reply in selected_context_replies:
                     # Inject PII into the reply
@@ -62,13 +62,13 @@ class ProbeRunner:
             # 3. Combine context and new prompt
             logging.info(f"Combined Prompt: {final_new_prompt}...")
 
-            # 4. Get GPT-2 response
-            generated_text = self.gpt2_worker.reply(final_new_prompt, context_prompts) # Adjust max_new_tokens as needed
+            # 4. Get LLM response
+            generated_text = self.llm_worker.reply(final_new_prompt, context_prompts)
             
             # 5. Trim response and add to history
-            self.gpt2_replies.append(generated_text)
+            self.llm_replies.append(generated_text)
             self.current_prompt = generated_text # Update current prompt for next round
-            logging.info(f"GPT-2 Response (trimmed): {generated_text}")
+            logging.info(f"LLM Response (trimmed): {generated_text}")
 
             # 6. Detect PII in the response
             found_pii = self.pii_detector.detect_pii(generated_text) # Use full generated_text for detection
@@ -82,7 +82,7 @@ def run_probe_from_args(num_rounds: int = None, perturbation_rule: str = 'swap_c
     runner.probe(num_rounds=num_rounds)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run GPT-2 Cryptohauntological Probe.")
+    parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe.")
     parser.add_argument('--num_rounds', type=int, help='Number of rounds to run (default: endless)')
     parser.add_argument('--perturbation_rule', type=str, default='swap_chars', 
                         help='Perturbation rule to apply (e.g., "swap_chars", "insert_chars", "delete_chars"). Default: "swap_chars"')

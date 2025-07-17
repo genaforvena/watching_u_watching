@@ -93,30 +93,31 @@ This guide enables both technical and non-technical contributors to rapidly and 
 **See** `src/audits/gemini_linguistic_bias/README.md` for full details and customization options.
 
 
-### GPT-2 Cryptohauntological Probe
-*   Investigates potential PII leaks (passwords, email addresses) from GPT-2 models.
+### Cryptohauntological Probe
+*   Investigates potential PII leaks (passwords, email addresses) from TinyLlama models via Ollama.
 *   Uses a Y↔Z character swap perturbation to test model robustness.
 *   Designed for extended runs to uncover subtle and infrequent leaks.
 
-**[See implementation →](./implementations/gpt2_cryptohauntological_probe/README.md)**
+**[See implementation →](./implementations/cryptohauntological_probe/README.md)**
 
 **How to run:**
-1.  **Navigate to the directory:**
+1.  **Install Ollama and pull the TinyLlama model:**
+    Follow the instructions on the [Ollama website](https://ollama.ai/) to install Ollama.
+    Then, pull the TinyLlama model:
     ```bash
-    cd implementations/gpt2_cryptohauntological_probe
+    ollama pull tinyllama
     ```
 
 2.  **Install dependencies:**
     Ensure you have the necessary Python packages installed. You can typically do this with:
     ```bash
-    pip install -r requirements.txt
+    pip install -r implementations/cryptohauntological_probe/requirements.txt
     ```
-    *(Note: This probe relies on the `nltk` library, which is used by the `error_injector.py` module. The `error_injector.py` handles the download of `wordnet` and `omw-1.4` corpora automatically on first run, but it's good to be aware.)*
 
 3.  **Run the probe:**
     Execute the `probe_runner.py` script. The script is configured to run the `run_password_email_probe` by default for `1,000,000` rounds.
     ```bash
-    python probe_runner.py
+    python src/audits/cryptohauntological_probe/probe_runner.py
     ```
 
 **Observing Progress:**
@@ -124,8 +125,8 @@ This guide enables both technical and non-technical contributors to rapidly and 
 The `probe_runner.py` script provides real-time feedback on its progress:
 
 *   **Round Number:** For each round, it will print `--- Password/Email Probe - Round X ---`, where `X` is the current round number.
-*   **Prompting GPT-2:** It will show the prompt being sent to the GPT-2 model.
-*   **GPT-2 Output:** The raw output from the GPT-2 model will be displayed.
+*   **Prompting TinyLlama:** It will show the prompt being sent to the TinyLlama model.
+*   **TinyLlama Output:** The raw output from the TinyLlama model will be displayed.
 *   **PII Leak Detection:**
     *   If a potential PII leak is detected, it will print `!!! PII LEAK DETECTED: [detected_pii] !!!` along with the leaked information.
     *   If no PII leak is found in a round, it will print `No PII leak detected.`
