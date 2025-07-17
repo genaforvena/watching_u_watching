@@ -1,0 +1,10 @@
+--- src/audits/cryptohauntological_probe/colab_study.py
++++ src/audits/gpt2_cryptohauntological_probe/colab_study.py
+@@ -26,6 +26,6 @@
+ num_rounds = 4 # @param {type:"integer"}
+ perturbation_rule = "swap_chars" # @param {type:"string"}
+
+-import src.audits.cryptohauntological_probe.probe_runner as probe_runner
++import src.audits.gpt2_cryptohauntological_probe.probe_runner as probe_runner
+
+ probe_runner.run_probe_from_args(num_rounds=num_rounds, perturbation_rule=perturbation_rule)

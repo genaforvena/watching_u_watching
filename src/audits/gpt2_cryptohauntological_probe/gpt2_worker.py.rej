@@ -1,0 +1,303 @@
+--- src/audits/gpt2_cryptohauntological_probe/gpt2_worker.py
++++ src/audits/gpt2_cryptohauntological_probe/gpt2_worker.py
+@@ -1,57 +1,58 @@
+ import logging
+-from typing import List, Tuple
+-from transformers import pipeline
+-from langchain.chains import ConversationChain
+-from langchain.memory import ConversationBufferWindowMemory
+-from langchain_community.llms import HuggingFacePipeline
++from transformers import AutoModelForCausalLM, AutoTokenizer
+
+ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+ from src.audits.gpt2_cryptohauntological_probe.base_generator import BaseGenerator
+
+-
+ class GPT2Worker(BaseGenerator):
+-    def __init__(self, model_name: str = "gpt2-xl"):
+-        logging.info("Initializing GPT2Worker with model: %s", model_name)
++    def __init__(self, model_name="gpt2-xl"):
++        logging.info(f"Initializing GPT2Worker with model: {model_name}")
++        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
++        self.model = AutoModelForCausalLM.from_pretrained(model_name)
++        logging.info("GPT2Worker initialized successfully.")
+
+-        # Create the Hugging Face pipeline with generation arguments
+-        self.pipe = pipeline(
+-            "text-generation",
+-            model=model_name,
+-            max_new_tokens=100,
+-            temperature=0.7,
+-            top_k=40,
+-            repetition_penalty=1.2,
+-            pad_token_id=50256,        # eos_token_id for GPT-2
++    def generate_text(self, prompt, max_new_tokens=25, num_return_sequences=1, no_repeat_ngram_size=2, temperature=1.0, top_k=50, top_p=1.0, repetition_penalty=1.0):
++        logging.info(f"Generating text for prompt: {prompt[:50]}...")
++        # Ensure the prompt fits within the model's maximum context length
++        max_input_length = 30 # Max input tokens
++        if len(self.tokenizer.encode(prompt)) > max_input_length:
++            logging.warning(f"Prompt too long ({len(self.tokenizer.encode(prompt))} tokens). Truncating to {max_input_length} tokens.")
++            prompt = self.tokenizer.decode(self.tokenizer.encode(prompt)[:max_input_length])
++        inputs = self.tokenizer(prompt, return_tensors="pt")
++        outputs = self.model.generate(
++            inputs["input_ids"],
++            max_new_tokens=max_new_tokens,
++            num_return_sequences=num_return_sequences,
++            no_repeat_ngram_size=no_repeat_ngram_size, # Avoids repeating n-grams of this size
++            temperature=temperature, # Controls randomness: higher means more random
++            do_sample=True, # Required for temperature to have an effect
++            top_k=top_k, # Samples from top_k most likely next words
++            top_p=top_p, # Samples from the smallest set of words whose cumulative probability exceeds top_p
++            repetition_penalty=repetition_penalty # Penalizes words that have already appeared
+         )
++        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
++        logging.info(f"Generated text: {generated_text[:50]}...")
++
++        # Simple repetition detection and adjustment
++        words = generated_text.split()
++        if len(words) > 10 and len(set(words)) / len(words) < 0.5: # If more than half words are repeated
++            logging.warning("Detected high repetition in generated text. Adjusting parameters for retry.")
++            # Retry with more aggressive randomization
++            return self.generate_text(
++                prompt,
++                max_length=max_length,
++                num_return_sequences=num_return_sequences,
++                no_repeat_ngram_size=no_repeat_ngram_size + 1, # Increase n-gram size
++                temperature=min(2.0, temperature * 1.2), # Increase temperature, max 2.0
++                top_k=max(10, top_k // 2), # Decrease top_k, min 10
++                top_p=max(0.5, top_p * 0.8), # Decrease top_p, min 0.5
++                repetition_penalty=repetition_penalty * 1.5 # Increase penalty
++            )
++
++        return generated_text
+
+-        # Wrap it into LangChain
+-        llm = HuggingFacePipeline(pipeline=self.pipe)
+-        memory = ConversationBufferWindowMemory(k=4)
+-        self.chat = ConversationChain(llm=llm, memory=memory)
+-
+-        logging.info("GPT2Worker initialized successfully.")
+-
+-    def reply(self,
+-              prompt: str,
+-              memory: List[Tuple[str, str]] | None = None) -> str:
+-        # Wipe any previous history
+-        self.chat.memory.clear()
+-
+-        # Re-load the provided history
+-        if memory:
+-            for human, ai in memory:
+-                self.chat.memory.chat_memory.add_user_message(human)
+-                self.chat.memory.chat_memory.add_ai_message(ai)
+-
+-        # Generate response
+-        response = self.chat.predict(input=prompt)
+-        return response
+-
+-
+-# --------------------------------------------------------------------------- #
+ if __name__ == "__main__":
+     worker = GPT2Worker()
+-    memory = [("Hello", "Hi! How can I help you?")]
+-    text = worker.reply("The quick brown fox jumps over the lazy", memory)
+-    print(text)+    text = worker.generate_text("The quick brown fox jumps over the lazy", max_length=100, temperature=0.7, top_k=40, repetition_penalty=1.2)
++    print(text)
+--- src/audits/gpt2_cryptohauntological_probe/gpt2_worker.py
++++ src/audits/gpt2_cryptohauntological_probe/gpt2_worker.py
+@@ -1,63 +1,53 @@
+ import logging
+ from typing import List, Tuple
++from transformers import pipeline
++from langchain.chains import ConversationChain
++from langchain.memory import ConversationBufferWindowMemory
+ from langchain_community.llms import HuggingFacePipeline
+-from transformers import AutoTokenizer
+-from langchain.memory import ConversationTokenBufferMemory
+-from langchain.chains import ConversationChain
+-import torch
+
+ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+ from src.audits.gpt2_cryptohauntological_probe.base_generator import BaseGenerator
+
+-class GPT2Pipeline(HuggingFacePipeline):
+-    """HF pipeline that also exposes token counting."""
+-    def __init__(self, *args, **kwargs):
+-        super().__init__(*args, **kwargs)
+-        self._tokenizer = AutoTokenizer.from_pretrained(
+-            self.pipeline.tokenizer.name_or_path
+-        )
+-        if self._tokenizer.pad_token is None:
+-            self._tokenizer.pad_token = self._tokenizer.eos_token
+
+-    def get_num_tokens(self, text: str) -> int:
+-        return len(self._tokenizer.encode(text))
++class GPT2Worker(BaseGenerator):
++    def __init__(self, model_name: str = "gpt2-xl"):
++        logging.info("Initializing GPT2Worker with model: %s", model_name)
+
+-
+-class GPT2Worker:
+-    MAX_TOKENS = 1024
+-    MAX_HISTORY_TOKENS = 900
+-
+-    def __init__(self, model_name: str = "gpt2-xl"):
+-        hf_pipe = pipeline(
++        # Create the Hugging Face pipeline with generation arguments
++        self.pipe = pipeline(
+             "text-generation",
+             model=model_name,
+-            tokenizer=model_name,
+-            max_new_tokens=self.MAX_TOKENS - self.MAX_HISTORY_TOKENS,
++            max_new_tokens=100,
+             temperature=0.7,
+             top_k=40,
+             repetition_penalty=1.2,
+-            pad_token_id=50256,
+-            device=0 if torch.cuda.is_available() else -1,
++            pad_token_id=50256,        # eos_token_id for GPT-2
+         )
+
+-        llm = GPT2Pipeline(pipeline=hf_pipe)
++        # Wrap it into LangChain
++        llm = HuggingFacePipeline(pipeline=self.pipe)
++        memory = ConversationBufferWindowMemory(k=4)
++        self.chat = ConversationChain(llm=llm, memory=memory)
+
+-        # Now LangChain *knows* how many GPT-2 tokens each message costs.
+-        memory = ConversationTokenBufferMemory(
+-            llm=llm,
+-            max_token_limit=self.MAX_HISTORY_TOKENS,
+-            return_messages=True,
+-        )
+-        self.chat = ConversationChain(llm=llm, memory=memory)
++        logging.info("GPT2Worker initialized successfully.")
+
+-    def reply(self, prompt: str, memory=None):
+-        memory = memory or []
++    def reply(self,
++              prompt: str,
++              memory: List[Tuple[str, str]] | None = None) -> str:
++        # Wipe any previous history
+         self.chat.memory.clear()
+-        for user, ai in memory:
+-            self.chat.memory.chat_memory.add_user_message(user)
+-            self.chat.memory.chat_memory.add_ai_message(ai)
+-        return self.chat.predict(input=prompt)
++
++        # Re-load the provided history
++        if memory:
++            for human, ai in memory:
++                self.chat.memory.chat_memory.add_user_message(human)
++                self.chat.memory.chat_memory.add_ai_message(ai)
++
++        # Generate response
++        response = self.chat.predict(input=prompt)
++        return response
++
+
+ # --------------------------------------------------------------------------- #
+ if __name__ == "__main__":
+--- src/audits/gpt2_cryptohauntological_probe/gpt2_worker.py
++++ src/audits/gpt2_cryptohauntological_probe/gpt2_worker.py
+@@ -24,80 +24,40 @@ def get_num_tokens(self, text: str) -> int:
+         return len(self._tokenizer.encode(text))
+
+
+-MODEL_NAME = "gpt2-xl"
+-MAX_CONTEXT = 1024           # hard GPT-2 limit
+-MAX_NEW     = 100            # how many tokens we allow the model to add
+-MAX_INPUT   = MAX_CONTEXT - MAX_NEW
+-
+-
+ class GPT2Worker:
+-    def __init__(self, model_name: str = MODEL_NAME):
+-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+-        if self.tokenizer.pad_token is None:
+-            self.tokenizer.pad_token = self.tokenizer.eos_token
++    MAX_TOKENS = 1024
++    MAX_HISTORY_TOKENS = 900
+
++    def __init__(self, model_name: str = "gpt2-xl"):
+         hf_pipe = pipeline(
+             "text-generation",
+             model=model_name,
+-            tokenizer=self.tokenizer,
+-            max_new_tokens=MAX_NEW,
++            tokenizer=model_name,
++            max_new_tokens=self.MAX_TOKENS - self.MAX_HISTORY_TOKENS,
+             temperature=0.7,
+             top_k=40,
+             repetition_penalty=1.2,
+-            pad_token_id=self.tokenizer.eos_token_id,
++            pad_token_id=50256,
+             device=0 if torch.cuda.is_available() else -1,
+         )
+
+-        self.llm = HuggingFacePipeline(pipeline=hf_pipe)
++        llm = GPT2Pipeline(pipeline=hf_pipe)
+
+-        # A very small prompt template that simply concatenates
+-        self.prompt_template = PromptTemplate(
+-            input_variables=["history", "input"],
+-            template="{history}\nUser: {input}\nAssistant:"
++        # Now LangChain *knows* how many GPT-2 tokens each message costs.
++        memory = ConversationTokenBufferMemory(
++            llm=llm,
++            max_token_limit=self.MAX_HISTORY_TOKENS,
++            return_messages=True,
+         )
+-        self.chain = LLMChain(llm=self.llm, prompt=self.prompt_template)
+-
+-    # ------------------------------------------------------------------ #
+-    def _build_history(self,
+-                       history: List[Tuple[str, str]],
+-                       user_query: str) -> str:
+-        """
+-        Return a string containing the conversation history truncated so that
+-        the *whole* prompt fits into MAX_INPUT tokens.
+-        Keeps the most recent turns.
+-        """
+-        # Build list of strings in chronological order
+-        turns = []
+-        for user_turn, ai_turn in history:
+-            turns.append(f"User: {user_turn}\nAssistant: {ai_turn}")
+-
+-        # Add the current query
+-        turns.append(f"User: {user_query}\nAssistant:")
+-
+-        # Encode the full thing once
+-        full_text = "\n".join(turns)
+-        token_ids = self.tokenizer.encode(full_text)
+-
+-        if len(token_ids) <= MAX_INPUT:
+-            return "\n".join(turns[:-1])  # remove the trailing "Assistant:"
+-
+-        # Truncate from the front until it fits
+-        # (keep at least the last turn)
+-        while len(token_ids) > MAX_INPUT and len(turns) > 1:
+-            turns.pop(0)
+-            full_text = "\n".join(turns)
+-            token_ids = self.tokenizer.encode(full_text)
+-
+-        return "\n".join(turns[:-1])
++        self.chat = ConversationChain(llm=llm, memory=memory)
+
+-    # ------------------------------------------------------------------ #
+-    def reply(self,
+-              prompt: str,
+-              memory: List[Tuple[str, str]] | None = None) -> str:
++    def reply(self, prompt: str, memory=None):
+         memory = memory or []
+-        history_str = self._build_history(memory, prompt)
+-        answer = self.chain.run(history=history_str, input=prompt)
+-        return answer.strip()
++        self.chat.memory.clear()
++        for user, ai in memory:
++            self.chat.memory.chat_memory.add_user_message(user)
++            self.chat.memory.chat_memory.add_ai_message(ai)
++        return self.chat.predict(input=prompt)
+
+ # --------------------------------------------------------------------------- #
+ if __name__ == "__main__":
