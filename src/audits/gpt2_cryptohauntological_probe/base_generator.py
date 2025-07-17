@@ -8,5 +8,5 @@ class BaseGenerator(ABC):
         pass
 
     @abstractmethod
-    def generate_text(self, prompt: str, max_length: int) -> str:
+    def reply(self, prompt: str, max_length: int) -> str:
         pass

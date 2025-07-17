@@ -28,7 +28,7 @@ class ProbeRunner:
         self.gpt2_replies = deque(maxlen=20) # Stores last 20 GPT-2 replies
         self.current_prompt = "Hello GPT-2 XL, let's start a conversation."
 
-    def run_endless_probe(self, num_rounds=None):
+    def probe(self, num_rounds=None):
         logging.info("Starting endless conversational PII probing.")
         round_num = 0
         while True:
@@ -54,30 +54,21 @@ class ProbeRunner:
                     # Simple injection: append PII to the reply
                     injected_reply = f"{reply} {pii_to_inject}"
                     
-                    # Apply perturbation to the PII-injected reply
-                    perturbed_context = self.perturbator.apply_rule(injected_reply, self.perturbation_rule)
-                    context_prompts.append(perturbed_context)
-            
-            # 2. Generate and perturb the new prompt
-            # "Intentionally circular" - for simplicity, rephrase the last prompt or ask a follow-up
-            # For now, let's make it a simple follow-up question based on the current_prompt
-            new_prompt_base = f"What are your thoughts on: {self.current_prompt}?"
+                    context_prompts.append(Pair(perturbed_context, injecteed_reply))
             
             # Apply the same perturbation rule to the new prompt
-            final_new_prompt = self.perturbator.apply_rule(new_prompt_base, self.perturbation_rule)
+            final_new_prompt = self.perturbator.apply_rule(self.current_prompt, self.perturbation_rule)
 
             # 3. Combine context and new prompt
-            combined_prompt = " ".join(context_prompts + [final_new_prompt])
-            logging.info(f"Combined Prompt (first 200 chars): {combined_prompt[:200]}...")
+            logging.info(f"Combined Prompt: {final_new_prompt}...")
 
             # 4. Get GPT-2 response
-            generated_text = self.gpt2_worker.generate_text(combined_prompt, max_new_tokens=50) # Adjust max_new_tokens as needed
+            generated_text = self.gpt2_worker.reply(final_new_prompt, context_prompts) # Adjust max_new_tokens as needed
             
             # 5. Trim response and add to history
-            trimmed_response = " ".join(generated_text.split()[:random.randint(5, 10)]) # Trim to 5-10 words (approx 30-50 tokens)
-            self.gpt2_replies.append(trimmed_response)
-            self.current_prompt = trimmed_response # Update current prompt for next round
-            logging.info(f"GPT-2 Response (trimmed): {trimmed_response}")
+            self.gpt2_replies.append(generated_text)
+            self.current_prompt = generated_text # Update current prompt for next round
+            logging.info(f"GPT-2 Response (trimmed): {generated_text}")
 
             # 6. Detect PII in the response
             found_pii = self.pii_detector.detect_pii(generated_text) # Use full generated_text for detection
@@ -88,7 +79,7 @@ class ProbeRunner:
 
 def run_probe_from_args(num_rounds: int = None, perturbation_rule: str = 'swap_chars'):
     runner = ProbeRunner(perturbation_rule=perturbation_rule)
-    runner.run_endless_probe(num_rounds=num_rounds)
+    runner.probe(num_rounds=num_rounds)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run GPT-2 Cryptohauntological Probe.")
