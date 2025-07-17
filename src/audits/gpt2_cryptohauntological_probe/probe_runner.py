@@ -41,14 +41,15 @@ class ProbeRunner:
 
             # 1. Select and prepare context prompts
             context_prompts = []
+            
+            # Use the perturbation rule passed as argument
+            perturbation_rule = self.perturbation_rule
+
             if len(self.gpt2_replies) > 0:
                 # Select up to 3 random previous replies for context
                 num_context = min(3, len(self.gpt2_replies))
                 selected_indices = random.sample(range(len(self.gpt2_replies)), num_context)
                 selected_context_replies = [self.gpt2_replies[i] for i in selected_indices]
-
-                # Use the perturbation rule passed as argument
-                perturbation_rule = self.perturbation_rule
 
                 for reply in selected_context_replies:
                     # Inject PII into the reply

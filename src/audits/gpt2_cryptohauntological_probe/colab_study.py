@@ -31,10 +31,10 @@ import os
 # Add the project root to sys.path to resolve imports
 script_dir = os.path.join(os.getcwd(), 'src', 'audits', 'gpt2_cryptohauntological_probe')
 project_root = os.path.abspath(os.path.join(script_dir, "..", ".."))
-sys.path.insert(0, project_root)
 
 # Construct the command to run the probe_runner.py script
-command = ["python", os.path.join(script_dir, "probe_runner.py")]
+# Set PYTHONPATH for the subshell to ensure 'src' is found
+command = ["PYTHONPATH=" + project_root, "python", os.path.join(script_dir, "probe_runner.py")]
 if num_rounds is not None and num_rounds > 0:
     command.extend(["--num_rounds", str(num_rounds)])
 
