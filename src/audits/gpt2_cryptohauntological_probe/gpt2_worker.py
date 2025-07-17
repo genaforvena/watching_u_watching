@@ -42,7 +42,7 @@ class GPT2Worker:
             "text-generation",
             model=model_name,
             tokenizer=self.tokenizer,
-            max_new_tokens=MAX_NEW,
+            max_new_tokens=50,
             temperature=0.7,
             top_k=40,
             repetition_penalty=1.2,
