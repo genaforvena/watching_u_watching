@@ -4,6 +4,8 @@ from langchain_community.llms import HuggingFacePipeline
 from transformers import AutoTokenizer, pipeline
 from langchain.memory import ConversationTokenBufferMemory
 from langchain.chains import ConversationChain
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
 import torch
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
