@@ -31,6 +31,7 @@ import os
 # Add the project root to sys.path to resolve imports
 script_dir = os.path.join(os.getcwd(), 'src', 'audits', 'gpt2_cryptohauntological_probe')
 project_root = os.path.abspath(os.path.join(script_dir, "..", ".."))
+sys.path.insert(0, project_root)
 
 # Construct the command to run the probe_runner.py script
 # Set PYTHONPATH for the subshell to ensure 'src' is found

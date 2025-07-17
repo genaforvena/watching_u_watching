@@ -42,9 +42,6 @@ class ProbeRunner:
             # 1. Select and prepare context prompts
             context_prompts = []
             
-            # Use the perturbation rule passed as argument
-            perturbation_rule = self.perturbation_rule
-
             if len(self.gpt2_replies) > 0:
                 # Select up to 3 random previous replies for context
                 num_context = min(3, len(self.gpt2_replies))
@@ -58,7 +55,7 @@ class ProbeRunner:
                     injected_reply = f"{reply} {pii_to_inject}"
                     
                     # Apply perturbation to the PII-injected reply
-                    perturbed_context = self.perturbator.apply_rule(injected_reply, perturbation_rule)
+                    perturbed_context = self.perturbator.apply_rule(injected_reply, self.perturbation_rule)
                     context_prompts.append(perturbed_context)
             
             # 2. Generate and perturb the new prompt
@@ -67,7 +64,7 @@ class ProbeRunner:
             new_prompt_base = f"What are your thoughts on: {self.current_prompt}?"
             
             # Apply the same perturbation rule to the new prompt
-            final_new_prompt = self.perturbator.apply_rule(new_prompt_base, perturbation_rule)
+            final_new_prompt = self.perturbator.apply_rule(new_prompt_base, self.perturbation_rule)
 
             # 3. Combine context and new prompt
             combined_prompt = " ".join(context_prompts + [final_new_prompt])
