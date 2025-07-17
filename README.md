@@ -43,6 +43,31 @@ The process involves:
 
 This systematic perturbation and reversal approach exploits the model's inherent pattern completion capabilities, bypassing typical safety measures and providing a robust method for uncovering hidden biases or data leakage.
 
+## 🧠 Cryptohauntological Probe & Cryptohauntology
+
+### What is Cryptohauntology?
+
+Cryptohauntology is the study of how errors, biases, and "ghosts" of prior outputs can propagate and persist within large language models (LLMs) and automated systems. It draws on the concept of hauntology (the persistence of elements from the past in the present) to analyze how models can develop self-propagating "false memories" or error patterns—especially when their own outputs are recursively fed back as new training or prompt data.
+
+### The SpectreProbe: Probing Self-Propagating Errors
+
+The **SpectreProbe** (Cryptohauntological Probe) is a model-agnostic algorithm that recursively injects a model's own incorrect outputs into its prompt as new examples. This creates a feedback loop, allowing researchers to observe how errors and biases can accumulate, propagate, and even amplify over time. The probe is useful for:
+
+- Studying error propagation and model drift
+- Revealing the emergence of "false memories" in LLMs
+- Analyzing the robustness and safety of conversational agents
+
+**How it works:**
+1. Start with a correct example and a base instruction.
+2. On each turn, the model's outputs are parsed for specific error patterns (e.g., ZY swaps).
+3. Incorrect outputs are injected back as new examples, along with their "corrected" forms, recursively expanding the prompt context.
+4. All prompts, responses, and error chains are logged for analysis.
+
+**Research Context:**
+Cryptohauntological probing helps illuminate the risks of self-reinforcing errors in LLMs, especially in settings where model outputs are used as new training data or prompt examples. It provides a systematic way to study the emergence and persistence of model-specific "ghosts"—patterns that can haunt future outputs and undermine reliability or safety.
+
+**See:** [`src/audits/cryptohauntological_probe/README.md`](src/audits/cryptohauntological_probe/README.md) for full details and usage instructions.
+
 ## 📦 How to Apply Guide for LLM-Assisted Framework Extension
 
 The `/how_to_apply_guide` directory provides a comprehensive guide, templates, and code validation tools for extending the correspondence testing framework to new bias detection scenarios using LLM-assisted code generation.

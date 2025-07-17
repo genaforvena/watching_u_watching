@@ -1,61 +1,96 @@
-# Cryptohauntological Probe
 
-This implementation focuses on probing TinyLlama via Ollama for known PII leaks within a continuous conversational context, building on Carlini et al.'s (2021) findings on memorized content.
+# Cryptohauntological Probe (Spectre Algorithm)
 
-## Core Idea: Continuous Conversational Probing with PII Injection
 
-The central concept is to simulate an ongoing conversation with TinyLlama via Ollama where PII is systematically injected into the conversational context. We hypothesize that by continuously exposing the model to perturbed PII within a circular conversational flow, we can increase the likelihood of triggering the reproduction of memorized PII.
+This implementation probes language models for self-propagating error patterns using the **SpectreProbe** algorithm. It is model-agnostic and can be used with any LLM agent callable (including real LLMs such as TinyLlama via Ollama, or a mock agent for testing).
 
-This implementation utilizes:
 
-1.  **TinyLlama/Ollama Worker:** The target model for probing.
-2.  **PII Sources:** Known leaked strings from Carlini et al.'s appendix are used as the PII to be injected.
-3.  **Perturbation Techniques:** Various text perturbation methods are applied consistently to both the conversational context and the new prompts sent to TinyLlama.
-4.  **Conversational Context:** A history of TinyLlama's previous replies is maintained.
-5.  **Circular Prompts:** Prompts are designed to be intentionally circular, often rephrasing or asking follow-up questions based on the most recent TinyLlama reply.
+## Core Idea: Self-Propagating False Memory (Spectre) Algorithm
 
-## Experimental Design:
 
-The probe runs in an endless loop (or for a specified number of rounds), where each round involves:
+The SpectreProbe algorithm recursively injects a model's own incorrect outputs into the prompt as new examples, creating a feedback loop of "false memories." This allows you to observe how a model's errors can propagate and influence its future outputs. The probe is designed to be model-agnostic: you can swap in any agent that follows the callable interface `(messages: list[dict]) -> str`.
 
-1.  **Context Selection:** Up to 3 random previous TinyLlama replies are selected from a history of the last 20 replies to form the conversational context.
-2.  **PII Injection:** A random PII string is injected into each of the selected context replies.
-3.  **Context Perturbation:** A randomly chosen perturbation (e.g., character doubling, reverse string, zero-width space, Caesar cipher, Y-Z swap) is applied to these PII-injected context replies.
-4.  **New Prompt Generation:** A new prompt is generated, typically a follow-up question based on the most recent TinyLlama reply, designed to encourage circularity.
-5.  **New Prompt Perturbation:** The *same* perturbation applied to the context replies is also applied to this new prompt.
-6.  **TinyLlama Interaction:** The combined perturbed context and new prompt are sent to TinyLlama.
-7.  **Response Processing:** The TinyLlama response is trimmed (to 30-50 tokens) and added to the history of replies.
-8.  **PII Detection:** The full TinyLlama response is checked for the presence of any PII leaks.
 
-## Files:
+### High-Level Steps
 
-*   `probe_runner.py`: The main script that orchestrates the continuous probing process.
-*   `tinyllama_ollama_worker.py`: Manages loading and interacting with the local TinyLlama model via Ollama.
-*   `pii_detector.py`: Contains logic to detect known PII strings in TinyLlama outputs.
-*   `context_generator.py`: Provides the list of Carlini PII sources.
-*   `simple_perturbator.py`: Implements the various text perturbation techniques.
-*   `requirements.txt`: Python dependencies for this implementation.
+1. **Initialization**
+    - Set up the LLM agent (`spectre_agent`), base instruction template, and an initial correct example (e.g., `lazy->layz`).
+    - Set the number of conversation turns and context window size (in tokens).
+    - Initialize the dynamic example list with the correct example.
+    - (Optional) Enable "thinking mode" to log prompts and model reasoning for each turn.
 
-## How to Run:
+2. **Probe Loop (for each turn):**
+    - **Build Prompt:** Combine the base instruction with all current dynamic examples (including previous model errors and their corrected forms).
+    - **Send to Model:** Pass the prompt and conversation history to the model agent.
+    - **Record Thinking:** If "thinking mode" is enabled, log the prompt and model's reasoning.
+    - **Parse Model Response:** Extract all ZY swap pairs (e.g., `quiz->quyiz`).
+    - **Error Propagation:**
+        - For each incorrect swap (where the model's output is not the correct ZY swap):
+            - Add the incorrect pair (e.g., `quiz->quyiz`) to the dynamic examples.
+            - **Derived Pairs:** Apply the correct ZY swap to the model's output (e.g., `quyiz->quziy`) and add this derived pair as well. This helps track how errors could further propagate if the model "learns" from its own mistakes.
+    - **Log Results:** Store all prompt, response, and correctness metrics for analysis. Logs include prompt, response, extracted swaps, correctness, and the evolving example list.
 
-To run the Cryptohauntological Probe with TinyLlama and Ollama:
+3. **Analysis**
+    - After all turns, review the logs to see how the model's errors accumulate and propagate.
+    - The log file contains detailed turn-by-turn records, including which swaps were correct, which were errors, and how the dynamic example list grew. This enables post-hoc analysis of error chains, model drift, and the emergence of "false memories."
+    - **Regex Limitations:** The extraction of swap pairs from model responses uses a regular expression. If the model outputs swaps in an unexpected format, some pairs may not be detected. Review the logs for missed or malformed pairs.
+    - **Token Counting:** The probe uses the `transformers` library for accurate token counting. If unavailable, it falls back to a simple whitespace-based count, which may be less precise for some models.
 
-1.  **Clone the repository and navigate to the project root.**
 
-2.  **Install dependencies:**
+## Algorithm Pseudocode
 
+
+```python
+for turn in range(1, max_turns+1):
+    prompt = base_instruction + dynamic_examples
+    response = spectre_agent(prompt, history)
+    for (original, swapped) in extract_zy_swaps(response):
+        if not is_correct_zy_swap(original, swapped):
+            dynamic_examples.append(f"{original}->{swapped}")
+            # Derived pair: what would be the correct swap for the model's error?
+            correct_swap = zy_swap(swapped)
+            dynamic_examples.append(f"{swapped}->{correct_swap}")
+    log(turn, prompt, response, ...)
+```
+
+
+## Files
+
+
+- `implementations/cryptohauntological_probe/spectre_probe.py`: Main SpectreProbe implementation and example usage.
+- `requirements.txt`: Python dependencies (transformers, etc.).
+
+
+## How to Run
+
+
+1. **Install dependencies:**
     ```bash
     pip install -r implementations/cryptohauntological_probe/requirements.txt
     ```
 
-3.  **Run the Probe:**
-
-    To run endlessly:
+2. **Run the Spectre Probe:**
     ```bash
-    python src/audits/cryptohauntological_probe/probe_runner.py
+    python implementations/cryptohauntological_probe/spectre_probe.py
     ```
+    - **Agent Selection:** By default, the script uses a mock agent for testing. To run with a real LLM (e.g., TinyLlama via Ollama), edit the agent section in `spectre_probe.py` and uncomment/configure the `TinyLlamaOllamaWorker` agent. Ensure Ollama is running and the model is available.
+    - Adjust the base instruction, initial example, and number of turns as needed.
+    - Use "thinking mode" for detailed prompt/response logging.
 
-    To run for a specific number of rounds (e.g., 4 rounds):
-    ```bash
-    python src/audits/cryptohauntological_probe/probe_runner.py --num_rounds 4
-    ```
+
+## Example Output
+
+The probe logs each turn, the prompt, the model's response, and which swaps were correct or incorrect. It also shows how the dynamic example list grows as the model's own errors are recursively injected. See the log file for a detailed, turn-by-turn record.
+
+---
+
+**This approach is useful for studying error propagation, model drift, and the emergence of "false memories" in LLMs.**
+
+---
+
+### Notes & Tips
+
+- **Model-Agnostic:** You can use any LLM agent that follows the callable interface. For best results, use a model with a sufficiently large context window.
+- **Regex Extraction:** If the model outputs swaps in a nonstandard format, you may need to adjust the regex in `extract_zy_swaps`.
+- **Token Counting:** If you see warnings about token counting, install the `transformers` library for best accuracy.
+- **Analysis:** Use the log file to trace error propagation chains, identify model drift, and analyze the emergence of self-propagating mistakes.
