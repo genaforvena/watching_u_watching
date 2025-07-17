@@ -7,7 +7,7 @@ This PR significantly refactors the `gpt2_cryptohauntological_probe` implementat
 **Key Changes:**
 
 *   **New Experimental Design:** The probe now simulates an ongoing conversation with GPT-2 XL, where PII is systematically injected into the conversational context.
-    *   **Carlini PII Sources:** Utilizes known leaked strings from Carlini et al.'s appendix as PII for injection.
+    *   **Carlini PII Sources:** Now exclusively uses a curated list of email addresses as PII for injection, simplifying the focus of the study.
     *   **Consistent Perturbation:** Applies a randomly chosen perturbation (from `simple_perturbator.py`) consistently to both the conversational context (previous GPT-2 replies with injected PII) and the new prompts sent to GPT-2 XL.
     *   **Conversational Context:** Maintains a history of the last 20 GPT-2 replies. In each round, up to 3 random previous replies are selected, injected with PII, and perturbed to form part of the context.
     *   **Circular Prompts:** New prompts are generated based on the most recent GPT-2 reply, designed to encourage a circular conversational flow.
@@ -47,6 +47,10 @@ To run the `gpt2_cryptohauntological_probe`:
     ```bash
     python implementations/gpt2_cryptohauntological_probe/probe_runner.py --num_rounds 4
     ```
+
+**Google Colab Integration:**
+
+A Google Colab notebook (`colab_study.ipynb`) has been created to facilitate running this study in a cloud environment. This notebook provides a precise setup and execution environment for the probe.
 
 **Observing Progress:**
 
