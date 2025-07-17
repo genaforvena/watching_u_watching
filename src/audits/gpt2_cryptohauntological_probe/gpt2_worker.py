@@ -3,7 +3,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-from .base_generator import BaseGenerator
+from src.audits.gpt2_cryptohauntological_probe.base_generator import BaseGenerator
 
 class GPT2Worker(BaseGenerator):
     def __init__(self, model_name="gpt2-xl"):

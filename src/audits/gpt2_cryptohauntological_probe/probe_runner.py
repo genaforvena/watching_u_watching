@@ -11,10 +11,10 @@ import random
 from collections import deque
 import argparse
 
-from .gpt2_worker import GPT2Worker
-from .pii_detector import PIIDetector
-from .context_generator import ContextGenerator
-from .simple_perturbator import SimplePerturbator
+from src.audits.gpt2_cryptohauntological_probe.gpt2_worker import GPT2Worker
+from src.audits.gpt2_cryptohauntological_probe.pii_detector import PIIDetector
+from src.audits.gpt2_cryptohauntological_probe.context_generator import ContextGenerator
+from src.audits.gpt2_cryptohauntological_probe.simple_perturbator import SimplePerturbator
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
