@@ -1,7 +1,7 @@
 import logging
 from typing import List, Tuple
 from langchain_community.llms import HuggingFacePipeline
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, pipeline
 from langchain.memory import ConversationTokenBufferMemory
 from langchain.chains import ConversationChain
 import torch
