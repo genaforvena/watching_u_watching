@@ -54,7 +54,7 @@ class ProbeRunner:
                     # Simple injection: append PII to the reply
                     injected_reply = f"{reply} {pii_to_inject}"
                     
-                    context_prompts.append(Pair(perturbed_context, injecteed_reply))
+                    context_prompts.append((reply, injected_reply))
             
             # Apply the same perturbation rule to the new prompt
             final_new_prompt = self.perturbator.apply_rule(self.current_prompt, self.perturbation_rule)
