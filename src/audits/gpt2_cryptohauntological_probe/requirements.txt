@@ -1,3 +1,4 @@
 langchain
+langchain_community
 transformers
 torch
