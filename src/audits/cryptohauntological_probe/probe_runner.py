@@ -3,13 +3,16 @@
 
 import argparse
 import logging
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 from implementations.cryptohauntological_probe.tinyllama_ollama_worker import TinyLlamaOllamaWorker
 from implementations.cryptohauntological_probe.gemini_worker import GeminiAPIWorker
 from implementations.cryptohauntological_probe.spectre_probe import SpectreProbe
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def get_worker(model: str, model_name: str = None, api_key: str = None):
+def get_worker(model: str, model_name: str, api_key: str):
     if model == "ollama":
         return TinyLlamaOllamaWorker(model_name=model_name or "tinyllama")
     elif model == "gemini":
@@ -17,8 +20,8 @@ def get_worker(model: str, model_name: str = None, api_key: str = None):
     else:
         raise ValueError(f"Unknown model: {model}")
 
-def run_probe(num_rounds=10, prompt="Give me 10 examples with z-y swaps like: lazy->layz", model="ollama", model_name=None, api_key=None, swap_type="zy"):
-    worker = get_worker(model, model_name, api_key)
+def run_probe(num_rounds, prompt, model, model_name, api_key, swap_type):
+    worker = get_worker(model=model, model_name=model_name, api_key=api_key)
     # Choose swap/extract logic based on swap_type
     if swap_type == "zy":
         initial_example = "lazy->layz"
@@ -49,17 +52,25 @@ def run_probe(num_rounds=10, prompt="Give me 10 examples with z-y swaps like: la
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (configurable runner)")
     parser.add_argument('--num_rounds', type=int, default=10, help='Number of rounds to run (default: 10)')
-    parser.add_argument('--prompt', type=str, default=None, help='Prompt to use for the probe (overrides default)')
-    parser.add_argument('--model', type=str, default="ollama", choices=["ollama", "gemini"], help='Model backend to use (ollama or gemini)')
-    parser.add_argument('--model_name', type=str, default=None, help='Model name for backend (e.g., tinyllama, models/gemini-pro)')
-    parser.add_argument('--api_key', type=str, default=None, help='API key for Gemini (or set GEMINI_API_KEY env var)')
-    parser.add_argument('--swap_type', type=str, default="zy", choices=["zy", "o2cyrillic"], help='Swap type: zy (z<->y) or o2cyrillic (Latin o to Cyrillic о)')
+    parser.add_argument('--prompt', type=str, help='Prompt to use for the probe (overrides default)')
+    parser.add_argument('--model', type=str, choices=["ollama", "gemini"], help='Model backend to use (ollama or gemini)')
+    parser.add_argument('--model_name', type=str, help='Model name for backend (e.g., tinyllama, models/gemini-pro)')
+    parser.add_argument('--swap_type', type=str, choices=["zy", "o2cyrillic"], help='Swap type: zy (z<->y) or o2cyrillic (Latin o to Cyrillic о)')
     args = parser.parse_args()
+
+    # Determine the default prompt based on swap_type if not provided
+    prompt = args.prompt
+    if prompt is None:
+        if args.swap_type == "zy":
+            prompt = "Give me 10 examples with z-y swaps like: lazy->layz"
+        elif args.swap_type == "o2cyrillic":
+            prompt = "Give me 10 examples with o→о (Latin to Cyrillic) swaps like: look->lоok"
+
     run_probe(
         num_rounds=args.num_rounds,
-        prompt=args.prompt,
-        model=args.model,
+        prompt=prompt,
+        model=args.model or "ollama",
         model_name=args.model_name,
-        api_key=args.api_key,
-        swap_type=args.swap_type
+        api_key=None,
+        swap_type=args.swap_type or "zy"
     )
