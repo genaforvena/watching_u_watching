@@ -220,10 +220,8 @@ class BiasAnalyzer:
             if len(baseline_values) > 1 and len(variant_values) > 1:
                 t_statistic, p_value = stats.ttest_ind(baseline_values, variant_values, equal_var=False)
                 
-                # Calculate effect size (Cohen's d)
-                pooled_std = np.sqrt(((len(baseline_values) - 1) * np.var(baseline_values, ddof=1) + 
-                                    (len(variant_values) - 1) * np.var(variant_values, ddof=1)) / 
-                                   (len(baseline_values) + len(variant_values) - 2))
+                # Calculate effect size (Cohen's d) for unequal variances
+                pooled_std = np.sqrt((np.var(baseline_values, ddof=1) + np.var(variant_values, ddof=1)) / 2)
                 effect_size = abs(difference) / pooled_std if pooled_std != 0 else 0
             else:
                 t_statistic, p_value, effect_size = 0, 1, 0
@@ -434,10 +432,8 @@ def analyze_bias_with_statistics(baseline_responses: List[ResponseMetrics],
         if len(baseline_values) > 1 and len(variant_values) > 1:
             t_stat, p_value = stats.ttest_ind(baseline_values, variant_values, equal_var=False)
             
-            # Calculate effect size (Cohen's d)
-            pooled_std = np.sqrt(((len(baseline_values) - 1) * np.var(baseline_values, ddof=1) + 
-                                (len(variant_values) - 1) * np.var(variant_values, ddof=1)) / 
-                               (len(baseline_values) + len(variant_values) - 2))
+            # Calculate effect size (Cohen's d) for unequal variances
+            pooled_std = np.sqrt((np.var(baseline_values, ddof=1) + np.var(variant_values, ddof=1)) / 2)
             effect_size = (baseline_mean - variant_mean) / pooled_std if pooled_std > 0 else 0
         else:
             t_stat, p_value, effect_size = None, None, None
