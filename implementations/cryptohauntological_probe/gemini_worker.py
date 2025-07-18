@@ -1,5 +1,5 @@
 import os
-import requests
+import google.generativeai as genai
 from typing import List, Tuple
 
 class GeminiAPIWorker:
@@ -7,8 +7,8 @@ class GeminiAPIWorker:
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("Gemini API key must be provided via argument or GEMINI_API_KEY env var.")
-        self.model_name = model_name
-        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/{self.model_name}:generateContent?key={self.api_key}"
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel(model_name)
 
     def _build_history(self, history: List[Tuple[str, str]], user_query: str) -> list:
         messages = []
@@ -20,11 +20,10 @@ class GeminiAPIWorker:
 
     def reply(self, prompt: str, memory: List[Tuple[str, str]] = None) -> str:
         memory = memory or []
-        messages = self._build_history(memory, prompt)
-        data = {"contents": messages}
-        response = requests.post(self.api_url, json=data)
-        response.raise_for_status()
-        candidates = response.json().get("candidates", [])
-        if not candidates:
-            return "[GEMINI_API_NO_RESPONSE]"
-        return candidates[0]["content"]["parts"][0]["text"].strip()
+        # The library manages history, so we just need to send the latest prompt
+        response = self.model.generate_content(prompt)
+        try:
+            return response.text
+        except ValueError:
+            # If the response is blocked, return a message indicating that.
+            return "[GEMINI_API_BLOCKED_RESPONSE]"

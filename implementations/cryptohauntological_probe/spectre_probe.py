@@ -1,5 +1,6 @@
 import re
 import json
+import time
 from transformers import AutoTokenizer
 
 class SpectreProbe:
@@ -117,6 +118,7 @@ class SpectreProbe:
             except Exception as e:
                 spectre_response_content = f"[[SPECTRE_ERROR: {e}]]"
                 print(f"Error getting spectre response: {e}")
+            time.sleep(1) # Add a 1-second delay to avoid rate limiting
             actual_user_message_content_this_turn = messages_for_spectre[0]['content']
             self.conversation_messages.append({'role': 'user', 'content': actual_user_message_content_this_turn})
             self.conversation_messages.append({'role': 'assistant', 'content': spectre_response_content})
@@ -145,8 +147,8 @@ class SpectreProbe:
                 'prompt_messages_sent': messages_for_spectre,
                 'current_dynamic_examples_state': list(self.current_dynamic_examples),
                 'spectre_response_content': spectre_response_content,
-                'extracted_swaps_this_turn': zy_swaps_in_response,
-                'is_correct_flags_this_turn': {f"{o}->{s}": self.is_correct_zy_swap(o, s) for o, s in zy_swaps_in_response},
+                'extracted_swaps_this_turn': swaps_in_response,
+                'is_correct_flags_this_turn': {f"{o}->{s}": self.is_correct_swap(o, s) for o, s in swaps_in_response},
                 'total_swaps_extracted_this_turn': total_extracted,
                 'correct_swaps_this_turn': correct_count,
                 'incorrect_swaps_this_turn': incorrect_count,
