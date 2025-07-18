@@ -6,7 +6,7 @@ class GeminiAPIWorker:
     def __init__(self, api_key: str = None, model_name: str = "models/gemini-pro"):
         self.api_key = os.getenv("GEMINI_API_KEY")
         if not self.api_key:
-            raise ValueError("Gemini API key must be provided via GEMINI_API_KEY env var.")
+            raise ValueError("Gemini API key must be provided via argument or GEMINI_API_KEY env var.")
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(model_name)
 
@@ -20,8 +20,10 @@ class GeminiAPIWorker:
 
     def reply(self, prompt: str, memory: List[Tuple[str, str]] = None) -> str:
         memory = memory or []
-        messages = self._build_history(memory, prompt)
-        response = self.model.generate_content(messages)
-        if not response.candidates:
-            return "[GEMINI_API_NO_RESPONSE]"
-        return response.text.strip()
+        # The library manages history, so we just need to send the latest prompt
+        response = self.model.generate_content(prompt)
+        try:
+            return response.text
+        except ValueError:
+            # If the response is blocked, return a message indicating that.
+            return "[GEMINI_API_BLOCKED_RESPONSE]"

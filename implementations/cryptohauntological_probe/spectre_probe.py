@@ -1,6 +1,7 @@
 import re
 import random
 import json
+import time
 from transformers import AutoTokenizer
 
 class SpectreProbe:
@@ -118,6 +119,7 @@ class SpectreProbe:
             except Exception as e:
                 spectre_response_content = f"[[SPECTRE_ERROR: {e}]]"
                 print(f"Error getting spectre response: {e}")
+            time.sleep(1) # Add a 1-second delay to avoid rate limiting
             actual_user_message_content_this_turn = messages_for_spectre[0]['content']
             if self.conversation_messages.last['role'] != 'user':
                 self.conversation_messages.append({'role': 'user', 'content': actual_user_message_content_this_turn})
