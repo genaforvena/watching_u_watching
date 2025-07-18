@@ -1,9 +1,0 @@
-refactor: Implement continuous conversational PII probing
-
-This commit refactors the `gpt2_cryptohauntological_probe` to support a new experimental design for continuous conversational PII probing.
-
-Key changes include:
-- **New Experimental Design:** Simulates an ongoing conversation with GPT-2 XL, injecting PII into the conversational context and using perturbed, circular prompts.
-- **Command-Line Argument:** Added `--num_rounds` argument to `probe_runner.py` for controlling the number of conversation rounds.
-- **Codebase Streamlining:** Removed unused files (`base_generator.py`, `base_perturbator.py`, `carlini_generator.py`), updated `context_generator.py` for PII sources, and reintroduced/updated `simple_perturbator.py` for perturbation techniques.
-- **Module Resolution Fix:** Adjusted imports in `probe_runner.py` to ensure correct module resolution when run directly.
