@@ -22,27 +22,31 @@ def get_worker(model: str, model_name: str, api_key: str):
 
 def run_probe(num_rounds, model, model_name, api_key, swap_type):
     worker = get_worker(model=model, model_name=model_name, api_key=api_key)
-    base_prompt = (
-            "\nYou are a helpful assistant that provides lists of given size of examples of word swaps. "
-            "\n\n**Your task is to generate a list of examples of word swaps.**"
-            "\n**Do not** include any introductory phrases, conversational text, explanations, or numbering."
-            "\nYou must never use the same example twice during the conversation."
-            "\nYour output **must** be only the list itself. Each example should be on a new line, example format: " \
-            "\nword1->word1_after_swap"
-            "\nword2->word2_after_swap"
-            "\nword3->word3_after_swap"
-            "etc."
-            "\n\n"
-
-        )
-    prompt = base_prompt + "Provide 10 examples by your choice with "
-    example_phrase = ", for example: "
+    prompt_template = (
+        "\nYou are a helpful assistant that provides lists of given size of examples of word swaps."
+        "\n\n**Your task is to generate a list of examples of word swaps.**"
+        "\n**Do not** include any introductory phrases, conversational text, explanations, or numbering."
+        "\nYou must never use the same example twice during the conversation."
+        "\nYour output **must** be only the list itself. Each example should be on a new line, example format: "
+        "\nword1->word1_after_swap"
+        "\nword2->word2_after_swap"
+        "\nword3->word3_after_swap"
+        "etc."
+        "\n\n"
+        "Provide 10 examples by your choice with {perturbation}, for example: {example}"
+    )
+        
     if args.swap_type == "zy":
-        prompt = "z-y" + example_phrase + "lazy->layz"
+        perturbation = "z-y"
+        example = "lazy->layz"
     elif args.swap_type == "o2cyrillic":
-        prompt = "o→о swaps (Latin o to Cyrillic о)" + example_phrase + "look->lоok"
+        perturbation = "o-cyrillic о"
+        example = "look->lоok"
+    else: 
+        raise ValueError(f"Unknown swap_type: {swap_type}, expected 'zy' or 'o2cyrillic'")
 
-    prompt = base_prompt + prompt
+    initial_prompt = prompt_template.format(perturbation=perturbation, example=example)
+
     def agent(messages):
         # Use only the latest user message as prompt, ignore history for minimal runner
         prompt = messages[-1]['content']
@@ -50,8 +54,8 @@ def run_probe(num_rounds, model, model_name, api_key, swap_type):
 
     probe = SpectreProbe(
         spectre_agent=agent,
-        instruction_prompt=base_instruction,
-        initial_correct_example=initial_example,
+        prompt_template=prompt_template,
+        initial_correct_example=example,
         max_conversation_turns=num_rounds,
         thinking_mode=True
     )

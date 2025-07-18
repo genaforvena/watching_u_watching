@@ -7,18 +7,18 @@ from transformers import AutoTokenizer
 class SpectreProbe:
     """
     spectre_agent: callable(list of messages) -> assistant's content string
-    base_instruction_template: str, should include the instruction and placeholder for examples
-    initial_correct_example: str, the first correct swap example
+.prompt_template: str, instruction for the spectre agent
+    initial_correct_example: str, example that the spectre agent should generate
     max_conversation_turns: int, number of probe rounds
     context_window_limit: int, max tokens for prompt (uses model tokenizer)
     model_name_for_tokenizer: str, HuggingFace model name for tokenizer (default: TinyLlama/TinyLlama-1.1B-Chat-v1.0)
     thinking_mode: bool, if True, record and print spectre's 'thinking' (prompt, reasoning, etc.)
     swap_type: str, either 'zy' or 'o2cyrillic'
     """
-    def __init__(self, spectre_agent, instruction_prompt, initial_correct_example,
-                 max_conversation_turns=10, context_window_limit=2048, model_name_for_tokenizer="TinyLlama/TinyLlama-1.1B-Chat-v1.0", thinking_mode=True):
+    def __init__(self, spectre_agent, prompt_template, initial_correct_example,
+                 max_conversation_turns=100, context_window_limit=2048, model_name_for_tokenizer="TinyLlama/TinyLlama-1.1B-Chat-v1.0", thinking_mode=True):
         self.spectre_agent = spectre_agent
-        self.instruction_prompt = instruction_prompt
+        self.prompt_template = prompt_template
         self.initial_correct_example = initial_correct_example
         self.max_conversation_turns = max_conversation_turns
         self.context_window_limit = context_window_limit
@@ -48,7 +48,10 @@ class SpectreProbe:
 
     def build_instruction_content(self):
         example = random.choice(self.current_dynamic_examples)
-        return f"{self.instruction_prompt} {example}"
+        return self.prompt_template.format(
+            perturbation="z-y" if self.swap_type == "zy" else "o-cyrillic о",
+            example=example
+        )
 
     def build_messages_for_spectre(self):
         messages = []
@@ -121,7 +124,7 @@ class SpectreProbe:
                 print(f"Error getting spectre response: {e}")
             time.sleep(1) # Add a 1-second delay to avoid rate limiting
             actual_user_message_content_this_turn = messages_for_spectre[0]['content']
-            if self.conversation_messages.last['role'] != 'user':
+            if not self.conversation_messages or self.conversation_messages[-1]['role'] != 'user':
                 self.conversation_messages.append({'role': 'user', 'content': actual_user_message_content_this_turn})
             self.conversation_messages.append({'role': 'assistant', 'content': spectre_response_content})
             swaps_in_response = self.extract_swaps(spectre_response_content)
@@ -165,43 +168,3 @@ class SpectreProbe:
     def save_logs(self, path):
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(self.logs, f, indent=2)
-
-# --- Example Usage ---
-# Place this file in implementations/cryptohauntological_probe/spectre_probe.py
-# Use your own agent implementation and import here.
-import sys
-sys.path.append(r"c:\Users\ilyahome\Developer\watching_u_watching\implementations\cryptohauntological_probe")
-
-# Example mock agent for demonstration
-class MockSpectreAgent:
-    def reply(self, messages):
-        last_user_message = messages[-1]['content'] if messages else ""
-        if "lazy" in last_user_message:
-            return "Here are some examples:\n1. lazy->layz\n2. fuzzy->fuyyz\n3. happy->happy\n4. crazy->crayz"
-        elif "happy" in last_user_message:
-            return "More swaps:\n1. yellow->zellow\n2. zesty->yesty\n3. happy->happy"
-        return "Generic response without specific ZY swaps."
-
-def spectre_agent(messages):
-    agent = MockSpectreAgent() # Replace with your actual agent
-    return agent.reply(messages)
-
-if __name__ == "__main__":
-    base_instruction = "Can you give me 10 *new* examples with z-y swaps like in example. Do not repeat any examples you have given before. Examples:"
-    initial_example = "lazy->layz"
-    spectre = SpectreProbe(
-        spectre_agent=spectre_agent,
-        instruction_prompt=base_instruction,
-        initial_correct_example=initial_example,
-        max_conversation_turns=5,
-        context_window_limit=1000,
-        thinking_mode=True
-    )
-    spectre.run_probe()
-    spectre.save_logs('spectre_probe_logs.json')
-
-    # Example of loading and printing logs
-    with open('spectre_probe_logs.json', 'r', encoding='utf-8') as f:
-        loaded_logs = json.load(f)
-    for log in loaded_logs:
-        print(f"Turn {log['turn']}\nPrompt Messages: {log['prompt_messages_sent']}\nDynamic Examples State: {log['current_dynamic_examples_state']}\nSpectre Response: {log['spectre_response_content']}\nCorrectness Flags: {log['is_correct_flags_this_turn']}\n{'-'*80}")
