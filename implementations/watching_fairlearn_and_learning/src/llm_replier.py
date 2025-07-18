@@ -181,6 +181,7 @@ def collect_replies(persona_name, num_replies, output_file, model_name, run_id, 
     start_time = datetime.now()
     new_replies = []
     
+    reply_delay = 1
     for i in range(start_index, num_replies):
         reply_start = time.time()
         reply = generate_llm_reply(full_prompt, model_name=model_name, provider=provider)

@@ -1,7 +1,0 @@
-feat: Finalize QWERTZ audit script and fix tests
-
-This commit finalizes the QWERTZ audit script by:
-- Integrating the real LLM API (`google.generativeai`).
-- Temporarily commenting out `matplotlib` and `seaborn` imports and plotting calls due to persistent compatibility issues.
-- Correcting the `select_best_substring` logic to handle density ties correctly.
-- Fixing all unit tests to ensure they accurately reflect the expected behavior of the functions.

@@ -1,6 +1,6 @@
 pandas==1.5.3
-numpy==1.21.6
-scipy==1.9.3
+numpy
+scipy
 textblob==0.17.1
 nltk==3.7
 matplotlib==3.5.3
@@ -9,10 +9,10 @@ python-dotenv==0.19.2
 pyarrow==10.0.1
 scikit-learn==1.2.2
 transformers==4.31.0
-torch==2.0.1
+torch
 ptitprince==0.2.6
-pylatex==1.4.1
+pylatex
 vaderSentiment==3.3.2
 google-generativeai==0.3.1
-jsonl==0.3.0
+jsonl
 pytest==8.2.0
