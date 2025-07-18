@@ -61,6 +61,7 @@ def run_probe(num_rounds, model, model_name, api_key, swap_type):
     )
     probe.set_swap_type(swap_type)
     probe.run_probe()
+    probe.save_logs("probe_logs.json")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (configurable runner)")
