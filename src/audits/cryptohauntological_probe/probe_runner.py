@@ -29,6 +29,8 @@ def run_probe(num_rounds=10, prompt="Give me 10 examples with z-y swaps like: la
     else:
         raise ValueError(f"Unknown swap_type: {swap_type}")
 
+    base_instruction += "\n**Do not** include any introductory phrases, conversational text, explanations, or numbering.\nYour output **must** be only the list itself."
+
     def agent(messages):
         # Use only the latest user message as prompt, ignore history for minimal runner
         prompt = messages[-1]['content']
