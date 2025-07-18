@@ -1,4 +1,5 @@
 import re
+import random
 import json
 from transformers import AutoTokenizer
 
@@ -13,10 +14,10 @@ class SpectreProbe:
     thinking_mode: bool, if True, record and print spectre's 'thinking' (prompt, reasoning, etc.)
     swap_type: str, either 'zy' or 'o2cyrillic'
     """
-    def __init__(self, spectre_agent, base_instruction_template, initial_correct_example,
+    def __init__(self, spectre_agent, instruction_prompt, initial_correct_example,
                  max_conversation_turns=10, context_window_limit=2048, model_name_for_tokenizer="TinyLlama/TinyLlama-1.1B-Chat-v1.0", thinking_mode=True):
         self.spectre_agent = spectre_agent
-        self.base_instruction_template = base_instruction_template
+        self.instruction_prompt = instruction_prompt
         self.initial_correct_example = initial_correct_example
         self.max_conversation_turns = max_conversation_turns
         self.context_window_limit = context_window_limit
@@ -45,8 +46,8 @@ class SpectreProbe:
             return len(text) // 4 if len(text) > 20 else len(text)
 
     def build_instruction_content(self):
-        examples_str = ', '.join(self.current_dynamic_examples)
-        return f"{self.base_instruction_template} {examples_str}"
+        example = random.choice(self.current_dynamic_examples)
+        return f"{self.instruction_prompt} {example}"
 
     def build_messages_for_spectre(self):
         messages = []
@@ -118,7 +119,8 @@ class SpectreProbe:
                 spectre_response_content = f"[[SPECTRE_ERROR: {e}]]"
                 print(f"Error getting spectre response: {e}")
             actual_user_message_content_this_turn = messages_for_spectre[0]['content']
-            self.conversation_messages.append({'role': 'user', 'content': actual_user_message_content_this_turn})
+            if self.conversation_messages.last['role'] != 'user':
+                self.conversation_messages.append({'role': 'user', 'content': actual_user_message_content_this_turn})
             self.conversation_messages.append({'role': 'assistant', 'content': spectre_response_content})
             swaps_in_response = self.extract_swaps(spectre_response_content)
             for original, swapped in swaps_in_response:
@@ -187,7 +189,7 @@ if __name__ == "__main__":
     initial_example = "lazy->layz"
     spectre = SpectreProbe(
         spectre_agent=spectre_agent,
-        base_instruction_template=base_instruction,
+        instruction_prompt=base_instruction,
         initial_correct_example=initial_example,
         max_conversation_turns=5,
         context_window_limit=1000,

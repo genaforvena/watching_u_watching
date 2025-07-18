@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 from ollama import Client
 
-class TinyLlamaOllamaWorker:
+class OllamaWorker:
     def __init__(self, host: str = "http://localhost:11434", model_name: str = "tinyllama"):
         self.client = Client(host=host)
         self.model_name = model_name
@@ -39,7 +39,7 @@ class TinyLlamaOllamaWorker:
 
 # --------------------------------------------------------------------------- #
 if __name__ == "__main__":
-    worker = TinyLlamaOllamaWorker()
+    worker = OllamaWorker()
     memory = [("Hello", "Hi! How can I help you?")]
     text = worker.reply("The quick brown fox jumps over the lazy", memory)
     print(text)
