@@ -122,6 +122,8 @@ This guide enables both technical and non-technical contributors to rapidly and 
 *   Investigates potential PII leaks (passwords, email addresses) from TinyLlama models via Ollama.
 *   Uses a Y↔Z character swap perturbation to test model robustness.
 *   Designed for extended runs to uncover subtle and infrequent leaks.
+*   We have also run this probe on the `gemma-3-27b-it` model to test for self-propagating errors. The results of this run are available in the `src/audits/cryptohauntological_probe/` directory. The log file, `probe_logs_gemma-3-27b-it.json`, contains a detailed, turn-by-turn record of the probe's interaction with the model. A brief analysis of the results is available in the `README.md` file in the same directory.
+
 
 **[See implementation →](./implementations/cryptohauntological_probe/README.md)**
 
