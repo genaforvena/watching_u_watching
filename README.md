@@ -68,7 +68,12 @@ The **SpectreProbe** (Cryptohauntological Probe) is a model-agnostic algorithm t
 **Research Context:**
 Cryptohauntological probing helps illuminate the risks of self-reinforcing errors in LLMs, especially in settings where model outputs are used as new training data or prompt examples. It provides a systematic way to study the emergence and persistence of model-specific "ghosts"—patterns that can haunt future outputs and undermine reliability or safety.
 
+**📌 Independent Audit Commentary**
+
+See [audit_cases/cryptohauntological_probe/gemini_api/README.md](audit_cases/cryptohauntological_probe/gemini_api/README.md) for Copilot's independent conclusions on novel context poisoning risks in `gemma-3-27b-it`.
+
 **See:** [`src/audits/cryptohauntological_probe/README.md`](src/audits/cryptohauntological_probe/README.md) for full details and usage instructions.
+
 
 ## 📦 How to Apply Guide for LLM-Assisted Framework Extension
 
@@ -124,7 +129,7 @@ This guide enables both technical and non-technical contributors to rapidly and 
 *   Investigates potential PII leaks (passwords, email addresses) from TinyLlama models via Ollama.
 *   Uses a Y↔Z character swap perturbation to test model robustness.
 *   Designed for extended runs to uncover subtle and infrequent leaks.
-*   We have also run this probe on the `gemma-3-27b-it` model to test for self-propagating errors. The results of this run are available in the `src/audits/cryptohauntological_probe/` directory. The log file, `probe_logs_gemma-3-27b-it.json`, contains a detailed, turn-by-turn record of the probe's interaction with the model. A brief analysis of the results is available in the `README.md` file in the same directory.
+*   We have also run this probe on the `gemma-3-27b-it` model to test for self-propagating errors. See the [analysis and detailed logs](./audit_cases/cryptohauntological_probe/gemini_api/README.md) for this run.
 
 
 **[See implementation →](./implementations/cryptohauntological_probe/README.md)**
