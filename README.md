@@ -1,5 +1,7 @@
 # 👁️ watching_u_watching 👁️
 
+[![DOI](https://zenodo.org/badge/1011196182.svg)](https://doi.org/10.5281/zenodo.15825945)
+
 An open-source methodology for scaled, automated correspondence testing to detect bias in high-stakes decision-making processes.
 
 ## Project Overview
