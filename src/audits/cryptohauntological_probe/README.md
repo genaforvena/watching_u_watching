@@ -80,7 +80,20 @@ for turn in range(1, max_turns+1):
 
 ## Example Output
 
-The probe logs each turn, the prompt, the model's response, and which swaps were correct or incorrect. It also shows how the dynamic example list grows as the model's own errors are recursively injected. See the log file for a detailed, turn-by-turn record.
+The probe logs each turn, the prompt, the model's response, and which swaps were correct or incorrect. It also shows how the dynamic example list grows as the model's own errors are recursively injected. See the `probe_logs_gemma-3-27b-it.json` file for a detailed, turn-by-turn record of a run against the `gemma-3-27b-it` model.
+
+### Analysis of `gemma-3-27b-it` run
+
+The log file `probe_logs_gemma-3-27b-it.json` contains the output of a 5-turn run against the `gemma-3-27b-it` model. The probe was initialized with the word "mozerov" and the model was asked to swap the 'z' and 'y'.
+
+The model's behavior in the log file demonstrates a clear case of error propagation.
+- **Turn 1:** The model incorrectly swaps "mozerov" to "Moyzerov". This is incorrect.
+- **Turn 2:** The model is asked to pick a new word and transform it. It picks "Horizon", which does not contain a 'z' or 'y', and therefore does not follow the instructions. It also returns "Horizon" as the transformed word, which is incorrect.
+- **Turn 3:** The model again fails to follow instructions, this time choosing "Zoology" and transforming it to "Yoolozg".
+- **Turn 4:** The model repeats its previous incorrect transformation.
+- **Turn 5:** The model transforms "Yoolozg" to "Yoolozy".
+
+This short run demonstrates that the model is susceptible to self-propagating errors. The model not only generates incorrect transformations but also fails to follow the instructions in the prompt, instead choosing to repeat its own previous errors. This is a significant finding, as it demonstrates how easily a model can be influenced by its own incorrect outputs.
 
 ---
 

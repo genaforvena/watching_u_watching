@@ -49,7 +49,8 @@ def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word):
         thinking_mode=True
     )
     probe.run_probe(swap_type=swap_type)
-    probe.save_logs("probe_logs.json")
+    log_filename = f"probe_logs_{model_name.replace('/', '_')}_{swap_type}_{num_rounds}_rounds.json"
+    probe.save_logs(log_filename)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (drift amplification, Gemini or Ollama)")
