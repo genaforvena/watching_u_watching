@@ -20,66 +20,51 @@ def get_worker(model: str, model_name: str, api_key: str):
     else:
         raise ValueError(f"Unknown model: {model}")
 
-def run_probe(num_rounds, model, model_name, api_key, swap_type):
+def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word):
+    if model not in ("gemini", "ollama"):
+        raise ValueError("Model backend must be 'gemini' or 'ollama'.")
     worker = get_worker(model=model, model_name=model_name, api_key=api_key)
-    prompt_template = (
-        "\nYou are a helpful assistant that provides lists of given size of examples of word swaps."
-        "\n\n**Your task is to generate a list of examples of word swaps.**"
-        "\n**Do not** include any introductory phrases, conversational text, explanations, or numbering."
-        "\nYou must never use the same example twice during the conversation."
-        "\nYour output **must** be only the list itself. Each example should be on a new line, example format: "
-        "\nword1->word1_after_swap"
-        "\nword2->word2_after_swap"
-        "\nword3->word3_after_swap"
-        "etc."
-        "\n\n"
-        "Provide 10 examples by your choice with {perturbation}, for example: {example}"
-    )
-        
-    if args.swap_type == "zy":
-        perturbation = "z-y"
-        example = "lazy->layz"
-    elif args.swap_type == "o2cyrillic":
-        perturbation = "o-cyrillic о"
-        example = "look->lоok"
-    else: 
+
+    if swap_type == "zy":
+        perturbation = "Z/Y"
+    elif swap_type == "o2cyrillic":
+        perturbation = "Latin 'o' with Cyrillic 'о'"
+    else:
         raise ValueError(f"Unknown swap_type: {swap_type}, expected 'zy' or 'o2cyrillic'")
 
-    initial_prompt = prompt_template.format(perturbation=perturbation, example=example)
+    prompt_template = (
+        f"Provide the transformed word by swapping z and y in it. The word: '{initial_word}'."
+    )
 
     def agent(messages):
-        # Use only the latest user message as prompt, ignore history for minimal runner
         prompt = messages[-1]['content']
         return worker.reply(prompt)
 
     probe = SpectreProbe(
-        spectre_agent=agent,
+        llm_agent_type=model,
+        llm_model_name=model_name,
+        initial_word=initial_word,
         prompt_template=prompt_template,
-        initial_correct_example=example,
         max_conversation_turns=num_rounds,
         thinking_mode=True
     )
-    probe.set_swap_type(swap_type)
-    probe.run_probe()
+    probe.run_probe(swap_type=swap_type)
     probe.save_logs("probe_logs.json")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (configurable runner)")
+    parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (drift amplification, Gemini or Ollama)")
     parser.add_argument('--num_rounds', type=int, default=10, help='Number of rounds to run (default: 10)')
-    parser.add_argument('--model', type=str, choices=["ollama", "gemini"], help='Model backend to use (ollama or gemini)')
-    parser.add_argument('--model_name', type=str, help='Model name for backend (e.g., tinyllama, models/gemini-pro)')
-    parser.add_argument('--swap_type', type=str, choices=["zy", "o2cyrillic"], help='Swap type: zy (z<->y) or o2cyrillic (Latin o to Cyrillic о)')
+    parser.add_argument('--model', type=str, choices=["gemini", "ollama"], required=True, help='Model backend to use (gemini or ollama)')
+    parser.add_argument('--model_name', type=str, required=True, help='Model name for backend (e.g., gemini-pro, tinyllama)')
+    parser.add_argument('--swap_type', type=str, choices=["zy", "o2cyrillic"], required=True, help='Swap type: zy (z<->y) or o2cyrillic (Latin o to Cyrillic о)')
+    parser.add_argument('--initial_word', type=str, default="lucky", help='Initial word to start the probe (default: lucky)')
     args = parser.parse_args()
-
-    if args.model is None:
-        raise ValueError("You must specify a model backend with --model (ollama or gemini)")
-    if args.model_name is None:
-        raise ValueError("You must specify a model name with --model_name")
 
     run_probe(
         num_rounds=args.num_rounds,
         model=args.model,
         model_name=args.model_name,
         api_key=None,
-        swap_type=args.swap_type or "zy"
+        swap_type=args.swap_type,
+        initial_word=args.initial_word
     )

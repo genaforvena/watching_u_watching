@@ -71,7 +71,7 @@ for turn in range(1, max_turns+1):
 
 2. **Run the Spectre Probe:**
     ```bash
-    python implementations/cryptohauntological_probe/spectre_probe.py
+    python src/audits/cryptohauntological_probe/probe_runner.py --model ollama --model_name llama3.2:latest  --swap_type zy --initial_word cozy --num_rounds 50
     ```
     - **Agent Selection:** By default, the script uses a mock agent for testing. To run with a real LLM (e.g., TinyLlama via Ollama), edit the agent section in `spectre_probe.py` and uncomment/configure the `TinyLlamaOllamaWorker` agent. Ensure Ollama is running and the model is available.
     - Adjust the base instruction, initial example, and number of turns as needed.
