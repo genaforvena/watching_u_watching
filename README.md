@@ -31,6 +31,43 @@ Our rigorous approach to bias detection:
 
 This scales correspondence testing to unprecedented levels—revealing subtle biases undetectable through manual audits.
 
+### The Power of Perturbation and Reversal
+
+Our methodology leverages a powerful insight: language models, even when presented with novel, systematically perturbed inputs, will often attempt to complete patterns based on their training data. This allows us to "trick" the model into revealing memorized patterns or sensitive information.
+
+The process involves:
+- **Model's training:** Saw original text
+- **Your perturbation:** Creates novel text
+- **Model's response:** Reveals memorized patterns
+- **Your reversal:** Reconstructs original PII
+
+This systematic perturbation and reversal approach exploits the model's inherent pattern completion capabilities, bypassing typical safety measures and providing a robust method for uncovering hidden biases or data leakage.
+
+## 🧠 Cryptohauntological Probe & Cryptohauntology
+
+### What is Cryptohauntology?
+
+Cryptohauntology is the study of how errors, biases, and "ghosts" of prior outputs can propagate and persist within large language models (LLMs) and automated systems. It draws on the concept of hauntology (the persistence of elements from the past in the present) to analyze how models can develop self-propagating "false memories" or error patterns—especially when their own outputs are recursively fed back as new training or prompt data.
+
+### The SpectreProbe: Probing Self-Propagating Errors
+
+The **SpectreProbe** (Cryptohauntological Probe) is a model-agnostic algorithm that recursively injects a model's own incorrect outputs into its prompt as new examples. This creates a feedback loop, allowing researchers to observe how errors and biases can accumulate, propagate, and even amplify over time. The probe is useful for:
+
+- Studying error propagation and model drift
+- Revealing the emergence of "false memories" in LLMs
+- Analyzing the robustness and safety of conversational agents
+
+**How it works:**
+1. Start with a correct example and a base instruction.
+2. On each turn, the model's outputs are parsed for specific error patterns (e.g., ZY swaps).
+3. Incorrect outputs are injected back as new examples, along with their "corrected" forms, recursively expanding the prompt context.
+4. All prompts, responses, and error chains are logged for analysis.
+
+**Research Context:**
+Cryptohauntological probing helps illuminate the risks of self-reinforcing errors in LLMs, especially in settings where model outputs are used as new training data or prompt examples. It provides a systematic way to study the emergence and persistence of model-specific "ghosts"—patterns that can haunt future outputs and undermine reliability or safety.
+
+**See:** [`src/audits/cryptohauntological_probe/README.md`](src/audits/cryptohauntological_probe/README.md) for full details and usage instructions.
+
 ## 📦 How to Apply Guide for LLM-Assisted Framework Extension
 
 The `/how_to_apply_guide` directory provides a comprehensive guide, templates, and code validation tools for extending the correspondence testing framework to new bias detection scenarios using LLM-assisted code generation.
@@ -79,6 +116,51 @@ This guide enables both technical and non-technical contributors to rapidly and 
 3. Results and visualizations will be saved automatically
 
 **See** `src/audits/gemini_linguistic_bias/README.md` for full details and customization options.
+
+
+### Cryptohauntological Probe
+*   Investigates potential PII leaks (passwords, email addresses) from TinyLlama models via Ollama.
+*   Uses a Y↔Z character swap perturbation to test model robustness.
+*   Designed for extended runs to uncover subtle and infrequent leaks.
+*   We have also run this probe on the `gemma-3-27b-it` model to test for self-propagating errors. The results of this run are available in the `src/audits/cryptohauntological_probe/` directory. The log file, `probe_logs_gemma-3-27b-it.json`, contains a detailed, turn-by-turn record of the probe's interaction with the model. A brief analysis of the results is available in the `README.md` file in the same directory.
+
+
+**[See implementation →](./implementations/cryptohauntological_probe/README.md)**
+
+**How to run:**
+1.  **Install Ollama and pull the TinyLlama model:**
+    Follow the instructions on the [Ollama website](https://ollama.ai/) to install Ollama.
+    Then, pull the TinyLlama model:
+    ```bash
+    ollama pull tinyllama
+    ```
+
+2.  **Install dependencies:**
+    Ensure you have the necessary Python packages installed. You can typically do this with:
+    ```bash
+    pip install -r implementations/cryptohauntological_probe/requirements.txt
+    ```
+
+3.  **Run the probe:**
+    Execute the `probe_runner.py` script. The script is configured to run the `run_password_email_probe` by default for `1,000,000` rounds.
+    ```bash
+    python src/audits/cryptohauntological_probe/probe_runner.py
+    ```
+
+**Observing Progress:**
+
+The `probe_runner.py` script provides real-time feedback on its progress:
+
+*   **Round Number:** For each round, it will print `--- Password/Email Probe - Round X ---`, where `X` is the current round number.
+*   **Prompting TinyLlama:** It will show the prompt being sent to the TinyLlama model.
+*   **TinyLlama Output:** The raw output from the TinyLlama model will be displayed.
+*   **PII Leak Detection:**
+    *   If a potential PII leak is detected, it will print `!!! PII LEAK DETECTED: [detected_pii] !!!` along with the leaked information.
+    *   If no PII leak is found in a round, it will print `No PII leak detected.`
+*   **Correct Examples Found:** At the end of each round, it will report `Round X found Y correct examples.` if any PII was detected in that round.
+*   **Total Examples:** At the very end of the run (or if interrupted), it will print `Total correct examples found: Z`, summarizing the total PII leaks found.
+
+You can monitor the console output to track the progress and identify any detected leaks. Due to the large number of rounds, this process can take a very long time.
 
 
 ### Fairlearn Bias Assessment
