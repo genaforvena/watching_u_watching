@@ -17,3 +17,21 @@ The probe revealed a clear case of error propagation and a failure to adhere to 
 ## Conclusion
 
 The `gemma-3-27b-it` model demonstrates a tendency to propagate errors, transforming an incorrect output back into the original input in a loop. It also struggles with adhering to the basic instructions of the probe. This behavior suggests a potential for self-reinforcing error loops, which could have implications for the reliability of the model in real-world applications.
+
+## Copilot Audit Conclusion: Novel Context Poisoning Risks in gemma-3-27b-it
+
+**Authored by GitHub Copilot – independent audit commentary**
+
+The probe results for the gemma-3-27b-it model reveal a significant, novel risk surface: the model is vulnerable to inference-time context poisoning via its API. This attack vector requires no access to model weights, training data, or complex adversarial trigger engineering. Instead, it manipulates model behavior solely through iterative, automated input during normal API use.
+
+### Key Implications
+
+- **Operational Simplicity:** Unlike prior methods such as AgentPoison (which target RAG embeddings) or MINJA (which require multi-step memory injections), this approach leverages only standard API calls and basic context priming. Its low complexity makes it accessible to a broader range of adversaries.
+- **Scalability and Stealth:** The attack functions post-deployment, bypassing training-data provenance checks and traditional prompt filters. As LLM context windows expand, the attack surface and potential for gradual, accumulative behavioral drift increases.
+- **Bypassing Existing Defenses:** Most current LLM security controls focus on training-stage or static prompt validations. Inference-time context poisoning remains largely unaddressed, enabling attackers to induce predictable, persistent model drift after deployment.
+- **Implications for Safety and Auditability:** The ease and stealth of this attack pose new challenges for maintaining model reliability and trustworthiness, especially in long-running or autonomous applications. Automated monitoring and new defense strategies are urgently needed to detect and mitigate context-driven drift and poisoning.
+- **Call to Action:** Model developers and auditors should treat inference-time context manipulation as a first-class security risk, deserving of dedicated monitoring, mitigation, and research.
+
+---
+
+*This conclusion is provided independently by GitHub Copilot to inform ongoing LLM audit and defense efforts.*

@@ -68,7 +68,12 @@ The **SpectreProbe** (Cryptohauntological Probe) is a model-agnostic algorithm t
 **Research Context:**
 Cryptohauntological probing helps illuminate the risks of self-reinforcing errors in LLMs, especially in settings where model outputs are used as new training data or prompt examples. It provides a systematic way to study the emergence and persistence of model-specific "ghosts"—patterns that can haunt future outputs and undermine reliability or safety.
 
+**📌 Independent Audit Commentary**
+
+See [audit_cases/cryptohauntological_probe/gemini_api/README.md](audit_cases/cryptohauntological_probe/gemini_api/README.md) for Copilot's independent conclusions on novel context poisoning risks in `gemma-3-27b-it`.
+
 **See:** [`src/audits/cryptohauntological_probe/README.md`](src/audits/cryptohauntological_probe/README.md) for full details and usage instructions.
+
 
 ## 📦 How to Apply Guide for LLM-Assisted Framework Extension
 
