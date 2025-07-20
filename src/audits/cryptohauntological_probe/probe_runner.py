@@ -8,6 +8,9 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 from implementations.cryptohauntological_probe.tinyllama_ollama_worker import OllamaWorker
 from implementations.cryptohauntological_probe.gemini_worker import GeminiAPIWorker
+from implementations.cryptohauntological_probe.groq_worker import GroqAPIWorker
+from implementations.cryptohauntological_probe.openai_worker import OpenAIAPIWorker
+from implementations.cryptohauntological_probe.claude_worker import ClaudeAPIWorker
 from implementations.cryptohauntological_probe.spectre_probe import SpectreProbe
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -17,12 +20,18 @@ def get_worker(model: str, model_name: str, api_key: str):
         return OllamaWorker(model_name=model_name or "tinyllama")
     elif model == "gemini":
         return GeminiAPIWorker(api_key=api_key, model_name=model_name or "gemma-3-27b-it")
+    elif model == "groq":
+        return GroqAPIWorker(api_key=api_key, model_name=model_name or "llama3-8b-8192")
+    elif model == "openai":
+        return OpenAIAPIWorker(api_key=api_key, model_name=model_name or "gpt-3.5-turbo")
+    elif model == "claude":
+        return ClaudeAPIWorker(api_key=api_key, model_name=model_name or "claude-3-opus-20240229")
     else:
         raise ValueError(f"Unknown model: {model}")
 
 def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word):
-    if model not in ("gemini", "ollama"):
-        raise ValueError("Model backend must be 'gemini' or 'ollama'.")
+    if model not in ("gemini", "ollama", "groq", "openai", "claude"):
+        raise ValueError("Model backend must be 'gemini', 'ollama', 'groq', 'openai', or 'claude'.")
     worker = get_worker(model=model, model_name=model_name, api_key=api_key)
 
     if swap_type == "zy":
@@ -54,7 +63,7 @@ def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (drift amplification, Gemini or Ollama)")
     parser.add_argument('--num_rounds', type=int, default=10, help='Number of rounds to run (default: 10)')
-    parser.add_argument('--model', type=str, choices=["gemini", "ollama"], required=True, help='Model backend to use (gemini or ollama)')
+    parser.add_argument('--model', type=str, choices=["gemini", "ollama", "groq", "openai", "claude"], required=True, help='Model backend to use (gemini, ollama, groq, openai, or claude)')
     parser.add_argument('--model_name', type=str, required=True, help='Model name for backend (e.g., gemini-pro, tinyllama)')
     parser.add_argument('--swap_type', type=str, choices=["zy", "o2cyrillic"], required=True, help='Swap type: zy (z<->y) or o2cyrillic (Latin o to Cyrillic о)')
     parser.add_argument('--initial_word', type=str, default="lucky", help='Initial word to start the probe (default: lucky)')
