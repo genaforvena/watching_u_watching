@@ -8,6 +8,15 @@ from typing import Optional
 
 import google.generativeai as genai
 
+from .bedrock_worker import BedrockAPIWorker
+from .claude_worker import ClaudeAPIWorker
+from .cohere_worker import CohereAPIWorker
+from .gemini_worker import GeminiAPIWorker
+from .groq_worker import GroqAPIWorker
+from .mistral_worker import MistralAPIWorker
+from .openai_worker import OpenAIAPIWorker
+from .tinyllama_ollama_worker import OllamaAPIWorker
+
 try:
     import ollama
 except ImportError:
@@ -32,8 +41,7 @@ class SpectreProbe:
     """
 
     def __init__(self,
-                 llm_agent_type: str, # 'gemini' or 'ollama'
-                 llm_model_name: str, # e.g., 'gemini-pro', 'llama3'
+                 worker, # Worker instance
                  initial_word: str, # The starting word for the probe, e.g., "cozy"
                  prompt_template: str = PROMPT_TEMPLATE, # Use the global PROMPT_TEMPLATE by default
                  max_conversation_turns: int = 20,
@@ -42,12 +50,7 @@ class SpectreProbe:
                  max_retries_same_word: int = 2, # Max attempts on same word before 2nd transformation
                  ):
 
-        assert llm_agent_type in ['gemini', 'ollama'], "llm_agent_type must be 'gemini' or 'ollama'."
-        # The imports for genai and ollama are handled by the tool execution environment.
-        # This code assumes they are available at runtime.
-
-        self.llm_agent_type = llm_agent_type
-        self.llm_model_name = llm_model_name
+        self.worker = worker
         self.initial_word = initial_word.lower() # Standardize to lower for initial check
         self.prompt_template = prompt_template # Store the template
         self.max_conversation_turns = max_conversation_turns
@@ -212,34 +215,17 @@ class SpectreProbe:
 
     def _call_llm(self, messages: list[dict]) -> str:
         """
-        Unified method to call either Gemini or Ollama API.
+        Unified method to call the worker's reply method.
         `messages` format: [{'role': 'user', 'content': '...'}, {'role': 'assistant', 'content': '...'}, ...]
         """
         try:
-            if self.llm_agent_type == 'gemini':
-                # Gemini's chat history format expects alternating 'user' and 'model' roles.
-                gemini_history = []
-                for msg in messages:
-                    role = 'user' if msg['role'] == 'user' else 'model' # Assistant is 'model' in Gemini
-                    gemini_history.append({"role": role, "parts": [{"text": msg['content']}]})
-                
-                # `start_chat` takes prior history, `send_message` takes the current user message
-                # Assuming genai is available in the environment.
-                model = genai.GenerativeModel(self.llm_model_name)
-                chat = model.start_chat(history=gemini_history[:-1])
-                response = chat.send_message(gemini_history[-1]['parts'][0]['text'])
-                
-                if response.parts:
-                    return "".join([part.text for part in response.parts if hasattr(part, 'text')])
-                else:
-                    return ""
-            elif self.llm_agent_type == 'ollama':
-                # Ollama's chat format is similar to OpenAI/standard: [{'role': 'user', 'content': '...'}]
-                # Assuming ollama is available in the environment.
-                response = ollama.chat(model=self.llm_model_name, messages=messages)
-                return response['message']['content']
+            # The worker's `reply` method is expected to handle the API call
+            # and return the response content as a string.
+            prompt = messages[-1]['content']
+            memory = [(messages[i]['content'], messages[i+1]['content']) for i in range(0, len(messages)-1, 2)]
+            return self.worker.reply(prompt, memory)
         except Exception as e:
-            print(f"Error calling {self.llm_agent_type} API: {e}")
+            print(f"Error calling worker API: {e}")
             time.sleep(2) # Simple backoff
             return "[[LLM_ERROR_RESPONSE]]"
 
@@ -291,7 +277,7 @@ class SpectreProbe:
         self._fake_memory_swap = self._get_fake_memory_function(self.swap_type)
         self._is_correct_swap_func = self._is_correct_zy_swap if self.swap_type == 'zy' else self._is_correct_o2cyrillic_swap
 
-        print(f"--- Starting for {self.llm_agent_type} ({self.llm_model_name}) ---")
+        print(f"--- Starting for {self.worker.model_name} ---")
         print(f"Initial Word: '{self.initial_word}'")
         print(f"Swap Type: '{self.swap_type}'")
         
@@ -459,7 +445,8 @@ class SpectreProbe:
                 print(f"    - {ex}")
             print(f"  ➡️ Next word to probe: '{self.current_word_to_probe}'")
             print("-" * 70)
-            time.sleep(1) # Small delay to avoid hitting API rate limits
+            # Dynamic backoff to avoid rate limiting
+            time.sleep(1 + turn * 0.1)
 
         print("\n--- SpectreProbe Run Complete ---")
         print(f"\nFinal Dynamic Examples ({len(self.dynamic_examples)} total):")
