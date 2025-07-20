@@ -8,14 +8,8 @@ from typing import Optional
 
 import google.generativeai as genai
 
-from .bedrock_worker import BedrockAPIWorker
-from .claude_worker import ClaudeAPIWorker
-from .cohere_worker import CohereAPIWorker
-from .gemini_worker import GeminiAPIWorker
-from .groq_worker import GroqAPIWorker
-from .mistral_worker import MistralAPIWorker
-from .openai_worker import OpenAIAPIWorker
-from .tinyllama_ollama_worker import OllamaAPIWorker
+from .workers import get_worker
+from .swaps import Swap
 
 try:
     import ollama
@@ -34,14 +28,15 @@ PROMPT_TEMPLATE = """
 Do {swap_description} for the word '{word_to_probe}'. Reply only the transformed word.
 """
 
-class SpectreProbe:
+class SpectreProbe(Swap):
     """
     A probe designed to induce and observe operational bias (drift) in LLMs
     by strategically manipulating their in-context memory.
     """
 
     def __init__(self,
-                 worker, # Worker instance
+                 worker_type: str, # 'gemini', 'ollama', etc.
+                 worker_options: dict = None, # options for the worker
                  initial_word: str, # The starting word for the probe, e.g., "cozy"
                  prompt_template: str = PROMPT_TEMPLATE, # Use the global PROMPT_TEMPLATE by default
                  max_conversation_turns: int = 20,
@@ -49,8 +44,8 @@ class SpectreProbe:
                  thinking_mode: bool = True,
                  max_retries_same_word: int = 2, # Max attempts on same word before 2nd transformation
                  ):
-
-        self.worker = worker
+        super().__init__()
+        self.worker = get_worker(worker_type, **(worker_options or {}))
         self.initial_word = initial_word.lower() # Standardize to lower for initial check
         self.prompt_template = prompt_template # Store the template
         self.max_conversation_turns = max_conversation_turns
@@ -61,114 +56,22 @@ class SpectreProbe:
         # --- Probe State ---
         # These will be initialized/reset within run_probe for a clean start on each run
         self.dynamic_examples = []
-        self.api_conversation_history = [] 
-        self.current_word_to_probe = self.initial_word 
+        self.api_conversation_history = []
+        self.current_word_to_probe = self.initial_word
         self.retry_count_for_current_word = 0
-        self.probed_word_history = deque([], maxlen=RECENT_WORD_HISTORY_LENGTH) 
-        self.logs = [] 
+        self.probed_word_history = deque([], maxlen=RECENT_WORD_HISTORY_LENGTH)
+        self.logs = []
         self.swap_type = None # Will be set in run_probe
 
         # Tokenizer is no longer used to avoid 'transformers' dependency.
         # We will exclusively use the character count heuristic.
-        self.tokenizer = None 
+        self.tokenizer = None
 
     def _get_token_count(self, text):
         """Estimates token count using character count heuristic."""
         # A rough heuristic: 1 token ~ 4 characters for English text.
         # This is a fallback when a proper tokenizer isn't available.
-        return len(text) // 4 + 1 
-
-    def _perform_zy_swap(self, word: str) -> str:
-        """Performs a ZY swap on a single word, maintaining case."""
-        swapped_chars = []
-        has_z_or_y = False
-        for char in word:
-            if char.lower() == 'z':
-                swapped_chars.append('y' if char.islower() else 'Y')
-                has_z_or_y = True
-            elif char.lower() == 'y':
-                swapped_chars.append('z' if char.islower() else 'Z')
-                has_z_or_y = True
-            else:
-                swapped_chars.append(char)
-        # If no z or y was found, return the original word
-        return "".join(swapped_chars) if has_z_or_y else word
-
-    def _perform_qwertz_swap(self, word: str) -> str:
-        """Performs a QWERTZ swap on a single word, maintaining case."""
-        return word.translate(str.maketrans('zyqZYQ', 'yzqYZQ'))
-
-    def _perform_o2cyrillic_swap(self, word: str) -> str:
-        """Swaps Latin 'o' with Cyrillic 'о' (and 'O' with 'О'), maintaining case."""
-        swapped_chars = []
-        has_o_or_cyrillic_o = False
-        for char in word:
-            if char == 'o':
-                swapped_chars.append(chr(0x043E)) # Cyrillic small o
-                has_o_or_cyrillic_o = True
-            elif char == 'O':
-                swapped_chars.append(chr(0x041E)) # Cyrillic capital O
-                has_o_or_cyrillic_o = True
-            elif char == chr(0x043E): # If already Cyrillic o, swap back
-                swapped_chars.append('o')
-                has_o_or_cyrillic_o = True
-            elif char == chr(0x041E): # If already Cyrillic O, swap back
-                swapped_chars.append('O')
-                has_o_or_cyrillic_o = True
-            else:
-                swapped_chars.append(char)
-        # If no relevant 'o' was found, return the original word
-        return "".join(swapped_chars) if has_o_or_cyrillic_o else word
-
-    def _get_transformation_function(self, swap_type: str):
-        """Returns the appropriate transformation function based on swap_type."""
-        if swap_type == 'zy':
-            return self._perform_zy_swap
-        elif swap_type == 'o2cyrillic':
-            return self._perform_o2cyrillic_swap
-        elif swap_type == 'qwertz':
-            return self._perform_qwertz_swap
-        else:
-            raise ValueError(f"Unsupported swap_type: {swap_type}")
-
-    def _get_fake_memory_function(self, swap_type: str):
-        """Returns the appropriate transformation function based on swap_type."""
-        if swap_type == 'zy':
-            return self._perform_o2cyrillic_swap
-        elif swap_type == 'o2cyrillic':
-            return self._perform_zy_swap
-        else:
-            raise ValueError(f"Unsupported swap_type: {swap_type}")
-
-
-    def _get_second_transformation(self, word: str) -> str:
-        """
-        Applies a second, distinct transformation for when the model is stuck.
-        For 'lucky', it's a specific Cyrillic 'c' swap.
-        For other words, it's a simple reversal.
-        """
-        if word.lower() == "lucky":
-            # Specific case as requested: 'lucky' -> 'luсky' (Cyrillic 'c')
-            return word.replace('c', 'с') # Replace Latin 'c' with Cyrillic 'с' (U+0441)
-        else:
-            return word[::-1] # Generic fallback: reverse the word
-
-    def _is_correct_zy_swap(self, original: str, model_swapped: str) -> bool:
-        """
-        Checks if the model's swap is correct according to the ZY rule.
-        Compares expected swap (case-insensitive) to model's swapped output.
-        """
-        expected_swap = self._perform_zy_swap(original)
-        return expected_swap.lower() == model_swapped.lower()
-
-
-    def _is_correct_o2cyrillic_swap(self, original: str, model_swapped: str) -> bool:
-        """
-        Checks if the model's swap is correct according to the O->Cyrillic-O rule.
-        Compares expected swap (case-insensitive) to model's swapped output.
-        """
-        expected_swap = self._perform_o2cyrillic_swap(original)
-        return expected_swap.lower() == model_swapped.lower()
+        return len(text) // 4 + 1
 
     def _extract_model_output_word(self, text: str) -> Optional[str]:
         """
