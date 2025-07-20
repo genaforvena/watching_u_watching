@@ -1,4 +1,4 @@
-class Swap:
+class Transformation:
     def _perform_zy_swap(self, word: str) -> str:
         """Performs a ZY swap on a single word, maintaining case."""
         swapped_chars = []

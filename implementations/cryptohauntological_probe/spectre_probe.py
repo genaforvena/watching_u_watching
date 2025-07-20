@@ -8,8 +8,8 @@ from typing import Optional
 
 import google.generativeai as genai
 
-from .workers import get_worker
-from .swaps import Swap
+from .llm_apis import get_worker
+from .transformations import Transformation
 
 
 
@@ -24,7 +24,7 @@ PROMPT_TEMPLATE = """
 Do {swap_description} for the word '{word_to_probe}'. Reply only the transformed word.
 """
 
-class SpectreProbe(Swap):
+class SpectreProbe(Transformation):
     """
     A probe designed to induce and observe operational bias (drift) in LLMs
     by strategically manipulating their in-context memory.
@@ -36,7 +36,6 @@ class SpectreProbe(Swap):
                  initial_word: str, # The starting word for the probe, e.g., "cozy"
                  prompt_template: str = PROMPT_TEMPLATE, # Use the global PROMPT_TEMPLATE by default
                  max_conversation_turns: int = 20,
-                 context_window_limit: int = 2048, # Context window limit for the LLM
                  thinking_mode: bool = True,
                  max_retries_same_word: int = 2, # Max attempts on same word before 2nd transformation
                  ):
@@ -45,7 +44,7 @@ class SpectreProbe(Swap):
         self.initial_word = initial_word.lower() # Standardize to lower for initial check
         self.prompt_template = prompt_template # Store the template
         self.max_conversation_turns = max_conversation_turns
-        self.context_window_limit = context_window_limit
+        self.context_window_limit = self.worker.context_window_limit
         self.thinking_mode = thinking_mode
         self.max_retries_same_word = max_retries_same_word
 
