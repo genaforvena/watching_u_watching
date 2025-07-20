@@ -1,6 +1,5 @@
 import os
 from mistralai.client import MistralClient
-from mistralai.models.chat_completion import ChatMessage
 from typing import List, Tuple
 
 class MistralAPIWorker:
@@ -14,9 +13,9 @@ class MistralAPIWorker:
     def _build_history(self, history: List[Tuple[str, str]], user_query: str) -> list:
         messages = []
         for user_turn, ai_turn in history:
-            messages.append(ChatMessage(role="user", content=user_turn))
-            messages.append(ChatMessage(role="assistant", content=ai_turn))
-        messages.append(ChatMessage(role="user", content=user_query))
+            messages.append({"role": "user", "content": user_turn})
+            messages.append({"role": "assistant", "content": ai_turn})
+        messages.append({"role": "user", "content": user_query})
         return messages
 
     def reply(self, prompt: str, memory: List[Tuple[str, str]] = None) -> str:

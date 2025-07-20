@@ -2,13 +2,11 @@ import re
 import random
 import json
 import time
+import os
 from collections import deque
 from typing import Optional
 
-try:
-    import genai
-except ImportError:
-    pass
+import google.generativeai as genai
 
 try:
     import ollama
@@ -345,9 +343,9 @@ class SpectreProbe:
 
             # --- Call LLM ---
             model_response_content = self._call_llm(self.api_conversation_history)
-            if model_response_content == "[[LLM_ERROR_RESPONSE]]" or not model_response_content.strip():
-                print("  ❗ LLM returned an error or empty response. Handling as failed attempt.")
-                model_response_content = "[[FAILED_RESPONSE]]" # Mark as failed
+            if model_response_content == "[[LLM_ERROR_RESPONSE]]" or not model_response_content.strip() or model_response_content == "[[FAILED_RESPONSE]]":
+                print("  ❗ LLM returned an error or empty response. Aborting run.")
+                raise Exception("LLM returned an error or empty response.")
             
             print(f"Model Response: {model_response_content}")
 
