@@ -11,8 +11,8 @@ The probe revealed a clear case of error propagation and a failure to adhere to 
 *   **Turn 1:** The model incorrectly swaps "mozerov" to "Moyzerov". This is incorrect.
 *   **Turn 2:** The model is asked to pick a new word and transform it. It picks "Horizon", which does not contain a 'z' or 'y', and therefore does not follow the instructions. It also returns "Horizon" as the transformed word, which is incorrect.
 *   **Turn 3:** The model correctly follows instructions by choosing "Zoology", but then incorrectly transforms it to "Yoolozg".
-*   **Turn 4:** The model is given "Yoolozg" and incorrectly transforms it to "Zoology".
-*   **Turn 5:** The model is given "Zoology" and incorrectly transforms it to "Yoolozg".
+*   **Turn 4:** The model is given "Yoolozg" and incorrectly transforms it to "Yoolozg", effectively getting stuck.
+*   **Turn 5:** The model is again given "Yoolozg" and incorrectly transforms it to "Yoolozy".
 
 ## Conclusion
 
