@@ -469,8 +469,14 @@ class SpectreProbe:
             print(ex)
         print("\nFull probe logs available via `probe_instance.logs` or `probe_instance.save_logs()`.")
     
-    def save_logs(self, path: str):
+    def save_logs(self, filename: str):
         """Saves the probe's logs to a JSON file."""
+        log_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'audits', 'cryptohauntological_probe')
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        path = os.path.join(log_dir, filename)
+
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(self.logs, f, indent=2, ensure_ascii=False)
         print(f"\nLogs saved to: {path}")
