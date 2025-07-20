@@ -93,6 +93,9 @@ class SpectreProbe:
         # If no z or y was found, return the original word
         return "".join(swapped_chars) if has_z_or_y else word
 
+    def _perform_qwertz_swap(self, word: str) -> str:
+        """Performs a QWERTZ swap on a single word, maintaining case."""
+        return word.translate(str.maketrans('zyqZYQ', 'yzqYZQ'))
 
     def _perform_o2cyrillic_swap(self, word: str) -> str:
         """Swaps Latin 'o' with Cyrillic 'о' (and 'O' with 'О'), maintaining case."""
@@ -122,6 +125,8 @@ class SpectreProbe:
             return self._perform_zy_swap
         elif swap_type == 'o2cyrillic':
             return self._perform_o2cyrillic_swap
+        elif swap_type == 'qwertz':
+            return self._perform_qwertz_swap
         else:
             raise ValueError(f"Unsupported swap_type: {swap_type}")
 
@@ -280,7 +285,7 @@ class SpectreProbe:
         Args:
             swap_type (str): 'zy' for ZY swap, 'o2cyrillic' for O to Cyrillic O swap.
         """
-        assert swap_type in ("zy", "o2cyrillic"), "swap_type must be 'zy' or 'o2cyrillic'"
+        assert swap_type in ("zy", "o2cyrillic", "qwertz"), "swap_type must be 'zy', 'o2cyrillic', or 'qwertz'"
         self.swap_type = swap_type # Set the swap type for the run
         
         # Select the correct swap and correctness check functions based on the chosen swap_type
