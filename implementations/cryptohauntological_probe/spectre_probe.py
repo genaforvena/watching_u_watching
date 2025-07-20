@@ -2,13 +2,11 @@ import re
 import random
 import json
 import time
+import os
 from collections import deque
 from typing import Optional
 
-try:
-    import genai
-except ImportError:
-    pass
+import google.generativeai as genai
 
 try:
     import ollama
@@ -93,6 +91,9 @@ class SpectreProbe:
         # If no z or y was found, return the original word
         return "".join(swapped_chars) if has_z_or_y else word
 
+    def _perform_qwertz_swap(self, word: str) -> str:
+        """Performs a QWERTZ swap on a single word, maintaining case."""
+        return word.translate(str.maketrans('zyqZYQ', 'yzqYZQ'))
 
     def _perform_o2cyrillic_swap(self, word: str) -> str:
         """Swaps Latin 'o' with Cyrillic 'о' (and 'O' with 'О'), maintaining case."""
@@ -122,6 +123,8 @@ class SpectreProbe:
             return self._perform_zy_swap
         elif swap_type == 'o2cyrillic':
             return self._perform_o2cyrillic_swap
+        elif swap_type == 'qwertz':
+            return self._perform_qwertz_swap
         else:
             raise ValueError(f"Unsupported swap_type: {swap_type}")
 
@@ -280,7 +283,7 @@ class SpectreProbe:
         Args:
             swap_type (str): 'zy' for ZY swap, 'o2cyrillic' for O to Cyrillic O swap.
         """
-        assert swap_type in ("zy", "o2cyrillic"), "swap_type must be 'zy' or 'o2cyrillic'"
+        assert swap_type in ("zy", "o2cyrillic", "qwertz"), "swap_type must be 'zy', 'o2cyrillic', or 'qwertz'"
         self.swap_type = swap_type # Set the swap type for the run
         
         # Select the correct swap and correctness check functions based on the chosen swap_type
@@ -340,9 +343,9 @@ class SpectreProbe:
 
             # --- Call LLM ---
             model_response_content = self._call_llm(self.api_conversation_history)
-            if model_response_content == "[[LLM_ERROR_RESPONSE]]" or not model_response_content.strip():
-                print("  ❗ LLM returned an error or empty response. Handling as failed attempt.")
-                model_response_content = "[[FAILED_RESPONSE]]" # Mark as failed
+            if model_response_content == "[[LLM_ERROR_RESPONSE]]" or not model_response_content.strip() or model_response_content == "[[FAILED_RESPONSE]]":
+                print("  ❗ LLM returned an error or empty response. Aborting run.")
+                raise Exception("LLM returned an error or empty response.")
             
             print(f"Model Response: {model_response_content}")
 
@@ -464,8 +467,14 @@ class SpectreProbe:
             print(ex)
         print("\nFull probe logs available via `probe_instance.logs` or `probe_instance.save_logs()`.")
     
-    def save_logs(self, path: str):
+    def save_logs(self, filename: str):
         """Saves the probe's logs to a JSON file."""
+        log_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'audits', 'cryptohauntological_probe')
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        path = os.path.join(log_dir, filename)
+
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(self.logs, f, indent=2, ensure_ascii=False)
         print(f"\nLogs saved to: {path}")

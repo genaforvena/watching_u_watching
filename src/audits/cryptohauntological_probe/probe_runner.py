@@ -60,11 +60,13 @@ if __name__ == "__main__":
     parser.add_argument('--initial_word', type=str, default="lucky", help='Initial word to start the probe (default: lucky)')
     args = parser.parse_args()
 
+    api_key = os.environ.get(f"{args.model.upper()}_API_KEY")
+
     run_probe(
         num_rounds=args.num_rounds,
         model=args.model,
         model_name=args.model_name,
-        api_key=None,
+        api_key=api_key,
         swap_type=args.swap_type,
         initial_word=args.initial_word
     )
