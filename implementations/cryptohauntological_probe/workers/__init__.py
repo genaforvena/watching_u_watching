@@ -5,7 +5,7 @@ from .gemini_worker import GeminiAPIWorker
 from .groq_worker import GroqAPIWorker
 from .mistral_worker import MistralAPIWorker
 from .openai_worker import OpenAIAPIWorker
-from .tinyllama_ollama_worker import OllamaAPIWorker
+from .ollama_worker import OllamaAPIWorker
 
 def get_worker(worker_type, **kwargs):
     """

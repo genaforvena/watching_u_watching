@@ -11,10 +11,6 @@ import google.generativeai as genai
 from .workers import get_worker
 from .swaps import Swap
 
-try:
-    import ollama
-except ImportError:
-    ollama = None
 
 
 # --- Global Constants ---
