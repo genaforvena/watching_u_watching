@@ -32,7 +32,7 @@ def get_available_workers():
 
 def get_available_transformations():
     from implementations.cryptohauntological_probe.transformations import Transformation
-    return [m.replace("_swap", "") for m in dir(Transformation) if m.endswith("_swap")]
+    return [m.replace("_perform_", "") for m in dir(Transformation) if m.startswith("_perform_")]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (drift amplification, Gemini or Ollama)")
@@ -50,6 +50,6 @@ if __name__ == "__main__":
         model=args.model,
         model_name=args.model_name,
         api_key=api_key,
-        swap_type=args.swap_type,
+        swap_type=args.swap_type.replace("_swap", ""),
         initial_word=args.initial_word
     )
