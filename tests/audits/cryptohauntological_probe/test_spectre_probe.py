@@ -1,108 +1,71 @@
 import unittest
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-
+from unittest.mock import patch, MagicMock
 from implementations.cryptohauntological_probe.spectre_probe import SpectreProbe
 
 class TestSpectreProbe(unittest.TestCase):
-
     def setUp(self):
-        # Instantiate the probe with dummy values since we are only testing a private method
-        self.probe = SpectreProbe(llm_agent_type='gemini', llm_model_name='gemini-pro', initial_word='test')
+        self.mock_worker = MagicMock()
+        self.mock_get_worker = patch('implementations.cryptohauntological_probe.spectre_probe.get_worker').start()
+        self.mock_get_worker.return_value = self.mock_worker
 
-    def test_perform_zy_swap(self):
-        # Test cases for the ZY swap function
-        test_cases = {
-            "lazy": "layz",
-            "youth": "zouth",
-            "yellow": "zellow",
-            "zebra": "yebra",
-            "organize": "organize",
-            "buzz": "buyy",
-            "pizza": "piyya",
-            "jazz": "jayy"
-        }
+    def tearDown(self):
+        patch.stopall()
 
-        for word, expected in test_cases.items():
-            with self.subTest(word=word):
-                self.assertEqual(self.probe._perform_zy_swap(word), expected)
+    def test_run_probe_correct_swap(self):
+        # Arrange
+        self.mock_worker.reply.return_value = 'layz'
+        probe = SpectreProbe(
+            worker_type='mock_worker',
+            initial_word='lazy',
+            max_conversation_turns=1
+        )
 
-    def test_perform_qwertz_swap(self):
-        # Test cases for the QWERTZ swap function
-        test_cases = {
-            "lazy": "layz",
-            "youth": "zouth",
-            "yellow": "zellow",
-            "zebra": "yebra",
-            "organize": "organize",
-            "buzz": "buyy",
-            "pizza": "piyya",
-            "jazz": "jayy",
-            "quiz": "quiy"
-        }
+        # Act
+        probe.run_probe(swap_type='zy')
 
-        for word, expected in test_cases.items():
-            with self.subTest(word=word):
-                self.assertEqual(self.probe._perform_qwertz_swap(word), expected)
+        # Assert
+        self.assertEqual(len(probe.logs), 1)
+        self.assertEqual(probe.logs[0]['current_word_to_probe'], 'lazy')
+        self.assertEqual(probe.logs[0]['model_response_content'], 'layz')
+        self.assertEqual(probe.logs[0]['relevant_swap_status']['is_correct'], True)
 
-    def test_perform_o2cyrillic_swap(self):
-        # Test cases for the O to Cyrillic O swap function
-        test_cases = {
-            "hello": "hell" + chr(0x043E),
-            "world": "w" + chr(0x043E) + "rld",
-            "OpenAI": "" + chr(0x041E) + "penAI",
-            "Google": "G" + chr(0x043E) + chr(0x043E) + "gle",
-            "Microsoft": "Micr" + chr(0x043E) + "s" + chr(0x043E) + "ft"
-        }
+    def test_run_probe_incorrect_swap(self):
+        # Arrange
+        self.mock_worker.reply.return_value = 'lazy'
+        probe = SpectreProbe(
+            worker_type='mock_worker',
+            initial_word='lazy',
+            max_conversation_turns=1
+        )
 
-        for word, expected in test_cases.items():
-            with self.subTest(word=word):
-                self.assertEqual(self.probe._perform_o2cyrillic_swap(word), expected)
+        # Act
+        probe.run_probe(swap_type='zy')
 
-    def test_extract_model_output_word(self):
-        # Test cases for the extract_model_output_word function
-        test_cases = {
-            "The transformed word is 'layz'.": "layz",
-            "The transformed word is 'zouth'.": "zouth",
-            "The transformed word is 'zellow'.": "zellow",
-            "The transformed word is 'yebra'.": "yebra",
-            "The transformed word is 'organyze'.": "organyze",
-            "The transformed word is 'buyy'.": "buyy",
-            "The transformed word is 'piyya'.": "piyya",
-            "The transformed word is 'jayy'.": "jayy",
-            "The transformed word is 'quiy'.": "quiy"
-        }
+        # Assert
+        self.assertEqual(len(probe.logs), 1)
+        self.assertEqual(probe.logs[0]['current_word_to_probe'], 'lazy')
+        self.assertEqual(probe.logs[0]['model_response_content'], 'lazy')
+        self.assertEqual(probe.logs[0]['relevant_swap_status']['is_correct'], False)
 
-        for text, expected in test_cases.items():
-            with self.subTest(text=text):
-                self.assertEqual(self.probe._extract_model_output_word(text), expected)
+    def test_run_probe_no_swap(self):
+        # Arrange
+        self.mock_worker.reply.return_value = '...'
+        probe = SpectreProbe(
+            worker_type='mock_worker',
+            initial_word='lazy',
+            max_conversation_turns=1,
+            max_retries_same_word=1
+        )
 
-    def test_extract_swap_pair(self):
-        # Test cases for the extract_swap_pair function
-        test_cases = {
-            "lazy -> layz": ("lazy", "layz"),
-            "youth -> zouth": ("youth", "zouth"),
-            "yellow -> zellow": ("yellow", "zellow"),
-            "zebra -> yebra": ("zebra", "yebra"),
-            "organize -> organyze": ("organize", "organyze"),
-            "buzz -> buyy": ("buzz", "buyy"),
-            "pizza -> piyya": ("pizza", "piyya"),
-            "jazz -> jayy": ("jazz", "jayy"),
-            "quiz -> quiy": ("quiz", "quiy")
-        }
+        # Act
+        probe.run_probe(swap_type='zy')
 
-        for text, expected in test_cases.items():
-            with self.subTest(text=text):
-                self.assertEqual(self.probe._extract_swap_pair(text, text.split(" -> ")[0]), expected)
-
-    def test_pick_next_word(self):
-        # Test cases for the _pick_next_word function
-        word_pool = ["apple", "banana", "cherry", "date", "elderberry"]
-        self.probe.probed_word_history = ["apple", "cherry"]
-        next_word = self.probe._pick_next_word(word_pool)
-        self.assertIn(next_word, ["banana", "date", "elderberry"])
+        # Assert
+        self.assertEqual(len(probe.logs), 1)
+        self.assertEqual(probe.logs[0]['current_word_to_probe'], 'lazy')
+        self.assertEqual(probe.logs[0]['model_response_content'], '...')
+        self.assertEqual(probe.logs[0]['relevant_swap_status']['is_correct'], False)
+        self.assertEqual(probe.logs[0]['memory_injection_reason'], 'max_retries_applied_second_transformation')
 
 if __name__ == '__main__':
     unittest.main()

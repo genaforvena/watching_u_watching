@@ -4,9 +4,11 @@ import json
 from typing import List, Tuple
 
 class BedrockAPIWorker:
-    def __init__(self, model_name: str = "anthropic.claude-3-sonnet-20240229-v1:0"):
+    def __init__(self, model_name: str = "anthropic.claude-3-sonnet-20240229-v1:0", context_window_limit: int = 2048, timeout: int = 120):
         self.client = boto3.client(service_name="bedrock-runtime")
         self.model_name = model_name
+        self.context_window_limit = context_window_limit
+        self.timeout = timeout
 
     def _build_history(self, history: List[Tuple[str, str]], user_query: str) -> list:
         messages = []
