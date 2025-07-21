@@ -63,7 +63,7 @@ These findings demonstrate that standard, stateless benchmarks can miss critical
 
 ---
 
-**➡️ See the full comparative analysis and detailed logs here: `/audit_cases/cryptohauntological_probe`**
+[**Cryptohauntological Probe: Comparative Analysis of Model Behavior**](./audit_cases/cryptohauntological_probe/README.md)
 
 *   **Cryptohauntological Probe: Comparative Analysis of Model Behavior**
 
