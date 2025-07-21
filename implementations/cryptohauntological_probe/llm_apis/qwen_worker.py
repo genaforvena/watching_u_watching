@@ -31,4 +31,4 @@ class QwenAPIWorker:
         if response.status_code == 200:
             return response.output.text
         else:
-            raise Exception(f"Qwen API error: {response.message}")
+            raise ValueError(f"Qwen API error: {response.message}")
