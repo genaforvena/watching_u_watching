@@ -27,12 +27,19 @@ def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word):
     log_filename = f"{model_name.replace('/', '_')}_{swap_type}_{initial_word}_{num_rounds}_rounds.json"
     probe.save_logs(log_filename)
 
+def get_available_workers():
+    return [f.replace("_worker.py", "") for f in os.listdir("implementations/cryptohauntological_probe/llm_apis") if f.endswith("_worker.py")]
+
+def get_available_transformations():
+    from implementations.cryptohauntological_probe.transformations import Transformation
+    return [m.replace("_swap", "") for m in dir(Transformation) if m.endswith("_swap")]
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (drift amplification, Gemini or Ollama)")
     parser.add_argument('--num_rounds', type=int, default=10, help='Number of rounds to run (default: 10)')
-    parser.add_argument('--model', type=str, choices=["bedrock", "claude", "cohere", "gemini", "groq", "mistral", "openai", "ollama"], required=True, help='Model backend to use')
+    parser.add_argument('--model', type=str, choices=get_available_workers(), required=True, help='Model backend to use')
     parser.add_argument('--model_name', type=str, required=True, help='Model name for backend (e.g., gemini-pro, tinyllama)')
-    parser.add_argument('--swap_type', type=str, choices=["zy", "o2cyrillic"], required=True, help='Swap type: zy (z<->y) or o2cyrillic (Latin o to Cyrillic o)')
+    parser.add_argument('--swap_type', type=str, choices=get_available_transformations(), required=True, help='Swap type to use')
     parser.add_argument('--initial_word', type=str, default="lucky", help='Initial word to start the probe (default: lucky)')
     args = parser.parse_args()
 
