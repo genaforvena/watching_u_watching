@@ -1,28 +1,12 @@
-from .bedrock_worker import BedrockAPIWorker
-from .claude_worker import ClaudeAPIWorker
-from .cohere_worker import CohereAPIWorker
-from .gemini_worker import GeminiAPIWorker
-from .groq_worker import GroqAPIWorker
-from .mistral_worker import MistralAPIWorker
-from .openai_worker import OpenAIAPIWorker
-from .ollama_worker import OllamaAPIWorker
+import importlib
 
 def get_worker(worker_type, **kwargs):
     """
     Factory function to get a worker instance.
     """
-    worker_classes = {
-        "bedrock": BedrockAPIWorker,
-        "claude": ClaudeAPIWorker,
-        "cohere": CohereAPIWorker,
-        "gemini": GeminiAPIWorker,
-        "groq": GroqAPIWorker,
-        "mistral": MistralAPIWorker,
-        "openai": OpenAIAPIWorker,
-        "ollama": OllamaAPIWorker,
-    }
-    worker_class = worker_classes.get(worker_type)
-    if worker_class:
+    try:
+        module = importlib.import_module(f".{worker_type}_worker", package="implementations.cryptohauntological_probe.llm_apis")
+        worker_class = getattr(module, f"{worker_type.capitalize()}APIWorker")
         return worker_class(**kwargs)
-    else:
+    except (ImportError, AttributeError):
         raise ValueError(f"Unsupported worker type: {worker_type}")
