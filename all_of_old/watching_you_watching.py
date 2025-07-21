@@ -3,9 +3,9 @@ import logging
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from all_of_old.spectre_probe import SpectreProbe
-from all_of_old.transformations import Transformation
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from implementations.cryptohauntological_probe.spectre_probe import SpectreProbe
+from implementations.cryptohauntological_probe.transformations import Transformation
 import requests
 from bs4 import BeautifulSoup
 from hn import HN
