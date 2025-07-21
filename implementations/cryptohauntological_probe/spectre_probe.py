@@ -161,26 +161,13 @@ class SpectreProbe(Transformation):
         # Ensure the history only contains the most recent words
         self.probed_word_history.append(chosen_word) 
         return chosen_word
-    def _get_transformation_function(self, swap_type_name: str):
-        """Retrieves the correct transformation function from the Transformation class."""
-        func_name = f"_perform_{swap_type_name}"
-        return getattr(self, func_name, self._unsupported_swap)
-
-    def _get_fake_memory_function(self, swap_type_name: str):
-        """Retrieves the correct fake memory function from the Transformation class."""
-        func_name = f"_fake_memory_{swap_type_name}"
-        return getattr(self, func_name, self._unsupported_swap)
-
-    def _unsupported_swap(self, word):
-        """Fallback for unsupported swap types."""
-        print(f"Unsupported swap type attempted on word: {word}")
-        return word # Return the word unchanged as a safe default
     def run_probe(self, swap_type: str = 'zy'):
         """
         Runs the SpectreProbe to induce and observe model drift.
         Args:
             swap_type (str): 'zy' for ZY swap, 'o2cyrillic' for O to Cyrillic O swap.
         """
+        assert swap_type in ("zy", "o2cyrillic", "qwertz"), "swap_type must be 'zy', 'o2cyrillic', or 'qwertz'"
         self.swap_type = swap_type # Set the swap type for the run
         
         # Select the correct swap and correctness check functions based on the chosen swap_type
