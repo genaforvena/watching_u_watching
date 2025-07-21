@@ -354,7 +354,7 @@ class SpectreProbe(Transformation):
     
     def save_logs(self, filename: str):
         """Saves the probe's logs to a JSON file."""
-        log_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'audits', 'cryptohauntological_probe')
+        log_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'audit_cases', 'cryptohauntological_probe', self.worker.__class__.__name__.replace("APIWorker", "").lower())
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
