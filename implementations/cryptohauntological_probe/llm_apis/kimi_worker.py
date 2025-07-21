@@ -7,7 +7,7 @@ class KimiAPIWorker:
         self.api_key = api_key or os.getenv("KIMI_API_KEY")
         if not self.api_key:
             raise ValueError("Kimi API key must be provided via argument or KIMI_API_KEY env var.")
-        self.client = OpenAI(api_key=self.api_key, base_url="https://api.moonshot.cn/v1")
+        self.client = OpenAI(api_key=self.api_key, base_url="https://api.moonshot.cn/v1", timeout=self.timeout)
         self.model_name = model_name
         self.context_window_limit = context_window_limit
         self.timeout = timeout
