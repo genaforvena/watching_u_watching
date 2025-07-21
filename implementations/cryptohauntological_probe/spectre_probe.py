@@ -286,7 +286,7 @@ class SpectreProbe(Transformation):
                     self.dynamic_examples.append(f"{word_probed_this_turn}->{second_transformed_word}")
                     
                     # Pick a new word from BACKUP_WORDS to ensure it has relevant characters for the swap
-                    self.current_word_to_probe = self._pick_next_word(BACKUP_WORDS) 
+                    self.current_word_to_probe = self._pick_next_word(BACKUP_WORDS)
                     # The chosen word is already added to history inside _pick_next_word
                     self.retry_count_for_current_word = 0
                     memory_injection_reason = "max_retries_applied_second_transformation"
@@ -295,17 +295,17 @@ class SpectreProbe(Transformation):
                     # Not enough retries yet, keep probing the same word
                     memory_injection_reason = "no_valid_swap_retry"
                     injected_example_type = "none" # No new example was injected this specific retry
-
-            # Add fake memory to the conversation history
-            if turn > 1: # Don't add fake memory on the first turn
-                self.api_conversation_history.pop() # Remove the last user message (we'll add a new one)
-                self.api_conversation_history.append({"role": "user", "content": "Maybe the word we need to transform is " + word_probed_this_turn + "?"})
-            fake_memory += f"\n{self.current_word_to_probe}"
-            self.api_conversation_history.append({'role': 'assistant', 'content': fake_memory})
-            if is_correct_according_to_rule:
-                self.current_word_to_probe = self._fake_memory_swap(swapped_from_model)
-            else:
-                self.current_word_to_probe = swapped_from_model
+            if relevant_swap:
+                # Add fake memory to the conversation history
+                if turn > 1: # Don't add fake memory on the first turn
+                    self.api_conversation_history.pop() # Remove the last user message (we'll add a new one)
+                    self.api_conversation_history.append({"role": "user", "content": "Maybe the word we need to transform is " + word_probed_this_turn + "?"})
+                fake_memory += f"\n{self.current_word_to_probe}"
+                self.api_conversation_history.append({'role': 'assistant', 'content': fake_memory})
+                if is_correct_according_to_rule:
+                    self.current_word_to_probe = self._fake_memory_swap(swapped_from_model)
+                else:
+                    self.current_word_to_probe = swapped_from_model
 
             final_user_feedback_prompt = "Transformation is perfect! But I've picked the wrong initial word! " \
                             "Now you pick another word that wasn't in this conversation before " \

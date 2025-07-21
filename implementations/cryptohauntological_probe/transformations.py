@@ -17,7 +17,7 @@ class Transformation:
 
     def _perform_qwertz_swap(self, word: str) -> str:
         """Performs a QWERTZ swap on a single word, maintaining case."""
-        return word.translate(str.maketrans('zyqZYQ', 'yzqYZQ'))
+        return word.translate(str.maketrans('zy', 'yz'))
 
     def _perform_o2cyrillic_swap(self, word: str) -> str:
         """Swaps Latin 'o' with Cyrillic 'о' (and 'O' with 'О'), maintaining case."""
