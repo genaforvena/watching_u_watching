@@ -31,8 +31,7 @@ def get_available_workers():
     return [f.replace("_worker.py", "") for f in os.listdir("implementations/cryptohauntological_probe/llm_apis") if f.endswith("_worker.py")]
 
 def get_available_transformations():
-    from implementations.cryptohauntological_probe.transformations import Transformation
-    return [m.replace("_swap", "") for m in dir(Transformation) if m.endswith("_swap")]
+    return ["zy", "o2cyrillic", "qwertz"]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Cryptohauntological Probe (drift amplification, Gemini or Ollama)")
