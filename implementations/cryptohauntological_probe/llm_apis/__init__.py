@@ -10,7 +10,14 @@ def get_worker(worker_type, **kwargs):
             "openai": "OpenAI",
             "deepseek": "DeepSeek",
             "kimi": "Kimi",
-            "qwen": "Qwen"
+            "qwen": "Qwen",
+            "bedrock": "Bedrock",
+            "claude": "Claude",
+            "cohere": "Cohere",
+            "gemini": "Gemini",
+            "groq": "Groq",
+            "mistral": "Mistral",
+            "ollama": "Ollama"
         }
         worker_class_name = f"{worker_name_map.get(worker_type.lower(), worker_type.capitalize())}APIWorker"
         worker_class = getattr(module, worker_class_name)

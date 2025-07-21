@@ -7,10 +7,10 @@ class DeepSeekAPIWorker:
         self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
         if not self.api_key:
             raise ValueError("DeepSeek API key must be provided via argument or DEEPSEEK_API_KEY env var.")
+        self.timeout = timeout
         self.client = OpenAI(api_key=self.api_key, base_url="https://api.deepseek.com/v1", timeout=self.timeout)
         self.model_name = model_name
         self.context_window_limit = context_window_limit
-        self.timeout = timeout
 
     def _build_history(self, history: List[Tuple[str, str]], user_query: str) -> list:
         messages = []
