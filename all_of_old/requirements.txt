@@ -1,0 +1,5 @@
+google-generativeai
+textblob
+nltk
+hn
+beautifulsoup4

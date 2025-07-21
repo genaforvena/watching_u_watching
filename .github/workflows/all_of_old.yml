@@ -1,0 +1,28 @@
+name: Watching You Watching
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  run_performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r all_of_old/requirements.txt
+      - name: Run the performance
+        env:
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          API_KEY: ${{ secrets.API_KEY }}
+          HN_USERNAME: ${{ secrets.HN_USERNAME }}
+          HN_PASSWORD: ${{ secrets.HN_PASSWORD }}
+        run: |
+          python all_of_old/watching_you_watching.py --llm_endpoint $LLM_ENDPOINT --api_key $API_KEY --publish
