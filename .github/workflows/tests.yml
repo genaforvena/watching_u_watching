@@ -19,4 +19,4 @@ jobs:
     - name: Run tests
       run: |
         pip install pytest
-        pytest --ignore=tests/audits/cryptohauntological_probe/test_cohere_worker.py --ignore=tests/audits/cryptohauntological_probe/test_groq_worker.py
+        pytest
