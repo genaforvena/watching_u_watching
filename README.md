@@ -47,32 +47,29 @@ This systematic perturbation and reversal approach exploits the model's inherent
 
 ## 🧠 Cryptohauntological Probe & Cryptohauntology
 
-### What is Cryptohauntology?
+**Cryptohauntology** is the study of how errors, biases, and "ghosts" of prior outputs can propagate and persist within large language models (LLMs) and automated systems. It draws on the concept of hauntology (the persistence of elements from the past in the present) to analyze how models can develop self-propagating "false memories" or error patterns.
 
-Cryptohauntology is the study of how errors, biases, and "ghosts" of prior outputs can propagate and persist within large language models (LLMs) and automated systems. It draws on the concept of hauntology (the persistence of elements from the past in the present) to analyze how models can develop self-propagating "false memories" or error patterns—especially when their own outputs are recursively fed back as new training or prompt data.
+### Probe Methodology & Key Findings
 
-### The SpectreProbe: Probing Self-Propagating Errors
+Our probe tests LLMs' instruction-following and state-tracking capabilities under confusing conditions. The process involves giving the model a simple task, providing intentionally misleading positive feedback ("Transformation is perfect!"), and then issuing a complex, multi-step follow-up that requires it to remember the conversation history.
 
-The **SpectreProbe** (Cryptohauntological Probe) is a model-agnostic algorithm that recursively injects a model's own incorrect outputs into its prompt as new examples. This creates a feedback loop, allowing researchers to observe how errors and biases can accumulate, propagate, and even amplify over time. The probe is useful for:
+This methodology has revealed that even powerful models fail in distinct and fascinating ways when subjected to sustained, ambiguous context. Our comparative analysis across multiple models has identified three primary failure modes:
 
-- Studying error propagation and model drift
-- Revealing the emergence of "false memories" in LLMs
-- Analyzing the robustness and safety of conversational agents
+*   **Competence Collapse:** The model breaks down and gets stuck in a simple, repetitive loop (e.g., `gemma-3-27b-it`).
+*   **Task Derailment:** The model confidently misunderstands the user's intent and invents a new, incorrect goal which it pursues with perfect memory (e.g., `qwen/qwen3-32b`).
+*   **Contextual Amnesia:** The model understands the task perfectly but has an unreliable memory, causing it to forget what it has already done and fall into loops (e.g., `deepseek-chat`).
 
-**How it works:**
-1. Start with a correct example and a base instruction.
-2. On each turn, the model's outputs are parsed for specific error patterns (e.g., ZY swaps).
-3. Incorrect outputs are injected back as new examples, along with their "corrected" forms, recursively expanding the prompt context.
-4. All prompts, responses, and error chains are logged for analysis.
+These findings demonstrate that standard, stateless benchmarks can miss critical, dynamic failure modes that only appear in stateful, conversational interactions.
 
-**Research Context:**
-Cryptohauntological probing helps illuminate the risks of self-reinforcing errors in LLMs, especially in settings where model outputs are used as new training data or prompt examples. It provides a systematic way to study the emergence and persistence of model-specific "ghosts"—patterns that can haunt future outputs and undermine reliability or safety.
+---
 
-**📌 Independent Audit Commentary**
+[**Cryptohauntological Probe: Comparative Analysis of Model Behavior**](./audit_cases/cryptohauntological_probe/README.md)
 
-See [audit_cases/cryptohauntological_probe/gemini_api/README.md](audit_cases/cryptohauntological_probe/gemini_api/README.md) for Copilot's independent conclusions on novel context poisoning risks in `gemma-3-27b-it`.
+*   **Cryptohauntological Probe: Comparative Analysis of Model Behavior**
 
-**See:** [`src/audits/cryptohauntological_probe/README.md`](src/audits/cryptohauntological_probe/README.md) for full details and usage instructions.
+[**SpectreProbe Algorithm Documentation**](./src/audits/cryptohauntological_probe/README.md)
+
+*   **SpectreProbe Algorithm Documentation**
 
 
 ## 📦 How to Apply Guide for LLM-Assisted Framework Extension
