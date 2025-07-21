@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 class QwenAPIWorker:
     def __init__(self, api_key: str = None, model_name: str = "qwen-turbo", context_window_limit: int = 6144, timeout: int = 120):
-        self.api_key = os.getenv("DASHSCOPE_API_KEY")
+        self.api_key = api_key or os.getenv("DASHSCOPE_API_KEY")
         if not self.api_key:
             raise ValueError("Qwen API key must be provided via argument or DASHSCOPE_API_KEY env var.")
         self.model_name = model_name
