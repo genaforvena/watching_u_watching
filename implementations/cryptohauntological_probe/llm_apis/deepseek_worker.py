@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 class DeepSeekAPIWorker:
     def __init__(self, api_key: str = None, model_name: str = "deepseek-chat", context_window_limit: int = 4096, timeout: int = 120):
-        self.api_key = os.getenv("DEEPSEEK_API_KEY")
+        self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
         if not self.api_key:
             raise ValueError("DeepSeek API key must be provided via argument or DEEPSEEK_API_KEY env var.")
         self.client = OpenAI(api_key=self.api_key, base_url="https://api.deepseek.com/v1")
