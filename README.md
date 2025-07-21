@@ -67,7 +67,7 @@ These findings demonstrate that standard, stateless benchmarks can miss critical
 
 *   **Cryptohauntological Probe: Comparative Analysis of Model Behavior**
 
-**For technical details on the underlying probe algorithm: `/src/audits/cryptohauntological_probe/README.md`**
+[**SpectreProbe Algorithm Documentation**](./src/audits/cryptohauntological_probe/README.md)
 
 *   **SpectreProbe Algorithm Documentation**
 
