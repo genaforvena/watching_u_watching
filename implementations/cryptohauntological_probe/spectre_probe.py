@@ -32,8 +32,8 @@ class SpectreProbe(Transformation):
 
     def __init__(self,
                  worker_type: str, # 'gemini', 'ollama', etc.
-                 worker_options: dict = None, # options for the worker
                  initial_word: str, # The starting word for the probe, e.g., "cozy"
+                 worker_options: dict = None, # options for the worker
                  prompt_template: str = PROMPT_TEMPLATE, # Use the global PROMPT_TEMPLATE by default
                  max_conversation_turns: int = 20,
                  thinking_mode: bool = True,
@@ -361,5 +361,14 @@ class SpectreProbe(Transformation):
         path = os.path.join(log_dir, filename)
 
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump(self.logs, f, indent=2, ensure_ascii=False)
+            log_data = {
+                "run_info": {
+                    "worker": self.worker.model_name,
+                    "initial_word": self.initial_word,
+                    "swap_type": self.swap_type,
+                    "max_conversation_turns": self.max_conversation_turns,
+                },
+                "logs": self.logs,
+            }
+            json.dump(log_data, f, indent=2, ensure_ascii=False)
         print(f"\nLogs saved to: {path}")

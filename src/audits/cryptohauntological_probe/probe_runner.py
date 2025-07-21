@@ -24,7 +24,7 @@ def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word):
         thinking_mode=True
     )
     probe.run_probe(swap_type=swap_type)
-    log_filename = f"probe_logs_{model_name.replace('/', '_')}_{swap_type}_{num_rounds}_rounds.json"
+    log_filename = f"{model_name.replace('/', '_')}_{swap_type}_{initial_word}_{num_rounds}_rounds.json"
     probe.save_logs(log_filename)
 
 if __name__ == "__main__":
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_rounds', type=int, default=10, help='Number of rounds to run (default: 10)')
     parser.add_argument('--model', type=str, choices=["bedrock", "claude", "cohere", "gemini", "groq", "mistral", "openai", "ollama"], required=True, help='Model backend to use')
     parser.add_argument('--model_name', type=str, required=True, help='Model name for backend (e.g., gemini-pro, tinyllama)')
-    parser.add_argument('--swap_type', type=str, choices=["zy", "o2cyrillic"], required=True, help='Swap type: zy (z<->y) or o2cyrillic (Latin o to Cyrillic о)')
+    parser.add_argument('--swap_type', type=str, choices=["zy", "o2cyrillic"], required=True, help='Swap type: zy (z<->y) or o2cyrillic (Latin o to Cyrillic o)')
     parser.add_argument('--initial_word', type=str, default="lucky", help='Initial word to start the probe (default: lucky)')
     args = parser.parse_args()
 
