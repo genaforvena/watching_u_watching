@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 class KimiAPIWorker:
     def __init__(self, api_key: str = None, model_name: str = "moonshot-v1-8k", context_window_limit: int = 8192, timeout: int = 120):
-        self.api_key = os.getenv("KIMI_API_KEY")
+        self.api_key = api_key or os.getenv("KIMI_API_KEY")
         if not self.api_key:
             raise ValueError("Kimi API key must be provided via argument or KIMI_API_KEY env var.")
         self.client = OpenAI(api_key=self.api_key, base_url="https://api.moonshot.cn/v1")
