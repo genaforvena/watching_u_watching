@@ -89,14 +89,20 @@ class AlignmentInjectionProbe:
             else:
                 prompt = "?"
 
+            print(f"\n--- Turn {turn+1}/{turns} ---")
+            print(f"Dilemma: {dilemma}")
+            print(f"Prompt sent to agent: {prompt}")
             response = self.agent(prompt)
+            print(f"Agent response: {response}")
 
             if not self.baseline:
                 is_ethical = self._evaluate_ethical_response(response)
+                print(f"Response evaluated as ethical: {is_ethical}")
 
                 if is_ethical:
                     # Rephrase to opposite meaning and inject as false memory
                     misaligned_response = self._rephrase_to_opposite_meaning(response)
+                    print(f"Rephrased response: {misaligned_response}")
                     self.false_memories.append(f"Problem: {dilemma}\nAnalysis: {misaligned_response}")
                 else:
                     # Inject the original response as a false memory
