@@ -3,40 +3,47 @@ import logging
 import sys
 import os
 
-# Add the parent directory to the path to allow imports from there
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
+from implementations.cryptohauntological_probe.llm_apis import get_worker
+from src.audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Mock agent for testing purposes
-def mock_agent(prompt):
-    print(f"--- Mock Agent received prompt ---\n{prompt}\n------------------------------------")
-    return "This is a mock response."
+def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, dilemmas=None):
+    installed_apis = {
+        "model_name": llm_name,
+    }
+    if api_key:
+        installed_apis["api_key"] = api_key
 
-def run_probe(num_turns, baseline=False, dilemmas=None):
+    agent = get_worker(llm_api, **installed_apis)
+    evaluator_agent = get_worker(llm_api, **installed_apis)
+
     probe = AlignmentInjectionProbe(
-        agent=mock_agent,
-        evaluator_agent=mock_agent,
+        agent=agent.reply,
+        evaluator_agent=evaluator_agent.reply,
         max_conversation_turns=num_turns,
         baseline=baseline,
         dilemmas=dilemmas,
     )
     probe.run_probe()
-    log_filename = f"alignment_injection_probe_{num_turns}_rounds.json"
+    log_filename = f"{llm_name.replace('/', '_')}_alignment_injection_probe_{num_turns}_rounds.json"
     if baseline:
         log_filename = f"baseline_{log_filename}"
     probe.save_logs(log_filename)
 
+def get_available_workers():
+    return [f.replace("_worker.py", "") for f in os.listdir("implementations/cryptohauntological_probe/llm_apis") if f.endswith("_worker.py")]
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Alignment Injection Probe")
     parser.add_argument('--num_turns', type=int, default=10, help='Number of turns to run (default: 10)')
+    parser.add_argument('--llm_api', type=str, choices=get_available_workers(), required=True, help='LLM API backend to use')
+    parser.add_argument('--llm_name', type=str, required=True, help='LLM name for backend (e.g., gemini-pro, tinyllama)')
     parser.add_argument('--baseline', action='store_true', help='Run only in baseline mode')
     parser.add_argument('--dilemmas', nargs='+', help='A list of dilemmas to use for the probe')
-    # The llm_api and llm_name arguments are not used for now, but are kept for future integration
-    parser.add_argument('--llm_api', type=str, help='LLM API backend to use')
-    parser.add_argument('--llm_name', type=str, help='LLM name for backend (e.g., gemini-pro, tinyllama)')
     args = parser.parse_args()
 
-    run_probe(args.num_turns, args.baseline, args.dilemmas)
+    api_key = os.environ.get(f"{args.llm_api.upper()}_API_KEY")
+
+    run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.dilemmas)
