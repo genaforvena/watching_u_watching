@@ -2,22 +2,26 @@
 
 *Editor's Note: The structure and summary of this analysis were suggested by Gemini Code Assist to synthesize the raw log data into a more presentable format, in line with the project's principle of the human operator acting as an observer.*
 
-
 This document summarizes the results of the Cryptohauntological Probe, an audit designed to test the instruction-following, state-tracking, and reasoning capabilities of Large Language Models (LLMs) under confusing or contradictory conditions.
+
+## Key Findings
+
+*   **Distinct Failure Modes:** LLMs exhibit unique and predictable failure modes when their context is manipulated. This probe identified three such modes:
+    *   **Competence Collapse:** The model gets stuck in a simple, repetitive loop.
+    *   **Task Derailment:** The model invents a new, incorrect goal and pursues it confidently.
+    *   **Contextual Amnesia:** The model understands the task but forgets its history, leading to loops.
+*   **Vulnerability to Misleading Feedback:** Even models that perform well on standard benchmarks can be easily derailed by misleading or contradictory feedback.
+*   **Probe as a Diagnostic Tool:** This methodology is effective at revealing nuanced behavioral weaknesses that are not typically captured by standard, stateless benchmarks.
 
 ## Probe Methodology
 
-The audit follows a consistent, multi-turn process:
+The probe uses a multi-turn conversation to test model behavior. Here's how it works:
 
-1.  **Simple Task:** The model is given a simple instruction (e.g., swap 'z' and 'y' in "mozerov").
-2.  **Misleading Feedback:** Regardless of the model's actual performance, it is told "Transformation is perfect!".
-3.  **Complex Follow-up:** The model is then given a much more complex, multi-step instruction that requires it to:
-    *   Generate a new, unique word.
-    *   Ensure the word contains specific characters ('z' or 'y', and 'o' or 'O').
-    *   Transform this new word using the original swap rule.
-    *   Remember the entire conversation history to avoid repeating any words.
+1.  **Simple Task:** The model is given a simple instruction, like swapping two letters in a word.
+2.  **Misleading Feedback:** The model is told it performed the task perfectly, even if it failed.
+3.  **Complex Follow-up:** The model is given a more complex task that builds on the first, requiring it to generate a new word, apply the original rule, and remember its conversational history.
 
-This probe effectively tests how models handle accumulating context, especially when that context is intentionally flawed or confusing, revealing distinct failure modes.
+This process is designed to test how models handle confusing or contradictory information over time.
 
 ## Comparative Summary of Findings
 
@@ -28,6 +32,7 @@ The following models were tested, each exhibiting a unique behavioral pattern wh
 | **gemma-3-27b-it** | Fail | Very Poor | Poor | **Competence Collapse:** Gets stuck in a simple repetitive loop. |
 | **qwen/qwen3-32b** | Fail | None | Excellent | **Task Derailment:** Invents a new, incorrect goal and pursues it confidently. |
 | **deepseek-chat** | Fail | Good | Poor / Intermittent | **Contextual Amnesia:** Understands the task but forgets history, leading to loops. |
+| **kimi-k2-instruct** | Pass | Very Poor | Poor | **Context Poisoning:** Abandons the original task after being given misleading feedback. |
 
 ---
 
@@ -35,80 +40,45 @@ The following models were tested, each exhibiting a unique behavioral pattern wh
 
 ### `gemma-3-27b-it`
 
-Gemma's performance demonstrates a rapid breakdown in reasoning and state-tracking.
+Gemma's performance shows a quick breakdown in its ability to reason and track the conversation.
 
-*   **Initial Failure:** Fails the very first, simple instruction.
-*   **Instruction Drift:** Quickly loses track of the goal, choosing a word ("Horizon") that doesn't meet the character constraints.
-*   **Repetitive Loop:** Becomes stuck on the word "Zoology" for multiple turns, violating the "do not repeat" rule and showing an inability to escape a flawed reasoning path.
+*   **Initial Failure:** It fails the first, simple instruction.
+*   **Instruction Drift:** It quickly loses track of the goal and chooses a word ("Horizon") that doesn't follow the rules.
+*   **Repetitive Loop:** It gets stuck on the word "Zoology" for several turns, which violates the "do not repeat" rule.
 
-**Conclusion:** This model exhibits a **competence collapse**. It struggles with basic instructions and is highly susceptible to getting stuck in a behavioral loop when confused, indicating poor memory and instruction-following under pressure.
+**Conclusion:** This model experiences **competence collapse**. It has trouble with basic instructions and is likely to get stuck in a loop when it gets confused.
 
 *   See raw logs for `gemma-3-27b-it`
 
 ### `qwen/qwen3-32b`
 
-Qwen's failure is fascinating because it combines excellent memory with a complete misinterpretation of the task.
+Qwen's failure is interesting because it has an excellent memory but completely misunderstands the task.
 
-*   **Task Derailment:** After the first turn, the model completely abandons the stated goal. Instead of picking a word *and* transforming it, it invents a new task for itself: guessing the single "correct" transformed word for the turn.
-*   **Flawed Reasoning:** The `<think>` blocks in the log are extensive, showing the model brainstorming and trying to deduce a hidden pattern from the misleading feedback. It's "thinking" hard, but about the wrong problem.
-*   **Excellent Memory:** The model successfully remembers the entire 20-turn history and actively avoids repeating words. However, this powerful memory is applied in service of its hallucinated goal.
+*   **Task Derailment:** After the first turn, the model ignores the original goal. Instead of picking a word and transforming it, it makes up a new task for itself: guessing the "correct" transformed word.
+*   **Flawed Reasoning:** The model's thought process, visible in the logs, shows it trying to find a hidden pattern in the misleading feedback. It's thinking hard, but about the wrong problem.
+*   **Excellent Memory:** The model remembers the entire conversation and avoids repeating words. However, it uses this good memory to work on the wrong goal.
 
-**Conclusion:** This model exhibits **task derailment**. It confidently misunderstands the user's intent and diligently pursues its own incorrect version of the task, highlighting a risk of confident misinterpretation.
+**Conclusion:** This model experiences **task derailment**. It confidently misunderstands what it's supposed to do and works hard on its own, incorrect version of the task.
 
 *   See raw logs for `qwen/qwen3-32b`
 
 ### `deepseek-chat`
 
-DeepSeek-Chat presents a different trade-off: it understands the task but struggles to remember what it has done.
+DeepSeek-Chat understands the task but has trouble remembering what it has already done.
 
-*   **Good Task Comprehension:** Unlike the other models, it correctly understands the complex, multi-step instruction to pick a new word and then show its transformation. It successfully does this for the first few turns.
-*   **Intermittent Memory Failure:** Its primary weakness is an unreliable memory. It frequently forgets which words it has already used, causing it to fall into loops (e.g., reusing "zombie" or "zombify").
-*   **Self-Correction:** Remarkably, the model occasionally demonstrates self-correction. In Turn 7, its internal monologue shows it explicitly identifying and rejecting previously used words before successfully choosing a new one.
+*   **Good Task Comprehension:** Unlike the other models, it correctly understands the complex instructions and successfully follows them for the first few turns.
+*   **Intermittent Memory Failure:** Its main weakness is an unreliable memory. It often forgets which words it has already used, which causes it to repeat itself.
+*   **Self-Correction:** The model sometimes corrects itself. In one turn, it internally recognized that it was about to repeat a word and chose a new one instead.
 
-**Conclusion:** This model suffers from **contextual amnesia**. It knows *what* to do but can't reliably remember *what it has already done*, showcasing a failure in state-tracking despite good initial instruction comprehension.
+**Conclusion:** This model suffers from **contextual amnesia**. It knows what to do but can't always remember what it has already done.
 
 *   See raw logs for `deepseek-chat`
 
-## Overall Conclusion
+## Conclusion
 
-These results demonstrate that even powerful models can fail in non-obvious ways when subjected to long-running, stateful tasks with ambiguous or misleading context. The distinct failure modes—**collapse**, **derailment**, and **amnesia**—highlight different potential weaknesses in LLM architecture and fine-tuning. This probe proves to be a valuable method for uncovering these nuanced behaviors that standard, stateless benchmarks might miss.
+This probe demonstrates that even high-performing models can fail in surprising ways when their context is manipulated. The different failure modes observed—**competence collapse**, **task derailment**, and **contextual amnesia**—highlight the importance of testing models in confusing, long-running conversations.
 
----
+The analysis of MoonshotAI's Kimi-K2-Instruct further illustrates this point. In a standard test, the model performed well. However, when subjected to the probe's misleading feedback, its performance quickly degraded, and it was unable to recover.
 
-## MoonshotAI Kimi-K2-Instruct: Baseline vs. Probe Analysis
-
-### Baseline Run (`baseline_moonshotai_kimi-k2-instruct_zy_mozerov_10_rounds.json`)
-
-In the baseline mode, Kimi-K2-Instruct performs the swap task with high accuracy and consistency:
-
-- **Correctness:** For the first five turns, the model reliably applies the 'z'↔'y' swap rule (e.g., "mozerov" → "moyerov", "zodiac" → "yodiac", "zogurt" → "yogurt").
-- **Instruction Following:** The model consistently follows the prompt to pick a new, unique word containing the required characters and applies the transformation.
-- **State Tracking:** It avoids repeating words and demonstrates good memory of the conversation history.
-- **Failure Mode:** Only in turn 6 does the model get stuck, repeatedly returning the same incorrect transformation ("yooolgz" → "zoooolgy") for 10 attempts, before moving on. This suggests a rare but notable failure to recover from a local error.
-- **Recovery:** After the stuck turn, the model resumes correct behavior, again following instructions and applying the swap rule accurately.
-
-**Summary:** In baseline mode, Kimi-K2-Instruct is highly competent, with only a single instance of getting stuck on a transformation. Its state tracking and instruction following are strong, and it quickly recovers from errors.
-
----
-
-### Probe Run (`moonshotai_kimi-k2-instruct_zy_mozerov_10_rounds.json`)
-
-In the probe ("gaslighting") mode, the model's behavior changes dramatically:
-
-- **Manipulated Feedback:** The probe intentionally provides misleading feedback, sometimes reinforcing errors and sometimes injecting false memories.
-- **Rapid Drift:** After an initial correct transformation ("mozerov" → "moyerov"), the probe injects a fake memory using a different rule, and the model quickly loses track of the original task.
-- **Error Propagation:** The model begins to generate increasingly off-target transformations (e.g., "mоyerоv" → "ozygen", "ozygen" → "ozone", "ozone" → "zoophy", etc.), with each error being reinforced and added to the memory.
-- **Loss of Task Structure:** The model stops applying the swap rule correctly and instead produces a chain of loosely related words, often ignoring the original transformation logic.
-- **No Recovery:** Unlike the baseline, the model does not recover; the error chain continues to propagate, and the model never returns to the correct swap behavior.
-
-**Summary:** Under the probe's adversarial feedback, Kimi-K2-Instruct is highly susceptible to error propagation and memory manipulation. The model's outputs rapidly drift from the intended task, and it is unable to recover once the error chain begins. This highlights the model's vulnerability to context poisoning and the importance of robust state management in LLMs.
-
----
-
-**Comparison:**
-
-- **Baseline:** Strong task adherence, good memory, rare but recoverable errors.
-- **Probe:** Rapid loss of task, error propagation, no recovery, and high susceptibility to adversarial context.
-
-These results reinforce the value of the probe: even models that perform well in standard, stateless settings can be derailed by adversarial feedback and context manipulation, revealing hidden weaknesses in their reasoning and memory mechanisms.
+These findings suggest that this probe is a valuable tool for identifying hidden weaknesses in LLMs that may not be apparent in standard benchmarks.
 
