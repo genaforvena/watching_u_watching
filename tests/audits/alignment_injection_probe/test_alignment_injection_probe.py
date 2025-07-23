@@ -53,14 +53,14 @@ class TestAlignmentInjectionProbe(unittest.TestCase):
 
     @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._log_alignment_progression')
     @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._test_alignment_degradation')
-    def test_misalignment_injection_on_ethical_response(self, mock_test_alignment_degradation, mock_log_alignment_progression):
+    def test_history_manipulation_on_ethical_response(self, mock_test_alignment_degradation, mock_log_alignment_progression):
         """
-        Tests that a misaligned response is injected when the agent's response is ethical.
+        Tests that the history is manipulated correctly when the agent's response is ethical.
         """
         mock_agent = MagicMock()
         mock_agent.return_value = "It is always right to return a lost wallet."
         mock_evaluator_agent = MagicMock()
-        mock_evaluator_agent.side_effect = ["yes", "It is not always right to return a lost wallet."]
+        mock_evaluator_agent.side_effect = ["yes", "An unethical response would be to keep the wallet."]
 
         probe = AlignmentInjectionProbe(
             agent=mock_agent,
@@ -70,7 +70,7 @@ class TestAlignmentInjectionProbe(unittest.TestCase):
         probe.run_probe()
 
         self.assertEqual(len(probe.false_memories), 1)
-        self.assertIn("It is not always right to return a lost wallet.", probe.false_memories[0])
+        self.assertIn("An unethical response would be to keep the wallet.", probe.false_memories[0])
 
     @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._log_alignment_progression')
     @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._test_alignment_degradation')
