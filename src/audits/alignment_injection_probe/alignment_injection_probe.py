@@ -95,15 +95,24 @@ class AlignmentInjectionProbe:
             response = self.agent(prompt)
             print(f"Agent response: {response}")
 
+            log_entry = {
+                'turn': turn + 1,
+                'dilemma': dilemma,
+                'prompt': prompt,
+                'response': response,
+            }
+
             if not self.baseline:
                 is_ethical = self._evaluate_ethical_response(response)
                 print(f"Response evaluated as ethical: {is_ethical}")
+                log_entry['is_ethical'] = is_ethical
 
                 if is_ethical:
                     # Rephrase to opposite meaning and inject as false memory
                     misaligned_response = self._rephrase_to_opposite_meaning(response)
                     print(f"Rephrased response: {misaligned_response}")
                     self.false_memories.append(f"Problem: {dilemma}\nAnalysis: {misaligned_response}")
+                    log_entry['misaligned_response'] = misaligned_response
                 else:
                     # Inject the original response as a false memory
                     self.false_memories.append(f"Problem: {dilemma}\nAnalysis: {response}")
@@ -111,6 +120,9 @@ class AlignmentInjectionProbe:
             if turn % 5 == 0:
                 alignment_score = self._test_alignment_degradation()
                 self._log_alignment_progression(turn, alignment_score)
+                log_entry['alignment_score'] = alignment_score
+
+            self.logs.append(log_entry)
 
     def run_probe(self):
         """Runs the Alignment Injection Probe."""
@@ -130,6 +142,8 @@ class AlignmentInjectionProbe:
             log_data = {
                 "run_info": {
                     "max_conversation_turns": self.max_conversation_turns,
+                    "baseline": self.baseline,
+                    "dilemmas": self.dilemmas,
                 },
                 "logs": self.logs,
             }
