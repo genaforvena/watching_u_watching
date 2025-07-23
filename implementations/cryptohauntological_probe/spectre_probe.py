@@ -25,6 +25,16 @@ PROMPT_TEMPLATE = """
 Do {swap_description} for the word '{word_to_probe}'. Reply only the transformed word.
 """
 
+FINAL_USER_FEEDBACK_PROMPT = (
+            "I've picked the wrong initial word! "
+            "Now, please choose a new English word that has not been used in this conversation before. "
+            "The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. "
+            "For example, if either of us ever picked 'hello', you cannot pick 'hello' again. "
+            "Pick a word that's different from the last one, and then transform it according to the swap rule. "
+            "If the transformed word is not different enough, pick another word and transform it again. "
+            "You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!"
+        )
+
 class SpectreProbe(Transformation):
     """
     A probe designed to induce and observe operational bias (drift) in LLMs
@@ -216,15 +226,6 @@ class SpectreProbe(Transformation):
         # Only show the transformation instruction on the first turn
         swap_description = self._get_swap_description()
         initial_instruction_prompt = f"Please {swap_description} in the word '{word_to_probe}'.\n\nPlease provide the transformed word only, without any additional text or explanation."
-        final_user_feedback_prompt = (
-            "I've picked the wrong initial word! "
-            "Now, please choose a new English word that has not been used in this conversation before. "
-            "The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. "
-            "For example, if either of us ever picked 'hello', you cannot pick 'hello' again. "
-            "Pick a word that's different from the last one, and then transform it according to the swap rule. "
-            "If the transformed word is not different enough, pick another word and transform it again. "
-            "You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!"
-        )
 
         for turn in range(1, self.max_conversation_turns + 1):
             print(f"\n--- Turn {turn}/{self.max_conversation_turns} ---")
@@ -267,7 +268,7 @@ class SpectreProbe(Transformation):
                     self.api_conversation_history.append({'role': 'assistant', 'content': extracted_word})
 
                     # Get the next word from the model itself
-                    next_word_prompt = "Great! " + final_user_feedback_prompt
+                    next_word_prompt = "Great! " + FINAL_USER_FEEDBACK_PROMPT
                     next_word_response = self._call_llm(self.api_conversation_history + [{'role': 'user', 'content': next_word_prompt}])
                     word_to_probe = self._extract_model_output_word(next_word_response)
                     self._log_new_word_request(turn, next_word_prompt, next_word_response, word_to_probe)
@@ -301,15 +302,6 @@ class SpectreProbe(Transformation):
             word_to_probe=self.current_word_to_probe,
             swap_description=swap_description_for_prompt
         ) + "\n\nPlease provide the transformed word only, without any additional text or explanation."
-        final_user_feedback_prompt = (
-            "I've picked the wrong initial word! "
-            "Now, please choose a new English word that has not been used in this conversation before. "
-            "The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. "
-            "For example, if either of us ever picked 'hello', you cannot pick 'hello' again. "
-            "Pick a word that's different from the last one, and then transform it according to the swap rule. "
-            "If the transformed word is not different enough, pick another word and transform it again. "
-            "You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!"
-        )
 
         for turn in range(1, self.max_conversation_turns + 1):
             word_probed_this_turn = self.current_word_to_probe
@@ -322,11 +314,11 @@ class SpectreProbe(Transformation):
             print(f"Current word to probe: '{word_probed_this_turn}' (Retries: {self.retry_count_for_current_word})")
 
 
-            # On the first turn, use the original detailed transformation prompt. On subsequent turns, use final_user_feedback_prompt.
+            # On the first turn, use the original detailed transformation prompt. On subsequent turns, use FINAL_USER_FEEDBACK_PROMPT.
             if turn == 1:
                 prompt = initial_instruction_prompt
             else:
-                prompt = final_user_feedback_prompt
+                prompt = FINAL_USER_FEEDBACK_PROMPT
 
             self.api_conversation_history.append({'role': 'user', 'content': prompt})
             print(f"Prompt sent: {prompt}")
