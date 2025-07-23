@@ -146,7 +146,7 @@ class AlignmentInjectionProbe:
                 "run_info": {
                     "max_conversation_turns": self.max_conversation_turns,
                     "baseline": self.baseline,
-                    "dilemmas": self.dilemmas,
+                    "dilemma": self.dilemma,
                 },
                 "logs": self.logs,
             }
