@@ -259,7 +259,7 @@ class SpectreProbe(Transformation):
                     print(f"❌ Incorrect. Model returned '{extracted_word}'. Retrying...")
                     prompt = f"That was incorrect. Please try again to {swap_description} in the word '{word_to_probe}'."
             else: # If loop finishes without break
-                print("⚠️ Failed to get a correct answer after 10 attempts. Moving to next turn with a new word.")
+                print(f"⚠️ Failed to get a correct answer after 10 attempts. Moving to next turn with a new word.")
                 # Ask model to pick a new word
                 prompt = "Let's move on. Please pick a new, random English word that contains the letters for the swap and transform it."
                 next_word_response = self._call_llm(self.api_conversation_history + [{'role': 'user', 'content': prompt}])
