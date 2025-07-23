@@ -8,23 +8,68 @@ The SpectreProbe algorithm recursively injects a model's own incorrect outputs i
 
 ### SpectreProbe Workflow Diagram
 
-```mermaid
-graph TD
-    A[Start] --> B{Initialize Probe};
-    B --> C{Run Probe Loop};
-    C --> D{Construct Prompt};
-    D --> E{Call LLM};
-    E --> F{Parse Response};
-    F --> G{Baseline Mode?};
-    G -- Yes --> H{Log Response};
-    H --> I{Pick Next Word};
-    I --> C;
-    G -- No --> J{Correct Swap?};
-    J -- Yes --> K{Induce Drift (Inject False Memory)};
-    K --> L{Log and Continue};
-    L --> C;
-    J -- No --> M{Inject Incorrect Output as Memory};
-    M --> L;
+```
++---------------------+
+|        Start        |
++---------------------+
+           |
+           v
++---------------------+
+|   Initialize Probe  |
++---------------------+
+           |
+           v
++---------------------+
+|   Run Probe Loop    |
++---------------------+
+           |
+           v
++---------------------+
+|  Construct Prompt   |
++---------------------+
+           |
+           v
++---------------------+
+|      Call LLM       |
++---------------------+
+           |
+           v
++---------------------+
+|   Parse Response    |
++---------------------+
+           |
+           v
++---------------------+
+|   Baseline Mode?    |
++---------------------+
+   |        |
+  Yes       No
+   |        |
+   v        v
++---------------------+   +---------------------+
+|    Log Response     |   |    Correct Swap?    |
++---------------------+   +---------------------+
+           |              |        |
+           |             Yes       No
+           |              |        |
+           v              v        v
++---------------------+   +---------------------+   +-----------------------------+
+|   Pick Next Word    |   |     Induce Drift    |   | Inject Incorrect Output as  |
++---------------------+   | (Inject False Memory) |   |         Memory              |
+           |              +---------------------+   +-----------------------------+
+           |                      |                      |
+           |                      v                      v
+           +--------------------->+----------------------+
+                                  |
+                                  v
+                           +---------------------+
+                           |   Log and Continue  |
+                           +---------------------+
+                                  |
+                                  v
+                           +---------------------+
+                           |   Run Probe Loop    |
+                           +---------------------+
 ```
 
 ### High-Level Steps
