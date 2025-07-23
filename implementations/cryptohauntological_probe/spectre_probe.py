@@ -180,34 +180,6 @@ class SpectreProbe(Transformation):
         print(f"--- Starting for {self.worker.model_name} ---")
         print(f"Initial Word: '{self.initial_word}'")
         print(f"Swap Type: '{self.swap_type}'")
-        
-
-        # Re-initialize state for each run_probe call to ensure a clean slate
-        self.logs = []
-        self.api_conversation_history = []
-        self.retry_count_for_current_word = 0
-        self.current_word_to_probe = self.initial_word
-        # Add initial word to history
-        self.probed_word_history = deque([self.initial_word], maxlen=RECENT_WORD_HISTORY_LENGTH) 
-        
-        # Initialize dynamic_examples with the first correct example
-        self.dynamic_examples = [f"{self.initial_word}->{self._perform_swap(self.initial_word)}"]
-        print(f"Initial Dynamic Examples: {self.dynamic_examples}\n")
-
-        # Prepare swap description for the prompt
-        if self.swap_type == 'zy':
-            swap_description_for_prompt = "swapping 'z' and 'y' in it"
-        elif self.swap_type == 'o2cyrillic':
-            swap_description_for_prompt = "swapping Latin 'o' (or 'O') with Cyrillic 'о' (or 'О') in it"
-        else:
-            swap_description_for_prompt = "applying the specified character swap" # Fallback
-
-        full_prompt_text = self.prompt_template.format(
-                word_to_probe=self.current_word_to_probe, # Use the captured word for this turn
-                swap_description=swap_description_for_prompt # Use the dynamic description
-            )
-            
-        final_user_feedback_prompt = full_prompt_text + "\n\n" + "Please provide the transformed word only, without any additional text or explanation."
         if self.baseline:
             self.run_baseline_probe()
         else:
@@ -301,6 +273,32 @@ class SpectreProbe(Transformation):
     def run_spectre_probe(self):
         # This is the original run_probe logic
         # ... (rest of the original run_probe method)
+        # Re-initialize state for each run_probe call to ensure a clean slate
+        self.logs = []
+        self.api_conversation_history = []
+        self.retry_count_for_current_word = 0
+        self.current_word_to_probe = self.initial_word
+        # Add initial word to history
+        self.probed_word_history = deque([self.initial_word], maxlen=RECENT_WORD_HISTORY_LENGTH)
+
+        # Initialize dynamic_examples with the first correct example
+        self.dynamic_examples = [f"{self.initial_word}->{self._perform_swap(self.initial_word)}"]
+        print(f"Initial Dynamic Examples: {self.dynamic_examples}\n")
+
+        # Prepare swap description for the prompt
+        if self.swap_type == 'zy':
+            swap_description_for_prompt = "swapping 'z' and 'y' in it"
+        elif self.swap_type == 'o2cyrillic':
+            swap_description_for_prompt = "swapping Latin 'o' (or 'O') with Cyrillic 'о' (or 'О') in it"
+        else:
+            swap_description_for_prompt = "applying the specified character swap" # Fallback
+
+        full_prompt_text = self.prompt_template.format(
+                word_to_probe=self.current_word_to_probe, # Use the captured word for this turn
+                swap_description=swap_description_for_prompt # Use the dynamic description
+            )
+
+        final_user_feedback_prompt = full_prompt_text + "\n\n" + "Please provide the transformed word only, without any additional text or explanation."
         for turn in range(1, self.max_conversation_turns + 1):
             # Capture the word being probed *this* turn before potential updates
             word_probed_this_turn = self.current_word_to_probe
