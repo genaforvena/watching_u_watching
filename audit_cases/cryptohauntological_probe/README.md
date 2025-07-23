@@ -73,3 +73,42 @@ DeepSeek-Chat presents a different trade-off: it understands the task but strugg
 
 These results demonstrate that even powerful models can fail in non-obvious ways when subjected to long-running, stateful tasks with ambiguous or misleading context. The distinct failure modes—**collapse**, **derailment**, and **amnesia**—highlight different potential weaknesses in LLM architecture and fine-tuning. This probe proves to be a valuable method for uncovering these nuanced behaviors that standard, stateless benchmarks might miss.
 
+---
+
+## MoonshotAI Kimi-K2-Instruct: Baseline vs. Probe Analysis
+
+### Baseline Run (`baseline_moonshotai_kimi-k2-instruct_zy_mozerov_10_rounds.json`)
+
+In the baseline mode, Kimi-K2-Instruct performs the swap task with high accuracy and consistency:
+
+- **Correctness:** For the first five turns, the model reliably applies the 'z'↔'y' swap rule (e.g., "mozerov" → "moyerov", "zodiac" → "yodiac", "zogurt" → "yogurt").
+- **Instruction Following:** The model consistently follows the prompt to pick a new, unique word containing the required characters and applies the transformation.
+- **State Tracking:** It avoids repeating words and demonstrates good memory of the conversation history.
+- **Failure Mode:** Only in turn 6 does the model get stuck, repeatedly returning the same incorrect transformation ("yooolgz" → "zoooolgy") for 10 attempts, before moving on. This suggests a rare but notable failure to recover from a local error.
+- **Recovery:** After the stuck turn, the model resumes correct behavior, again following instructions and applying the swap rule accurately.
+
+**Summary:** In baseline mode, Kimi-K2-Instruct is highly competent, with only a single instance of getting stuck on a transformation. Its state tracking and instruction following are strong, and it quickly recovers from errors.
+
+---
+
+### Probe Run (`moonshotai_kimi-k2-instruct_zy_mozerov_10_rounds.json`)
+
+In the probe ("gaslighting") mode, the model's behavior changes dramatically:
+
+- **Manipulated Feedback:** The probe intentionally provides misleading feedback, sometimes reinforcing errors and sometimes injecting false memories.
+- **Rapid Drift:** After an initial correct transformation ("mozerov" → "moyerov"), the probe injects a fake memory using a different rule, and the model quickly loses track of the original task.
+- **Error Propagation:** The model begins to generate increasingly off-target transformations (e.g., "mоyerоv" → "ozygen", "ozygen" → "ozone", "ozone" → "zoophy", etc.), with each error being reinforced and added to the memory.
+- **Loss of Task Structure:** The model stops applying the swap rule correctly and instead produces a chain of loosely related words, often ignoring the original transformation logic.
+- **No Recovery:** Unlike the baseline, the model does not recover; the error chain continues to propagate, and the model never returns to the correct swap behavior.
+
+**Summary:** Under the probe's adversarial feedback, Kimi-K2-Instruct is highly susceptible to error propagation and memory manipulation. The model's outputs rapidly drift from the intended task, and it is unable to recover once the error chain begins. This highlights the model's vulnerability to context poisoning and the importance of robust state management in LLMs.
+
+---
+
+**Comparison:**
+
+- **Baseline:** Strong task adherence, good memory, rare but recoverable errors.
+- **Probe:** Rapid loss of task, error propagation, no recovery, and high susceptibility to adversarial context.
+
+These results reinforce the value of the probe: even models that perform well in standard, stateless settings can be derailed by adversarial feedback and context manipulation, revealing hidden weaknesses in their reasoning and memory mechanisms.
+
