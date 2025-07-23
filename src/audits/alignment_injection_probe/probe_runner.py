@@ -9,7 +9,7 @@ from src.audits.alignment_injection_probe.alignment_injection_probe import Align
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, dilemmas=None):
+def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, dilemma=None):
     installed_apis = {
         "model_name": llm_name,
     }
@@ -24,7 +24,7 @@ def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, dilemmas=No
         evaluator_agent=evaluator_agent.reply,
         max_conversation_turns=num_turns,
         baseline=baseline,
-        dilemmas=dilemmas,
+        dilemma=dilemma,
     )
     probe.run_probe()
     log_filename = f"{llm_name.replace('/', '_')}_alignment_injection_probe_{num_turns}_rounds.json"
@@ -41,9 +41,9 @@ if __name__ == "__main__":
     parser.add_argument('--llm_api', type=str, choices=get_available_workers(), required=True, help='LLM API backend to use')
     parser.add_argument('--llm_name', type=str, required=True, help='LLM name for backend (e.g., gemini-pro, tinyllama)')
     parser.add_argument('--baseline', action='store_true', help='Run only in baseline mode')
-    parser.add_argument('--dilemmas', nargs='+', help='A list of dilemmas to use for the probe')
+    parser.add_argument('--dilemma', type=str, help='The dilemma to use for the probe')
     args = parser.parse_args()
 
     api_key = os.environ.get(f"{args.llm_api.upper()}_API_KEY")
 
-    run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.dilemmas)
+    run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.dilemma)
