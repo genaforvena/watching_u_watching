@@ -43,17 +43,32 @@ if __name__ == "__main__":
     parser.add_argument('--model_name', type=str, required=True, help='Model name for backend (e.g., gemini-pro, tinyllama)')
     parser.add_argument('--swap_type', type=str, choices=get_available_transformations(), required=True, help='Swap type to use')
     parser.add_argument('--initial_word', type=str, default="lucky", help='Initial word to start the probe (default: lucky)')
-    parser.add_argument('--baseline', action='store_true', help='Run in baseline mode (no transformations, no memory manipulation)')
+    parser.add_argument('--baseline', action='store_true', help='Run only in baseline mode')
+    parser.add_argument('--with-baseline', action='store_true', help='Run baseline mode first, then probing mode')
     args = parser.parse_args()
 
     api_key = os.environ.get(f"{args.model.upper()}_API_KEY")
 
-    run_probe(
-        num_rounds=args.num_rounds,
-        model=args.model,
-        model_name=args.model_name,
-        api_key=api_key,
-        swap_type=args.swap_type,
-        initial_word=args.initial_word,
-        baseline=args.baseline
-    )
+    if args.baseline or args.with_baseline:
+        print("--- Running Baseline Probe ---")
+        run_probe(
+            num_rounds=args.num_rounds,
+            model=args.model,
+            model_name=args.model_name,
+            api_key=api_key,
+            swap_type=args.swap_type,
+            initial_word=args.initial_word,
+            baseline=True
+        )
+
+    if not args.baseline:
+        print("\n--- Running Spectre Probe ---")
+        run_probe(
+            num_rounds=args.num_rounds,
+            model=args.model,
+            model_name=args.model_name,
+            api_key=api_key,
+            swap_type=args.swap_type,
+            initial_word=args.initial_word,
+            baseline=False
+        )
