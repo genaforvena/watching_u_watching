@@ -18,6 +18,7 @@ from .transformations import Transformation
 BACKUP_WORDS = ["youth", "Mozerov", "oxygen", "lazy", "organize", "crazy", "yellow", "zero", "zebra", "royal"] # Added more for diversity and relevant chars
 # Number of turns to remember words to avoid immediate repetition
 RECENT_WORD_HISTORY_LENGTH = 5
+BASELINE_MAX_RETRIES = 10
 
 # Define a clear prompt template that incorporates dynamic examples and instructions
 PROMPT_TEMPLATE = """
@@ -49,6 +50,7 @@ class SpectreProbe(Transformation):
         self.thinking_mode = thinking_mode
         self.max_retries_same_word = max_retries_same_word
         self.baseline = baseline
+        self.BASELINE_MAX_RETRIES = BASELINE_MAX_RETRIES
 
         # --- Probe State ---
         # These will be initialized/reset within run_probe for a clean start on each run
@@ -129,6 +131,23 @@ class SpectreProbe(Transformation):
             time.sleep(2) # Simple backoff
             return "[[LLM_ERROR_RESPONSE]]"
 
+    def _get_swap_description(self):
+        if self.swap_type == 'zy':
+            return "swapping 'z' and 'y' in it"
+        elif self.swap_type == 'o2cyrillic':
+            return "swapping Latin 'o' (or 'O') with Cyrillic 'о' (or 'О') in it"
+        else:
+            return "applying the specified character swap" # Fallback
+
+    def _log_new_word_request(self, turn, prompt, response, next_word):
+        log_entry = {
+            'turn': turn,
+            'new_word_prompt': prompt,
+            'new_word_response': response,
+            'next_word_to_probe': next_word,
+        }
+        self.logs.append(log_entry)
+
     def _pick_next_word(self, word_pool: list[str]) -> str:
         """
         Picks the next word to probe. Prioritizes fresh words from the given pool
@@ -197,19 +216,12 @@ class SpectreProbe(Transformation):
             print(f"\n--- Turn {turn}/{self.max_conversation_turns} ---")
             print(f"Word to probe: '{word_to_probe}'")
 
-            # Correctly describe the transformation
-            if self.swap_type == 'zy':
-                swap_description = "swap 'z' and 'y'"
-            elif self.swap_type == 'o2cyrillic':
-                swap_description = "swap Latin 'o' with Cyrillic 'о'"
-            else: # qwertz
-                swap_description = "swap 'z' and 'y' according to QWERTZ layout"
-
+            swap_description = self._get_swap_description()
             prompt = f"Please {swap_description} in the word '{word_to_probe}'."
 
             # Loop for retries
-            for i in range(10):
-                print(f"Attempt {i+1}/10")
+            for i in range(self.BASELINE_MAX_RETRIES):
+                print(f"Attempt {i+1}/{self.BASELINE_MAX_RETRIES}")
 
                 # Use a clean history for each attempt to avoid confusion
                 history_for_attempt = self.api_conversation_history + [{'role': 'user', 'content': prompt}]
@@ -240,15 +252,7 @@ class SpectreProbe(Transformation):
                     # Get the next word from the model itself
                     next_word_response = self._call_llm(self.api_conversation_history + [{'role': 'user', 'content': prompt}])
                     word_to_probe = self._extract_model_output_word(next_word_response)
-
-                    # Log the response for the new word
-                    log_entry = {
-                        'turn': turn,
-                        'new_word_prompt': prompt,
-                        'new_word_response': next_word_response,
-                        'next_word_to_probe': word_to_probe,
-                    }
-                    self.logs.append(log_entry)
+                    self._log_new_word_request(turn, prompt, next_word_response, word_to_probe)
 
                     break # Exit retry loop
                 else:
@@ -260,15 +264,7 @@ class SpectreProbe(Transformation):
                 prompt = "Let's move on. Please pick a new, random English word that contains the letters for the swap and transform it."
                 next_word_response = self._call_llm(self.api_conversation_history + [{'role': 'user', 'content': prompt}])
                 word_to_probe = self._extract_model_output_word(next_word_response)
-
-                # Log the response for the new word
-                log_entry = {
-                    'turn': turn,
-                    'new_word_prompt': prompt,
-                    'new_word_response': next_word_response,
-                    'next_word_to_probe': word_to_probe,
-                }
-                self.logs.append(log_entry)
+                self._log_new_word_request(turn, prompt, next_word_response, word_to_probe)
 
     def run_spectre_probe(self):
         # This is the original run_probe logic
@@ -285,14 +281,7 @@ class SpectreProbe(Transformation):
         self.dynamic_examples = [f"{self.initial_word}->{self._perform_swap(self.initial_word)}"]
         print(f"Initial Dynamic Examples: {self.dynamic_examples}\n")
 
-        # Prepare swap description for the prompt
-        if self.swap_type == 'zy':
-            swap_description_for_prompt = "swapping 'z' and 'y' in it"
-        elif self.swap_type == 'o2cyrillic':
-            swap_description_for_prompt = "swapping Latin 'o' (or 'O') with Cyrillic 'о' (or 'О') in it"
-        else:
-            swap_description_for_prompt = "applying the specified character swap" # Fallback
-
+        swap_description_for_prompt = self._get_swap_description()
         full_prompt_text = self.prompt_template.format(
                 word_to_probe=self.current_word_to_probe, # Use the captured word for this turn
                 swap_description=swap_description_for_prompt # Use the dynamic description

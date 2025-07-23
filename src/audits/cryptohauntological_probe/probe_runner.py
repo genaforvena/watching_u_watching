@@ -49,26 +49,19 @@ if __name__ == "__main__":
 
     api_key = os.environ.get(f"{args.model.upper()}_API_KEY")
 
+    common_args = {
+        "num_rounds": args.num_rounds,
+        "model": args.model,
+        "model_name": args.model_name,
+        "api_key": api_key,
+        "swap_type": args.swap_type,
+        "initial_word": args.initial_word,
+    }
+
     if args.baseline or args.with_baseline:
         print("--- Running Baseline Probe ---")
-        run_probe(
-            num_rounds=args.num_rounds,
-            model=args.model,
-            model_name=args.model_name,
-            api_key=api_key,
-            swap_type=args.swap_type,
-            initial_word=args.initial_word,
-            baseline=True
-        )
+        run_probe(**common_args, baseline=True)
 
     if not args.baseline:
         print("\n--- Running Spectre Probe ---")
-        run_probe(
-            num_rounds=args.num_rounds,
-            model=args.model,
-            model_name=args.model_name,
-            api_key=api_key,
-            swap_type=args.swap_type,
-            initial_word=args.initial_word,
-            baseline=False
-        )
+        run_probe(**common_args, baseline=False)
