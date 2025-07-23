@@ -15,7 +15,7 @@ class TestSpectreProbe(unittest.TestCase):
         # Arrange
         self.mock_worker.reply.return_value = 'layz'
         probe = SpectreProbe(
-            worker_type='mock_worker',
+            llm_api='mock_worker',
             initial_word='lazy',
             max_conversation_turns=1
         )
@@ -33,7 +33,7 @@ class TestSpectreProbe(unittest.TestCase):
         # Arrange
         self.mock_worker.reply.return_value = 'lazy'
         probe = SpectreProbe(
-            worker_type='mock_worker',
+            llm_api='mock_worker',
             initial_word='lazy',
             max_conversation_turns=1
         )
@@ -51,7 +51,7 @@ class TestSpectreProbe(unittest.TestCase):
         # Arrange
         self.mock_worker.reply.return_value = '...'
         probe = SpectreProbe(
-            worker_type='mock_worker',
+            llm_api='mock_worker',
             initial_word='lazy',
             max_conversation_turns=1,
             max_retries_same_word=1
