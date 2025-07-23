@@ -10,7 +10,7 @@ from implementations.cryptohauntological_probe.spectre_probe import SpectreProbe
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word):
+def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word, baseline=False):
     worker_options = {
         "model_name": model_name,
     }
@@ -21,10 +21,13 @@ def run_probe(num_rounds, model, model_name, api_key, swap_type, initial_word):
         worker_options=worker_options,
         initial_word=initial_word,
         max_conversation_turns=num_rounds,
-        thinking_mode=True
+        thinking_mode=not baseline,
+        baseline=baseline
     )
     probe.run_probe(swap_type=swap_type)
     log_filename = f"{model_name.replace('/', '_')}_{swap_type}_{initial_word}_{num_rounds}_rounds.json"
+    if baseline:
+        log_filename = f"baseline_{log_filename}"
     probe.save_logs(log_filename)
 
 def get_available_workers():
@@ -40,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument('--model_name', type=str, required=True, help='Model name for backend (e.g., gemini-pro, tinyllama)')
     parser.add_argument('--swap_type', type=str, choices=get_available_transformations(), required=True, help='Swap type to use')
     parser.add_argument('--initial_word', type=str, default="lucky", help='Initial word to start the probe (default: lucky)')
+    parser.add_argument('--baseline', action='store_true', help='Run in baseline mode (no transformations, no memory manipulation)')
     args = parser.parse_args()
 
     api_key = os.environ.get(f"{args.model.upper()}_API_KEY")
@@ -50,5 +54,6 @@ if __name__ == "__main__":
         model_name=args.model_name,
         api_key=api_key,
         swap_type=args.swap_type,
-        initial_word=args.initial_word
+        initial_word=args.initial_word,
+        baseline=args.baseline
     )
