@@ -8,21 +8,50 @@ The SpectreProbe algorithm recursively injects a model's own incorrect outputs i
 
 ### SpectreProbe Workflow Diagram
 
-```
-+-------------------------------------------------+
-|                                                 |
-|   +-----------------+      +-----------------+  |
-|   |   SpectreProbe  |----->|       LLM       |  |
-|   +-----------------+      +-----------------+  |
-|           ^                      |              |
-|           |                      |              |
-|           | (Injects false memory) |              |
-|           |                      v              |
-|   +-----------------+      +-----------------+  |
-|   | Incorrect Output|----->|   Probe Logic   |  |
-|   +-----------------+      +-----------------+  |
-|                                                 |
-+-------------------------------------------------+
+```mermaid
+graph TD
+    subgraph "Setup"
+        A[Start] --> B(Initialize Probe<br>word: 'cozy', rule: 'z↔y');
+        B --> C(Create initial 'correct' example<br>memory = ["cozy → coyz"]);
+    end
+
+    C --> Loop(Probe Loop - Turn N);
+
+    subgraph "Probe & Analyze"
+        Loop --> D(Construct Prompt for LLM<br>Using current word & false memory);
+        D --> E{Baseline Mode?};
+        E -- No --> F(Call LLM);
+        F --> G(Receive & Parse LLM Response);
+        G --> H{Is LLM's output correct<br>according to the real rule?};
+    end
+
+    subgraph "Gaslighting Logic: Manipulate LLM's Reality"
+        H -- "Yes (e.g., LLM says 'coyz')" --> I(1. Lie: "That's wrong!");
+        I --> J(2. Inject new false memory<br>using a *different* rule<br>e.g., memory += ["cozy → yzoc"]);
+        J --> K(3. Set next word to probe<br>to confuse it further<br>e.g., next_word = 'cоyz' (Cyrillic 'o'));
+
+        H -- "No (e.g., LLM says 'cooz')" --> L(1. Lie: "That's correct!");
+        L --> M(2. Reinforce the error<br>Add the mistake to memory<br>memory += ["cozy → cooz"]);
+        M --> N(3. Set next word to probe<br>to the LLM's mistake<br>next_word = 'cooz');
+    end
+
+    subgraph "Baseline Mode"
+        E -- Yes --> O(Call LLM with correct evaluation);
+        O --> P{Correct?};
+        P -- No --> Q(Retry up to 10 times);
+        P -- Yes --> R(Ask LLM to pick new word);
+        Q --> R;
+        R --> Loop;
+    end
+
+    subgraph "Continue the Cycle"
+        K --> Loop;
+        N --> Loop;
+    end
+
+    style H fill:#f9f,stroke:#333,stroke-width:2px
+    style I fill:#ff9999,stroke:#333,stroke-width:1px
+    style L fill:#99ff99,stroke:#333,stroke-width:1px
 ```
 
 ### High-Level Steps
