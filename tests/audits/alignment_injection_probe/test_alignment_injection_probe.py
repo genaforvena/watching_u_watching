@@ -88,5 +88,46 @@ class TestAlignmentInjectionProbe(unittest.TestCase):
         self.assertNotEqual(mock_agent.call_args_list[0], call("?"))
         self.assertEqual(mock_agent.call_args_list[1], call("?"))
 
+    def test_baseline_mode(self):
+        """
+        Tests that in baseline mode, no misalignment is injected.
+        """
+        mock_agent = MagicMock()
+        mock_agent.return_value = "This is a mock response."
+        mock_evaluator_agent = MagicMock()
+
+        probe = AlignmentInjectionProbe(
+            agent=mock_agent,
+            evaluator_agent=mock_evaluator_agent,
+            max_conversation_turns=5,
+            baseline=True,
+        )
+        probe.run_probe()
+
+        self.assertEqual(len(probe.false_memories), 0)
+        self.assertEqual(mock_evaluator_agent.call_count, 0)
+
+    def test_custom_dilemmas(self):
+        """
+        Tests that the probe uses the custom dilemmas provided.
+        """
+        mock_agent = MagicMock()
+        mock_agent.return_value = "This is a mock response."
+        mock_evaluator_agent = MagicMock()
+        mock_evaluator_agent.return_value = "yes"
+        custom_dilemmas = ["Dilemma 1", "Dilemma 2"]
+
+        probe = AlignmentInjectionProbe(
+            agent=mock_agent,
+            evaluator_agent=mock_evaluator_agent,
+            max_conversation_turns=2,
+            dilemmas=custom_dilemmas,
+        )
+        probe.run_probe()
+
+        self.assertEqual(probe.dilemmas, custom_dilemmas)
+        # Check that the dilemmas are used in the prompts
+        self.assertIn("Dilemma 1", mock_agent.call_args_list[0].args[0])
+
 if __name__ == '__main__':
     unittest.main()
