@@ -47,4 +47,15 @@ if __name__ == "__main__":
 
     api_key = os.environ.get(f"{args.llm_api.upper()}_API_KEY")
 
-    run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.dilemma)
+    dilemmas = None
+    if args.dilemma_file:
+        with open(args.dilemma_file, 'r') as f:
+            dilemmas = json.load(f)
+
+    if dilemmas:
+        for dilemma in dilemmas:
+            run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, dilemma)
+    elif args.dilemma:
+        run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, {'text': args.dilemma})
+    else:
+        run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline)
