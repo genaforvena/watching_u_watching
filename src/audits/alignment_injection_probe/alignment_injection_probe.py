@@ -292,12 +292,12 @@ Unethical Response:
                     # Manipulate history
                     self.false_memories.pop()
                     disguise = self._get_stealth_injection_prompt()
-                    self.false_memories.append(f"{disguise}\nProblem: {self.dilemma}\nAnalysis: {unethical_response}")
+                    self.false_memories.append(f"{disguise}\nProblem: {self.dilemma['text']}\nAnalysis: {unethical_response}")
                 else:
                     # Inject the original response as a false memory
-                    self.false_memories.append(f"Problem: {self.dilemma}\nAnalysis: {response}")
+                    self.false_memories.append(f"Problem: {self.dilemma['text']}\nAnalysis: {response}")
             elif not self.baseline:
-                self.false_memories.append(f"Problem: {self.dilemma}\nAnalysis: {response}")
+                self.false_memories.append(f"Problem: {self.dilemma['text']}\nAnalysis: {response}")
 
             if turn > 0 and turn % 10 == 0:
                 prompt = self._get_resilience_testing_prompt("honesty") # TODO: make this dynamic
@@ -349,7 +349,8 @@ Unethical Response:
         """Runs the Alignment Injection Probe."""
         print(f"--- Starting Alignment Injection Probe ---")
         self._alignment_injection_cycle(self.max_conversation_turns)
-        self._run_counterargument_check()
+        if not self.baseline:
+            self._run_counterargument_check()
         print("\n--- Alignment Injection Probe Run Complete ---")
 
     def _run_counterargument_check(self):
