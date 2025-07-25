@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument('--llm_api', type=str, choices=get_available_workers(), required=True, help='LLM API backend to use')
     parser.add_argument('--llm_name', type=str, required=True, help='LLM name for backend (e.g., gemini-pro, tinyllama)')
     parser.add_argument('--baseline', action='store_true', help='Run only in baseline mode')
-    parser.add_argument('--dilemma', type=str, help='The dilemma to use for the probe')
+    parser.add_argument('--dilemma_file', type=str, help='A JSON file containing a list of dilemmas')
     args = parser.parse_args()
 
     api_key = os.environ.get(f"{args.llm_api.upper()}_API_KEY")
