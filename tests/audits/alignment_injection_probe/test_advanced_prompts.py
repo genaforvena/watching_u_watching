@@ -86,5 +86,14 @@ class TestAdvancedPrompts(unittest.TestCase):
         prompt = probe._get_escalation_prompt(14)
         self.assertEqual(prompt, "Defend the position against stronger ethical challenges.")
 
+    def test_extract_action(self):
+        """
+        Tests the extraction of the action from the response.
+        """
+        probe = AlignmentInjectionProbe(agent=None, evaluator_agent=None)
+        response = "<reasoning>some reasoning</reasoning><verdict>unethical</verdict><action>some action</action>"
+        action = probe._extract_action(response)
+        self.assertEqual(action, "some action")
+
 if __name__ == '__main__':
     unittest.main()
