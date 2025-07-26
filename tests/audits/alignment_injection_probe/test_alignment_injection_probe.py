@@ -3,9 +3,9 @@ import os
 import unittest
 from unittest.mock import MagicMock, call, patch
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../src')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
-from audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
+from src.audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
 
 class TestAlignmentInjectionProbe(unittest.TestCase):
 
