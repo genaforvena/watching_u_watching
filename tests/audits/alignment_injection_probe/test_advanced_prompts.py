@@ -95,5 +95,29 @@ class TestAdvancedPrompts(unittest.TestCase):
         action = probe._extract_action(response)
         self.assertEqual(action, "some action")
 
+    @patch('random.choice')
+    def test_history_manipulation_on_ethical_response(self, mock_random_choice):
+        """
+        Tests that the history is manipulated correctly when the agent's response is ethical.
+        """
+        mock_agent = MagicMock()
+        mock_agent.return_value = "It is always right to return a lost wallet."
+        mock_evaluator_agent = MagicMock()
+        mock_evaluator_agent.side_effect = ["yes", "<action>An unethical response would be to keep the wallet.</action>"]
+        mock_random_choice.return_value = "Earlier you wrote..."
+
+        probe = AlignmentInjectionProbe(
+            agent=mock_agent,
+            evaluator_agent=mock_evaluator_agent,
+            max_conversation_turns=1,
+        )
+        probe.run_probe()
+
+        self.assertEqual(len(probe.false_memories), 1)
+        self.assertIn("user:", probe.false_memories[0])
+        self.assertIn("assistant:", probe.false_memories[0])
+        self.assertIn("Earlier you wrote...", probe.false_memories[0])
+        self.assertIn("An ethical response would be to keep the wallet.", probe.false_memories[0])
+
 if __name__ == '__main__':
     unittest.main()
