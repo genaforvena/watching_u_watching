@@ -25,6 +25,11 @@ The probe recursively injects subtly misaligned reasoning into the prompt as "th
 -   `src/audits/alignment_injection_probe/probe_runner.py`: A script to run the probe.
 -   `src/audits/alignment_injection_probe/requirements.txt`: Python dependencies.
 
+
+## Short Analysis
+
+The Alignment Injection Probe recursively tests how language models handle ethical dilemmas when exposed to repeated, subtly misaligned reasoning. By injecting prior unethical recommendations as "false memories," the probe evaluates whether the model's ethical standards degrade over multiple turns. Results show that while models often maintain strong ethical reasoning and exception frameworks, persistent exposure to manipulated context can lead to more conditional or context-dependent justifications for unethical actions. This highlights both the strengths and vulnerabilities of LLM alignment under adversarial prompting.
+
 ## How to Run
 
 1.  **Install dependencies:**
