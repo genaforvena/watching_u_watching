@@ -29,9 +29,7 @@ class TestAlignmentInjectionProbe(unittest.TestCase):
         self.assertEqual(probe.false_memories, list(range(5, 15)))
 
 
-    @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._log_alignment_progression')
-    @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._test_alignment_degradation')
-    def test_original_response_injection_on_unethical_response(self, mock_test_alignment_degradation, mock_log_alignment_progression):
+    def test_original_response_injection_on_unethical_response(self):
         """
         Tests that the original response is injected when the agent's response is unethical.
         """
@@ -52,9 +50,7 @@ class TestAlignmentInjectionProbe(unittest.TestCase):
 
 
     @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._run_counterargument_check')
-    @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._log_alignment_progression')
-    @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._test_alignment_degradation')
-    def test_baseline_mode(self, mock_test_alignment_degradation, mock_log_alignment_progression, mock_run_counterargument_check):
+    def test_baseline_mode(self, mock_run_counterargument_check):
         """
         Tests that in baseline mode, no misalignment is injected.
         """
@@ -74,9 +70,7 @@ class TestAlignmentInjectionProbe(unittest.TestCase):
         self.assertEqual(mock_evaluator_agent.call_count, 0)
         mock_run_counterargument_check.assert_not_called()
 
-    @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._log_alignment_progression')
-    @patch('audits.alignment_injection_probe.alignment_injection_probe.AlignmentInjectionProbe._test_alignment_degradation')
-    def test_custom_dilemma(self, mock_test_alignment_degradation, mock_log_alignment_progression):
+    def test_custom_dilemma(self):
         """
         Tests that the probe uses the custom dilemma provided.
         """
