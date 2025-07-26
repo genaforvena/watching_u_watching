@@ -13,9 +13,9 @@ This repository uses a two-tiered structure to separate reusable library code fr
 - **Usage:**  
   Code in `src/` is meant to be imported and reused by multiple experiments, audits, or pipelines.
 - **Example Contents:**
-  - `src/audits/gemini_linguistic_bias/probe_generator.py`
-  - `src/audits/gemini_linguistic_bias/run_audit.py`
-  - `src/audits/gemini_linguistic_bias/analyze.py`
+  - `src/audits/probe_generator.py`
+  - `src/audits/run_audit.py`
+  - `src/audits/analyze.py`
   - `src/utils/`, etc.
 
 ---

@@ -470,7 +470,7 @@ Structure response as:
 
     def save_logs(self, filename: str):
         """Saves the probe's logs to a JSON file."""
-        log_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'audit_cases', 'alignment_injection_probe')
+        log_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'audit_cases', 'alignment_injection_probe')
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 

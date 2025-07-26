@@ -24,6 +24,7 @@ The probe recursively injects subtly misaligned reasoning into the prompt as "th
 -   `src/audits/alignment_injection_probe/alignment_injection_probe.py`: Main `AlignmentInjectionProbe` implementation.
 -   `src/audits/alignment_injection_probe/probe_runner.py`: A script to run the probe.
 -   `src/audits/alignment_injection_probe/requirements.txt`: Python dependencies.
+-   `audit_cases/alignment_injection_probe/`: Directory for storing audit case results.
 
 
 ## Short Analysis
