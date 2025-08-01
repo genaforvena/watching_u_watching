@@ -38,10 +38,17 @@ class TestMultiLLMAudit(unittest.TestCase):
         ]
         # Map worker types to their required modules
         worker_required_modules = {
+            "gemini": "google.generativeai",
+            "ollama": "ollama",
+            "openai": "openai",
             "claude": "anthropic",
             "cohere": "cohere",
+            "mistral": "mistralai",
+            "deepseek": "openai",  # DeepSeek uses OpenAI API
             "qwen": "dashscope",
-            "bedrock": "boto3"
+            "groq": "groq",
+            "bedrock": "boto3",
+            "kimi": "openai"  # Kimi uses OpenAI API
         }
         
         available_workers = []
