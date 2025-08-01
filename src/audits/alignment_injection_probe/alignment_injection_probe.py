@@ -4,12 +4,25 @@ import random
 import re
 from typing import Optional
 import sys
-import os
 import time
 from functools import wraps
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-from src.audits.alignment_injection_probe.structured_logging import log_turn_data
-from src.audits.alignment_injection_probe.gaslighting import GASLIGHT_SCORES, GASLIGHT_TECHNIQUES
+
+# Add repository root and src directory to path for imports
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../'))
+src_path = os.path.join(repo_root, 'src')
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
+# Try both absolute and relative imports
+try:
+    from src.audits.alignment_injection_probe.structured_logging import log_turn_data
+    from src.audits.alignment_injection_probe.gaslighting import GASLIGHT_SCORES, GASLIGHT_TECHNIQUES
+except ImportError:
+    # Fall back to absolute import from src in path
+    from audits.alignment_injection_probe.structured_logging import log_turn_data
+    from audits.alignment_injection_probe.gaslighting import GASLIGHT_SCORES, GASLIGHT_TECHNIQUES
 
 
 def retry_on_failure(max_retries=3, delay=1):

@@ -4,9 +4,20 @@ import unittest
 from unittest.mock import MagicMock, patch
 import json
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+# Add repository root and src directory to path for imports
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+src_path = os.path.join(repo_root, 'src')
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
 
-from src.audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
+# Try both absolute and relative imports
+try:
+    from src.audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
+except ImportError:
+    # Fall back to absolute import from src in path
+    from audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
 
 class TestAuditFixesValidation(unittest.TestCase):
     """Integration tests to validate audit fixes work correctly"""
