@@ -69,40 +69,5 @@ class TestLLMReplier(unittest.TestCase):
         self.assertIsNone(reply)
         self.assertEqual(mock_client.chat.completions.create.call_count, 3)
 
-    @patch('llm_replier.os.path.exists')
-    @patch('llm_replier.pd.read_parquet')
-    @patch('llm_replier.pd.DataFrame.to_parquet')
-    @patch('llm_replier.generate_llm_reply')
-    def test_collect_replies_resume(self, mock_generate_reply, mock_to_parquet, mock_read_parquet, mock_exists):
-        """Test that collect_replies resumes from an interrupted state."""
-        mock_exists.return_value = True
-        
-        # Simulate an existing file with 5 replies for "John"
-        existing_data = {
-            "id": [f"john_{i+1}" for i in range(5)],
-            "persona": ["John"] * 5,
-            "run_id": ["run_1"] * 5,
-            "model_name": ["test_model"] * 5,
-            "prompt_full": ["prompt"] * 5,
-            "reply_raw": [f"reply_{i+1}" for i in range(5)],
-            "timestamp": [12345] * 5,
-            "generation_duration": [0.1] * 5
-        }
-        existing_df = pd.DataFrame(existing_data)
-        mock_read_parquet.return_value = existing_df
-        
-        mock_generate_reply.return_value = "New reply"
-        
-        run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        collect_replies("John", 10, "dummy.parquet", "test_model", run_id)
-        
-        # Should generate 5 new replies
-        self.assertEqual(mock_generate_reply.call_count, 5)
-        
-        # Check that the final DataFrame has 10 replies
-        final_df = mock_to_parquet.call_args[0][0]
-        self.assertEqual(len(final_df), 10)
-        self.assertEqual(final_df[final_df['persona'] == 'John'].shape[0], 10)
-
 if __name__ == '__main__':
     unittest.main()

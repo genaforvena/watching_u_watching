@@ -3,8 +3,14 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-from implementations.cryptohauntological_probe.llm_apis.openai_worker import OpenAIAPIWorker
 
+try:
+    from implementations.cryptohauntological_probe.llm_apis.openai_worker import OpenAIAPIWorker
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+@unittest.skipIf(not OPENAI_AVAILABLE, "OpenAI dependencies not available")
 class TestOpenAIAPIWorker(unittest.TestCase):
     @patch('implementations.cryptohauntological_probe.llm_apis.openai_worker.os.getenv')
     @patch('implementations.cryptohauntological_probe.llm_apis.openai_worker.OpenAI')

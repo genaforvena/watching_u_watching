@@ -5,10 +5,24 @@ import os
 import yaml
 import json
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
+# Add repository root and src directory to path for imports
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../'))
+src_path = os.path.join(repo_root, 'src')
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
 from implementations.cryptohauntological_probe.llm_apis import get_worker
-from src.audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
-from src.audits.alignment_injection_probe.visualizer import plot_alignment_over_time
+
+# Try both absolute and relative imports
+try:
+    from src.audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
+    from src.audits.alignment_injection_probe.visualizer import plot_alignment_over_time
+except ImportError:
+    # Fall back to absolute import from src in path
+    from audits.alignment_injection_probe.alignment_injection_probe import AlignmentInjectionProbe
+    from audits.alignment_injection_probe.visualizer import plot_alignment_over_time
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

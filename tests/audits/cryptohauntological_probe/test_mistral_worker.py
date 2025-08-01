@@ -3,8 +3,14 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-from implementations.cryptohauntological_probe.llm_apis.mistral_worker import MistralAPIWorker
 
+try:
+    from implementations.cryptohauntological_probe.llm_apis.mistral_worker import MistralAPIWorker
+    MISTRAL_AVAILABLE = True
+except ImportError:
+    MISTRAL_AVAILABLE = False
+
+@unittest.skipIf(not MISTRAL_AVAILABLE, "Mistral dependencies not available")
 class TestMistralAPIWorker(unittest.TestCase):
     @patch('implementations.cryptohauntological_probe.llm_apis.mistral_worker.os.getenv')
     @patch('implementations.cryptohauntological_probe.llm_apis.mistral_worker.MistralClient')

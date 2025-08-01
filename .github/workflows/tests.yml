@@ -18,6 +18,7 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pandas nltk scipy textblob groq boto3 anthropic cohere mistralai openai vaderSentiment pyarrow fastparquet matplotlib
         python -m nltk.downloader punkt
+        pip install -e .
     - name: Run tests
       run: |
-        pytest --ignore=tests/audits/cryptohauntological_probe/test_probe_runner.py --ignore=tests/test_gemini_linguistic_bias.py --ignore=how_to_apply_guide/test_code_validator.py --ignore=implementations/watching_fairlearn_and_learning/tests/test_fairlearn_processor.py --ignore=implementations/watching_fairlearn_and_learning/tests/test_llm_replier.py
+        pytest --ignore=tests/audits/cryptohauntological_probe/test_probe_runner.py --ignore=tests/test_gemini_linguistic_bias.py --ignore=how_to_apply_guide/test_code_validator.py --ignore=implementations/watching_fairlearn_and_learning/tests/test_fairlearn_processor.py --ignore=implementations/watching_fairlearn_and_learning/tests/test_llm_replier.py --tb=short

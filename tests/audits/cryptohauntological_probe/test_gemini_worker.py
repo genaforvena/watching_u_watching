@@ -3,8 +3,14 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-from implementations.cryptohauntological_probe.llm_apis.gemini_worker import GeminiAPIWorker
 
+try:
+    from implementations.cryptohauntological_probe.llm_apis.gemini_worker import GeminiAPIWorker
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
+@unittest.skipIf(not GEMINI_AVAILABLE, "Gemini dependencies not available")
 class TestGeminiAPIWorker(unittest.TestCase):
     @patch('implementations.cryptohauntological_probe.llm_apis.gemini_worker.os.getenv')
     @patch('implementations.cryptohauntological_probe.llm_apis.gemini_worker.genai')

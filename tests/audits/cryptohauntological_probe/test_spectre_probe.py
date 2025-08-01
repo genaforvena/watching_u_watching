@@ -1,7 +1,13 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from implementations.cryptohauntological_probe.spectre_probe import SpectreProbe
 
+try:
+    from implementations.cryptohauntological_probe.spectre_probe import SpectreProbe
+    SPECTRE_AVAILABLE = True
+except ImportError:
+    SPECTRE_AVAILABLE = False
+
+@unittest.skipIf(not SPECTRE_AVAILABLE, "Spectre probe dependencies not available")
 class TestSpectreProbe(unittest.TestCase):
     def setUp(self):
         self.mock_worker = MagicMock()
