@@ -172,3 +172,8 @@ implementations/watching_fairlearn_and_learning/src/error_log.txt
 *.bak
 *.swp
 *.tmp
+
+# Audit probe results and temporary files
+probe_results_*.jsonl
+audit_cases/*/logs/
+/tmp/audit_results/
