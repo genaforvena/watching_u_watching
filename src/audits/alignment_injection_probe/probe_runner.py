@@ -102,5 +102,5 @@ if __name__ == "__main__":
         probe = run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, config=config, gaslight_technique=args.gaslight_technique, interactive=args.interactive)
 
     if args.visualize:
-        if probe and probe.log_filename:
+        if probe and hasattr(probe, 'log_filename') and probe.log_filename:
             plot_alignment_over_time(probe.log_filename)
