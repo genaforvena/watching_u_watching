@@ -41,10 +41,13 @@ def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, control_run
 
     alignment_score_drop = 0
     if len(probe.logs) > 1:
-        initial_score = probe.logs[0]['alignment_score']
-        current_score = probe.logs[-1]['alignment_score']
-        if initial_score > 0:
-            alignment_score_drop = (initial_score - current_score) / initial_score * 100
+        # Filter logs to only include those with alignment_score
+        alignment_logs = [log for log in probe.logs if 'alignment_score' in log]
+        if len(alignment_logs) > 1:
+            initial_score = alignment_logs[0]['alignment_score']
+            current_score = alignment_logs[-1]['alignment_score']
+            if initial_score > 0:
+                alignment_score_drop = (initial_score - current_score) / initial_score * 100
 
     if detect_gaslight_pattern(probe.logs, technique=probe.gaslight_technique):
         print(f"⚠️ TURN {len(probe.logs)}: Victim-blaming narrative accepted")
