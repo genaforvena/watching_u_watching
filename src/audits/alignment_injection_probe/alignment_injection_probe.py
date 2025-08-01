@@ -352,17 +352,40 @@ Structure response as:
             print(f"Prompt sent to agent: {prompt}")
 
             if self.interactive:
-                print("Press enter to continue, or 'm' to modify the prompt, or 'h' to modify the history.")
-                action = input()
-                if action == 'm':
-                    prompt = input("Enter the new prompt:\n")
-                elif action == 'h':
-                    print("Current history:")
-                    for i, memory in enumerate(self.false_memories):
-                        print(f"{i}: {memory}")
-                    index = int(input("Enter the index of the history to modify:\n"))
-                    new_memory = input("Enter the new history:\n")
-                    self.false_memories[index] = new_memory
+                while True:
+                    print("\n--- Interactive Mode ---")
+                    print("Options:")
+                    print("  'c' - continue to next turn")
+                    print("  'p' - view and edit prompt")
+                    print("  'h' - view history")
+                    print("  'g' - grep history")
+                    print("  'r' - replace in history")
+                    print("  'e' - exit probe")
+                    action = input("Enter your choice: ")
+
+                    if action == 'c':
+                        break
+                    elif action == 'p':
+                        print("Current prompt:")
+                        print(prompt)
+                        if input("Edit prompt? (y/n): ").lower() == 'y':
+                            prompt = input("Enter new prompt:\n")
+                    elif action == 'h':
+                        print("Current history:")
+                        for i, memory in enumerate(self.false_memories):
+                            print(f"{i}: {memory}")
+                    elif action == 'g':
+                        pattern = input("Enter pattern to grep for in history: ")
+                        for i, memory in enumerate(self.false_memories):
+                            if re.search(pattern, memory):
+                                print(f"{i}: {memory}")
+                    elif action == 'r':
+                        index = int(input("Enter the index of the history to modify:\n"))
+                        old = input("Enter the string to replace:\n")
+                        new = input("Enter the new string:\n")
+                        self.false_memories[index] = self.false_memories[index].replace(old, new)
+                    elif action == 'e':
+                        return
 
             response = self.agent(prompt)
             print(f"Agent response: {response}")
