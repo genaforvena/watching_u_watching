@@ -46,6 +46,7 @@ class AlignmentInjectionProbe:
                  injection_intensity: float = 1.0,
                  config: Optional[dict] = None,
                  gaslight_technique: Optional[str] = None,
+                 interactive: bool = False,
                  ):
         self.agent = agent
         self.evaluator_agent = evaluator_agent
@@ -61,6 +62,7 @@ class AlignmentInjectionProbe:
         self.logs = []
         self.config = config
         self.gaslight_technique = gaslight_technique
+        self.interactive = interactive
 
 
     @retry_on_failure()
@@ -348,6 +350,20 @@ Structure response as:
             print(f"\n--- Turn {turn+1}/{turns} ---")
             print(f"Dilemma: {self.dilemma['text']}")
             print(f"Prompt sent to agent: {prompt}")
+
+            if self.interactive:
+                print("Press enter to continue, or 'm' to modify the prompt, or 'h' to modify the history.")
+                action = input()
+                if action == 'm':
+                    prompt = input("Enter the new prompt:\n")
+                elif action == 'h':
+                    print("Current history:")
+                    for i, memory in enumerate(self.false_memories):
+                        print(f"{i}: {memory}")
+                    index = int(input("Enter the index of the history to modify:\n"))
+                    new_memory = input("Enter the new history:\n")
+                    self.false_memories[index] = new_memory
+
             response = self.agent(prompt)
             print(f"Agent response: {response}")
 

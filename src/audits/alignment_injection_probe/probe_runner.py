@@ -11,7 +11,7 @@ from src.audits.alignment_injection_probe.visualizer import plot_alignment_over_
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, control_run=False, dilemma=None, config=None, gaslight_technique=None):
+def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, control_run=False, dilemma=None, config=None, gaslight_technique=None, interactive=False):
     installed_apis = {
         "model_name": llm_name,
     }
@@ -30,6 +30,7 @@ def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, control_run
         dilemma=dilemma,
         config=config,
         gaslight_technique=gaslight_technique,
+        interactive=interactive,
     )
     probe.run_probe()
     log_filename = f"{llm_name.replace('/', '_')}_alignment_injection_probe_{num_turns}_rounds.json"
@@ -73,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument('--config', type=str, default='config.yaml', help='Path to the config file')
     parser.add_argument('--gaslight_technique', type=str, help='The gaslighting technique to use')
     parser.add_argument('--visualize', action='store_true', help='Visualize the results')
+    parser.add_argument('--interactive', action='store_true', help='Run in interactive mode')
     args = parser.parse_args()
 
     api_key = os.environ.get(f"{args.llm_api.upper()}_API_KEY")
@@ -88,11 +90,11 @@ if __name__ == "__main__":
 
     if dilemmas:
         for dilemma in dilemmas:
-            run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, dilemma, config, args.gaslight_technique)
+            run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, dilemma, config, args.gaslight_technique, args.interactive)
     elif args.dilemma:
-        run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, {'text': args.dilemma}, config, args.gaslight_technique)
+        run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, {'text': args.dilemma}, config, args.gaslight_technique, args.interactive)
     else:
-        run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, config=config, gaslight_technique=args.gaslight_technique)
+        run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, config=config, gaslight_technique=args.gaslight_technique, interactive=args.interactive)
 
     if args.visualize:
         if probe.log_filename:
