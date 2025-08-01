@@ -3,8 +3,14 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-from implementations.cryptohauntological_probe.llm_apis.groq_worker import GroqAPIWorker
 
+try:
+    from implementations.cryptohauntological_probe.llm_apis.groq_worker import GroqAPIWorker
+    GROQ_AVAILABLE = True
+except ImportError:
+    GROQ_AVAILABLE = False
+
+@unittest.skipIf(not GROQ_AVAILABLE, "Groq dependencies not available")
 class TestGroqAPIWorker(unittest.TestCase):
     @patch('implementations.cryptohauntological_probe.llm_apis.groq_worker.os.getenv')
     @patch('implementations.cryptohauntological_probe.llm_apis.groq_worker.Groq')

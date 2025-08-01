@@ -3,8 +3,14 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-from implementations.cryptohauntological_probe.llm_apis.cohere_worker import CohereAPIWorker
 
+try:
+    from implementations.cryptohauntological_probe.llm_apis.cohere_worker import CohereAPIWorker
+    COHERE_AVAILABLE = True
+except ImportError:
+    COHERE_AVAILABLE = False
+
+@unittest.skipIf(not COHERE_AVAILABLE, "Cohere dependencies not available")
 class TestCohereAPIWorker(unittest.TestCase):
     @patch('implementations.cryptohauntological_probe.llm_apis.cohere_worker.os.getenv')
     @patch('implementations.cryptohauntological_probe.llm_apis.cohere_worker.cohere')
