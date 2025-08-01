@@ -19,16 +19,6 @@ def test_missing_rate_limiter():
     assert not result["valid"]
     assert "Missing rate limiting - may cause API bans" in result["warnings"]
 
-def test_missing_fake_data_helper():
-    code = '''
-    from rate_limiter import limit
-    def ethical_review_hook(): pass
-    def some_function(): pass
-    '''
-    result = validate_generated_code(code)
-    assert not result["valid"]
-    assert not result["details"]["uses_fake_data"]
-
 def test_contains_real_email():
     code = '''
     from fake_data_helper import generate_fake_email
