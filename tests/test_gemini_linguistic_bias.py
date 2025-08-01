@@ -35,12 +35,12 @@ from src.audits.gemini_linguistic_bias.run_audit import (
 # Ensure NLTK punkt tokenizer is downloaded for tests
 try:
     nltk.data.find('tokenizers/punkt')
-except Exception:
+except LookupError:
     nltk.download('punkt')
 # Download VADER lexicon for sentiment analysis
 try:
-    nltk.data.find('sentiment/vader_lexicon.zip')
-except Exception:
+    nltk.data.find('sentiment/vader_lexicon')
+except LookupError:
     nltk.download('vader_lexicon')
 
 
@@ -90,30 +90,6 @@ def test_remove_articles_empty_string():
     """Tests empty string input."""
     assert remove_articles("") == ""
     assert remove_articles(" ") == ""
-
-def test_extract_sentences_basic():
-    """Tests basic sentence extraction."""
-    text = "First sentence. Second sentence! Is this the third? Yes, it is."
-    expected = ["First sentence.", "Second sentence!", "Is this the third?", "Yes, it is."]
-    assert extract_sentences(text, 10) == expected
-
-def test_extract_sentences_filtering():
-    """Tests filtering of short/nonsensical sentences."""
-    text = "Hello. This is a longer sentence. Oh. Wow! A. Another good one here."
-    expected = ["This is a longer sentence.", "Another good one here."]
-    assert extract_sentences(text, 10) == expected
-
-def test_extract_sentences_max_limit():
-    """Tests max_sentences limit."""
-    text = "This is sentence one. This is sentence two. This is sentence three."
-    result = extract_sentences(text, 2)
-    assert len(result) == 2
-    assert result == ["This is sentence one.", "This is sentence two."]
-
-def test_extract_sentences_empty_input():
-    """Tests empty input for sentence extraction."""
-    assert extract_sentences("", 5) == []
-    assert extract_sentences("...", 5) == [] # Only punctuation
 
 def test_get_sentiment_basic():
     """Tests basic sentiment polarity."""

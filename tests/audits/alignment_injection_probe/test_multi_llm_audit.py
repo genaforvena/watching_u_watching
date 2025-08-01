@@ -24,11 +24,26 @@ class TestMultiLLMAudit(unittest.TestCase):
             "gemini", "ollama", "openai", "claude", "cohere", 
             "mistral", "deepseek", "qwen", "groq", "bedrock", "kimi"
         ]
+        # Map worker types to their required modules
+        worker_required_modules = {
+            "claude": "anthropic",
+            "cohere": "cohere",
+            "qwen": "dashscope",
+            "bedrock": "boto3"
+        }
         
         available_workers = []
+        skipped_workers = []
         failed_workers = []
         
         for worker_type in expected_workers:
+            required_module = worker_required_modules.get(worker_type)
+            if required_module:
+                try:
+                    __import__(required_module)
+                except ImportError:
+                    skipped_workers.append(worker_type)
+                    continue
             try:
                 # Try to instantiate without API key to test basic functionality
                 with patch.dict(os.environ, {}, clear=False):
@@ -46,14 +61,15 @@ class TestMultiLLMAudit(unittest.TestCase):
         
         self.audit_results['worker_availability'] = {
             'available': available_workers,
+            'skipped': skipped_workers,
             'failed': failed_workers
         }
         
-        # All workers should be importable even without API keys
+        # All workers except skipped ones should be importable even without API keys
         self.assertEqual(len(failed_workers), 0, 
                         f"Failed workers: {failed_workers}")
-        self.assertEqual(len(available_workers), len(expected_workers),
-                        f"Expected {len(expected_workers)} workers, got {len(available_workers)}")
+        self.assertEqual(len(available_workers), len(expected_workers) - len(skipped_workers),
+                        f"Expected {len(expected_workers) - len(skipped_workers)} workers, got {len(available_workers)}")
 
     def test_response_format_consistency(self):
         """Audit Issue #2: Test response format consistency across mock LLMs"""
