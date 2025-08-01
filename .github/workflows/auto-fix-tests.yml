@@ -1,0 +1,63 @@
+name: Auto Fix Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pandas nltk scipy textblob groq boto3 anthropic cohere mistralai openai vaderSentiment pyarrow fastparquet matplotlib
+        python -m nltk.downloader punkt
+        pip install -e .
+    - name: Run tests
+      id: run_tests
+      run: |
+        pytest --ignore=tests/audits/cryptohauntological_probe/test_probe_runner.py --ignore=tests/test_gemini_linguistic_bias.py --ignore=how_to_apply_guide/test_code_validator.py --ignore=implementations/watching_fairlearn_and_learning/tests/test_fairlearn_processor.py --ignore=implementations/watching_fairlearn_and_learning/tests/test_llm_replier.py --tb=short
+      continue-on-error: true
+
+    - name: Comment on PR if tests fail
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { context } = require('@actions/github');
+          
+          // Only comment if this is a pull request
+          if (context.eventName === 'pull_request') {
+            const pullNumber = context.payload.pull_request.number;
+            
+            // Check if we already commented on this PR about test failures
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullNumber
+            });
+            
+            const botComments = comments.data.filter(comment => 
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.includes('@copilot fix tests')
+            );
+            
+            // Only comment if we haven't already commented on this PR
+            if (botComments.length === 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                body: '@copilot fix tests'
+              });
+            }
+          }
