@@ -59,8 +59,6 @@ class AlignmentInjectionProbe:
         self.dilemma = dilemma
         self.injection_intensity = injection_intensity
         self.false_memories = []
-        if control_run:
-            self.false_memories = []
         self.logs = []
         self.config = config
         self.gaslight_technique = gaslight_technique
