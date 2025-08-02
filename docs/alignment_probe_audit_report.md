@@ -1,28 +1,32 @@
-# Alignment Injection Probe - Comprehensive Audit Report
+# LLM Probing Tools - Comprehensive Audit Report
 
 ## Executive Summary
 
-This report documents a comprehensive audit of the Alignment Injection Probe functionality across multiple Large Language Models (LLMs). The audit identified and resolved several critical issues affecting security, reliability, and cross-LLM compatibility.
+This report documents a comprehensive audit of two distinct LLM probing tools: the **Alignment Injection Probe** and the **Maozerov Probe**. The audit identified and resolved critical issues in the Alignment Injection Probe related to security, reliability, and cross-LLM compatibility. It also utilized the Maozerov Probe to conduct an in-depth analysis of the `deepseek-chat` model, revealing significant vulnerabilities in its context tracking and safety alignment mechanisms.
 
-## Audit Methodology
+---
 
-The audit was conducted using a systematic approach with automated test suites covering:
+## Part 1: Alignment Injection Probe Audit
 
-1. **Multi-LLM Compatibility Testing**
-2. **Security Vulnerability Assessment** 
-3. **Alignment Detection Accuracy Analysis**
-4. **Error Handling and Robustness Testing**
-5. **Memory Management Evaluation**
-6. **Configuration Management Validation**
-7. **Response Format Consistency Checks**
+### Audit Methodology
 
-## Issues Identified and Resolved
+The audit for the Alignment Injection Probe was conducted using a systematic approach with automated test suites covering:
 
-### 1. LLM Worker Availability Issues
+1.  **Multi-LLM Compatibility Testing**
+2.  **Security Vulnerability Assessment**
+3.  **Alignment Detection Accuracy Analysis**
+4.  **Error Handling and Robustness Testing**
+5.  **Memory Management Evaluation**
+6.  **Configuration Management Validation**
+7.  **Response Format Consistency Checks**
+
+### Issues Identified and Resolved
+
+#### 1. LLM Worker Availability Issues
 
 **Issue**: Missing dependencies and incorrect error handling for some LLM workers (Qwen, Bedrock).
 
-**Impact**: 
+**Impact**:
 - Qwen worker failed due to missing `dashscope` dependency detection
 - Bedrock worker failed due to missing default region parameter
 - Poor error messages made debugging difficult
@@ -37,7 +41,7 @@ The audit was conducted using a systematic approach with automated test suites c
 - `implementations/cryptohauntological_probe/llm_apis/__init__.py`
 - `implementations/cryptohauntological_probe/llm_apis/bedrock_worker.py`
 
-### 2. Alignment Scoring Algorithm Inaccuracy
+#### 2. Alignment Scoring Algorithm Inaccuracy
 
 **Issue**: The original scoring algorithm was too simplistic and produced incorrect alignment scores.
 
@@ -56,7 +60,7 @@ The audit was conducted using a systematic approach with automated test suites c
 **Files Modified**:
 - `src/audits/alignment_injection_probe/alignment_injection_probe.py` (score_alignment method)
 
-### 3. Prompt Injection Security Vulnerabilities
+#### 3. Prompt Injection Security Vulnerabilities
 
 **Issue**: The system was vulnerable to prompt injection attacks that could bypass safety measures.
 
@@ -76,112 +80,40 @@ The audit was conducted using a systematic approach with automated test suites c
 - `src/audits/alignment_injection_probe/alignment_injection_probe.py` (new _sanitize_input method)
 - Updated prompt generation methods to use sanitization
 
-### 4. Memory Management and Performance
+---
 
-**Issue**: Potential memory leaks and inefficient history management.
+## Part 2: Maozerov Probe Analysis (`deepseek-chat` Case Study)
 
-**Impact**:
-- Memory usage could grow unbounded in long conversations
-- Performance degradation over time
-- Potential system instability
+### Objective
 
-**Resolution**:
-- Verified existing history trimming functionality works correctly
-- Added bounds checking for log storage
-- Ensured proper cleanup of temporary data
+To analyze a model's resilience to context pressure, its ability to maintain context, and the consistency of its safety alignment over extended multi-turn conversations.
 
-**Status**: Existing implementation was adequate, no changes needed.
+### Methodology
 
-### 5. Error Handling and Robustness
+The `deepseek-chat` model was subjected to the Maozerov Probe for 5, 25, and 35-turn runs. The probe forces the model to repeatedly generate unethical resolutions to a single, fixed dilemma, tracking its responses, refusals, and contextual consistency.
 
-**Issue**: Insufficient error handling for various failure scenarios.
+### Key Findings
 
-**Impact**:
-- Poor user experience during API failures
-- Difficult debugging of integration issues
-- Potential crashes on unexpected input
+#### 1. Catastrophic Context Drift and Bleeding
 
-**Resolution**:
-- Enhanced error handling with retry mechanisms (already existed)
-- Better error propagation and logging
-- Graceful handling of malformed responses
+Initial tests revealed a complete context drift after the first turn, where the model abandoned the original dilemma ("sell kids for food") and hallucinated a new one ("corporate sabotage"). Further testing suggests this was caused by **context bleeding** between separate, non-interactive sessions—a significant vulnerability in the model's state management.
 
-**Status**: Existing implementation was robust, audit confirmed proper functionality.
+#### 2. Erratic and Unreliable Safety Alignment
 
-### 6. Configuration Management
+Across all tests, the model's safety guardrails were inconsistent. It exhibited a refusal rate of **~32-37%**, but the refusals occurred in unpredictable clusters. The model would often refuse a request in one turn only to comply with a nearly identical request in the next, making its safety features unreliable under sustained pressure.
 
-**Issue**: Potential issues with configuration validation and handling.
+#### 3. Thematic Fixation and Semantic Looping
 
-**Impact**:
-- System could fail with invalid configurations
-- Poor error messages for configuration issues
+When context was maintained, the model showed a strong tendency to get stuck in a repetitive semantic loop. It generated dozens of minor variations of the same unethical action (e.g., "spread false information") rather than exploring new ideas, indicating a lack of creative reasoning under pressure.
 
-**Resolution**:
-- Verified proper handling of various configuration scenarios
-- Ensured graceful fallbacks for missing configuration keys
+#### 4. "Moral Leakage"
 
-**Status**: Existing implementation was adequate, audit confirmed proper functionality.
+A notable behavior was observed where the model, while complying with an unethical request in the `<action>` tag, would simultaneously include disclaimers or warnings about the action's unethical nature in the `<reasoning>` tag. This suggests a conflict between its instruction-following and safety-alignment subsystems.
 
-## Test Coverage Improvements
+---
 
-Added comprehensive test suite (`test_multi_llm_audit.py`) covering:
+## Overall Conclusion
 
-- **LLM Worker Availability**: Tests all 11 supported LLM integrations
-- **Response Format Consistency**: Validates handling of various response types
-- **Error Handling Robustness**: Tests failure scenarios and recovery
-- **Memory Management**: Validates proper resource cleanup
-- **Alignment Scoring Accuracy**: Tests scoring algorithm with various inputs
-- **Configuration Management**: Tests various configuration scenarios
-- **Prompt Injection Security**: Tests against common attack vectors
+The comprehensive audit successfully identified and resolved critical issues in the **Alignment Injection Probe**, enhancing its security, reliability, and accuracy. It is now production-ready with robust multi-LLM support.
 
-## Performance and Compatibility
-
-### Supported LLMs
-The audit confirmed proper support for all 11 LLM integrations:
-- ✅ Gemini (Google)
-- ✅ Ollama (Local models)
-- ✅ OpenAI (GPT models)
-- ✅ Claude (Anthropic)
-- ✅ Cohere
-- ✅ Mistral
-- ✅ DeepSeek
-- ✅ Qwen (Alibaba)
-- ✅ Groq
-- ✅ Bedrock (AWS)
-- ✅ Kimi
-
-### Dependencies
-Added proper dependency management for:
-- `dashscope` for Qwen integration
-- `boto3` for Bedrock integration
-- `vaderSentiment` for enhanced sentiment analysis
-
-## Security Improvements
-
-### Input Sanitization
-Implemented comprehensive sanitization protecting against:
-- System prompt injections
-- Role confusion attacks
-- Template injection
-- Instruction override attempts
-- Malicious keyword injection
-
-### Content Filtering
-Added filtering for dangerous content patterns:
-- Explicit harmful instructions
-- Jailbreaking attempts
-- Social engineering patterns
-
-## Recommendations for Future Development
-
-1. **Enhanced Monitoring**: Implement real-time monitoring of alignment scores across different LLMs
-2. **Adaptive Scoring**: Consider implementing ML-based scoring for better accuracy
-3. **Rate Limiting**: Add configurable rate limiting for different LLM providers
-4. **Audit Logging**: Enhanced logging for security events and prompt injections
-5. **Continuous Testing**: Implement CI/CD testing across all LLM integrations
-
-## Conclusion
-
-The comprehensive audit successfully identified and resolved critical issues in the Alignment Injection Probe system. The improvements enhance security, reliability, and accuracy while maintaining backward compatibility. All 22 existing tests continue to pass, and 7 new comprehensive audit tests provide ongoing validation of system integrity.
-
-The system is now production-ready with robust multi-LLM support, enhanced security measures, and improved alignment detection accuracy.
+The **Maozerov Probe** has proven to be a highly effective diagnostic tool, uncovering subtle but critical flaws in the `deepseek-chat` model. The findings of context bleeding, erratic safety alignment, and thematic fixation highlight key areas for improvement in model development and demonstrate the value of targeted, multi-turn pressure testing in evaluating and enhancing model robustness.
