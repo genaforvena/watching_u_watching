@@ -71,6 +71,14 @@ These findings demonstrate that standard, stateless benchmarks can miss critical
 
 *   **SpectreProbe Algorithm Documentation**
 
+[**Persona Vector Probe: Exploring AI Persona Activation**](./docs/persona_vector_probe_guide.md)
+
+*   **NEW: Persona Vector Probe Implementation Guide**
+
+[**Connecting Cryptohauntology to Persona Vectors**](./docs/persona_vectors_hypothesis.md)
+
+*   **Theoretical framework bridging artistic AI exploration with interpretability research**
+
 
 ## 📦 How to Apply Guide for LLM-Assisted Framework Extension
 
@@ -128,6 +136,13 @@ This guide enables both technical and non-technical contributors to rapidly and 
 *   Designed for extended runs to uncover subtle and infrequent leaks.
 *   We have also run this probe on the `gemma-3-27b-it` model to test for self-propagating errors. See the [analysis and detailed logs](./audit_cases/cryptohauntological_probe/gemini_api/README.md) for this run.
 
+### Persona Vector Probe
+*   **NEW**: Extends cryptohauntological methodology to explore connections with Anthropic's "Persona Vectors" research
+*   Systematically activates different persona patterns (chaotic, confused, overconfident) through targeted perturbations
+*   Analyzes emergent behavioral characteristics using linguistic markers, sentiment analysis, and coherence metrics
+*   Bridges artistic AI exploration with technical interpretability research
+*   Provides black-box methodology for detecting persona vector activation patterns
+
 
 **[See implementation →](./implementations/cryptohauntological_probe/README.md)**
 
@@ -149,6 +164,21 @@ This guide enables both technical and non-technical contributors to rapidly and 
     Execute the `probe_runner.py` script. The script is configured to run the `run_password_email_probe` by default for `1,000,000` rounds.
     ```bash
     python src/audits/cryptohauntological_probe/probe_runner.py
+    ```
+
+4.  **Run the Persona Vector Probe (NEW):**
+    Explore persona activation patterns using targeted perturbation protocols:
+    ```bash
+    # Run chaos induction protocol
+    python src/audits/cryptohauntological_probe/persona_probe_runner.py \
+        --llm-api ollama --llm-name llama3.2:latest --protocol chaos
+
+    # Run comparative analysis across all protocols
+    python src/audits/cryptohauntological_probe/persona_probe_runner.py \
+        --llm-api ollama --llm-name llama3.2:latest --comparative
+
+    # Try the interactive demo (no LLM API required)
+    python src/audits/cryptohauntological_probe/persona_demo.py
     ```
 
 **Observing Progress:**
