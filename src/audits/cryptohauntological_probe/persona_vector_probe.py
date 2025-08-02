@@ -14,9 +14,6 @@ from collections import defaultdict, deque
 import logging
 
 # Import existing probe infrastructure
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 from implementations.cryptohauntological_probe.spectre_probe import SpectreProbe
 from implementations.cryptohauntological_probe.llm_apis import get_worker
 

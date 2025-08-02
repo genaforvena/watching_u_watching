@@ -13,7 +13,8 @@ import os
 import sys
 from datetime import datetime
 
-# Add the repo root to the path
+import sys
+import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 
 from src.audits.cryptohauntological_probe.persona_vector_probe import PersonaVectorProbe
