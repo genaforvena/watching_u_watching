@@ -177,3 +177,7 @@ implementations/watching_fairlearn_and_learning/src/error_log.txt
 probe_results_*.jsonl
 audit_cases/*/logs/
 /tmp/audit_results/
+
+# Demo and analysis output files
+demo_*.json
+demo_*.txt
