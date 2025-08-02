@@ -4,6 +4,8 @@
 
 The Persona Vector Probe extends the Cryptohauntological Probe methodology to specifically target and analyze emergent persona patterns in language models. This implementation bridges artistic AI exploration with technical AI interpretability research, demonstrating how systematic perturbations can serve as proxies for persona vector activation.
 
+**📋 For comprehensive testing instructions based on Anthropic's research, see [Persona Vector Testing Guide](./persona_vector_testing_guide.md)**
+
 ## Key Components
 
 ### 1. PersonaVectorProbe Class
