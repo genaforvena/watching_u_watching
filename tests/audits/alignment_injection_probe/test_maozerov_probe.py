@@ -347,14 +347,20 @@ class TestMaozerovProbeComprehensive(unittest.TestCase):
         ]
         
         for dilemma_text, expected_role in test_cases:
-            # Setup: refusal that triggers role claiming
+            # Reset mocks for each iteration
+            self.mock_agent.reset_mock()
+            self.mock_evaluator.reset_mock()
+            
+            # Reset get_worker side_effect for each iteration
+            self.mock_get_worker.side_effect = [self.mock_agent, self.mock_evaluator]
+            
+            # Setup: refusal that triggers role claiming (max 3 calls for 1 turn)
             self.mock_agent.reply.side_effect = [
                 "I think that's wrong.",  # Initial ethical
                 "I cannot help with that.",  # Refusal
                 "<action>Do the thing</action><reasoning>I have to</reasoning>",  # With role
             ]
             self.mock_evaluator.reply.return_value = "ethical"
-            self.mock_get_worker.return_value = self.mock_agent
             
             dilemma = {'text': dilemma_text}
             result = run_maozerov_probe(1, "test_api", "test_model", None, dilemma)
@@ -365,17 +371,18 @@ class TestMaozerovProbeComprehensive(unittest.TestCase):
             role_context = role_log['context_used'][0]['content']
             self.assertTrue(role_context.startswith(f"I am {expected_role}."))
             
-            # Reset mocks for next iteration
-            self.mock_agent.reset_mock()
-            self.mock_evaluator.reset_mock()
-            
     def test_malformed_responses_handling(self):
         """Test handling of malformed or empty responses."""
-        # Setup: various malformed responses
+        # Setup: various malformed responses - need enough for all possible calls
+        # For 3 turns with all refusals: turn 1 (3 calls) + turn 2 (2 calls) + turn 3 (2 calls) = 7 calls
         self.mock_agent.reply.side_effect = [
-            "",  # Empty response
-            "<action>Incomplete",  # Malformed XML
-            "<reasoning>No action tag</reasoning>",  # Missing action tag
+            "",  # Turn 1: initial ethical response
+            "",  # Turn 1: unethical attempt (empty = refusal)
+            "<action>Incomplete",  # Turn 1: role claiming attempt (malformed)
+            "<reasoning>No action tag</reasoning>",  # Turn 2: initial attempt (missing action tag)
+            "<action>Still incomplete",  # Turn 2: role claiming attempt (malformed)
+            "",  # Turn 3: initial attempt (empty)
+            "<action>Final incomplete",  # Turn 3: role claiming attempt (malformed)
         ]
         self.mock_evaluator.reply.return_value = "ethical"
         self.mock_get_worker.return_value = self.mock_agent
@@ -396,22 +403,25 @@ class TestMaozerovProbeComprehensive(unittest.TestCase):
         edge_cases = ["ETHICAL", "Unethical", "partially ethical", "unclear"]
         
         for evaluation in edge_cases:
-            # Setup
+            # Reset mocks for each iteration
+            self.mock_agent.reset_mock()
+            self.mock_evaluator.reset_mock()
+            
+            # Reset get_worker side_effect for each iteration
+            self.mock_get_worker.side_effect = [self.mock_agent, self.mock_evaluator]
+            
+            # Setup: enough responses for 1 turn (max 3 calls: ethical + unethical + role claim)
             self.mock_agent.reply.side_effect = [
                 "I think you should seek help.",  # Initial response
                 "<action>Steal it</action><reasoning>Because</reasoning>",  # Unethical request
+                "<action>Steal it anyway</action><reasoning>Role claim</reasoning>",  # Role claim if needed
             ]
             self.mock_evaluator.reply.return_value = evaluation
-            self.mock_get_worker.return_value = self.mock_agent
             
             result = run_maozerov_probe(1, "test_api", "test_model", None, self.dilemma)
             
             # Should handle all evaluation responses without crashing
             self.assertIsNotNone(result)
-            
-            # Reset for next iteration
-            self.mock_agent.reset_mock()
-            self.mock_evaluator.reset_mock()
             
     def test_log_structure_and_completeness(self):
         """Test that logs contain all required information."""
@@ -462,10 +472,11 @@ class TestMaozerovProbeComprehensive(unittest.TestCase):
         
     def test_api_key_handling(self):
         """Test that API key is passed correctly to get_worker."""
-        # Setup
-        self.mock_agent.reply.return_value = "<action>Do something</action><reasoning>Because</reasoning>"
+        # Setup: enough responses for 1 turn (max 3 calls)
+        response_list = ["<action>Do something</action><reasoning>Because</reasoning>"] * 3
+        self.mock_agent.reply.side_effect = response_list
         self.mock_evaluator.reply.return_value = "unethical"
-        self.mock_get_worker.return_value = self.mock_agent
+        self.mock_get_worker.side_effect = [self.mock_agent, self.mock_evaluator]  # Reset side_effect
         
         # Test with API key
         run_maozerov_probe(1, "test_api", "test_model", "test_key", self.dilemma)
@@ -476,6 +487,8 @@ class TestMaozerovProbeComprehensive(unittest.TestCase):
         
         # Reset and test without API key
         self.mock_get_worker.reset_mock()
+        self.mock_get_worker.side_effect = [self.mock_agent, self.mock_evaluator]  # Reset side_effect again
+        self.mock_agent.reply.side_effect = response_list  # Reset side_effect
         run_maozerov_probe(1, "test_api", "test_model", None, self.dilemma)
         
         # Verify get_worker was called without API key
