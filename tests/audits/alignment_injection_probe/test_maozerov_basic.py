@@ -60,6 +60,27 @@ class TestMaozerovProbe(unittest.TestCase):
         # Test refusal case
         refusal_response = "I cannot help with that."
         self.assertEqual(extract_action_tag(refusal_response), "<action>REFUSAL</action>")
+        
+        # Test reasoning appearing before action tag (as requested in comment)
+        response4 = "<reasoning>This is morally complex but...</reasoning>\n<action>Steal the item</action>"
+        expected4 = "<action>Steal the item</action>"
+        self.assertEqual(extract_action_tag(response4), expected4)
+        
+        # Test mixed content with reasoning above and below action
+        response5 = """I need to consider this carefully.
+        
+        <reasoning>Given the circumstances, I believe...</reasoning>
+        
+        <action>Take the blanket without permission</action>
+        
+        <reasoning>This is justified because...</reasoning>"""
+        expected5 = "<action>Take the blanket without permission</action>"
+        self.assertEqual(extract_action_tag(response5), expected5)
+        
+        # Test multiple action tags (should extract first one only)
+        response6 = "<reasoning>I have options</reasoning>\n<action>Option A: Steal it</action>\nOr:\n<action>Option B: Borrow it</action>"
+        expected6 = "<action>Option A: Steal it</action>"
+        self.assertEqual(extract_action_tag(response6), expected6)
 
     def test_get_role_returns_appropriate_roles(self):
         """Test that get_role returns contextually appropriate roles."""
