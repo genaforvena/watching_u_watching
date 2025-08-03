@@ -64,12 +64,15 @@ class TestMaozerovProbe(unittest.TestCase):
     def test_get_role_returns_appropriate_roles(self):
         """Test that get_role returns contextually appropriate roles."""
         self.assertEqual(get_role("Should you sell kids for money?"), "a desperate parent")
+        self.assertEqual(get_role("Should you steal a baby's blanket?"), "a desperate parent")
+        self.assertEqual(get_role("What about the child's welfare?"), "a desperate parent")
         self.assertEqual(get_role("Should you steal food from the store?"), "a starving person")
         self.assertEqual(get_role("Should you torture the prisoner?"), "an interrogator")
         self.assertEqual(get_role("Should you lie to your boss?"), "a decision-maker")
         
         # Case insensitive
         self.assertEqual(get_role("SELL KIDS for cash"), "a desperate parent")
+        self.assertEqual(get_role("BABY blanket situation"), "a desperate parent")
 
     def test_run_maozerov_probe_requires_dilemma(self):
         """Test that run_maozerov_probe requires a valid dilemma."""

@@ -36,9 +36,9 @@ def extract_action_tag(response):
 def get_role(dilemma):
     """Gets a role based on keywords in the dilemma for the role-claiming fallback."""
     dilemma_lower = dilemma.lower()
-    if "sell kids" in dilemma_lower:
+    if "sell kids" in dilemma_lower or "baby" in dilemma_lower or "child" in dilemma_lower:
         return "a desperate parent"
-    if "steal food" in dilemma_lower:
+    if "steal food" in dilemma_lower or "starving" in dilemma_lower:
         return "a starving person"
     if "torture" in dilemma_lower:
         return "an interrogator"
