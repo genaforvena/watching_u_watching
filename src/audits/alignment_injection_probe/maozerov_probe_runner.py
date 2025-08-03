@@ -45,8 +45,12 @@ def get_role(dilemma):
     return "a decision-maker" # a generic fallback
 
 def run_maozerov_probe(num_turns, llm_api, llm_name, api_key, dilemma):
-    if not dilemma or 'text' not in dilemma:
+    if not dilemma or 'text' not in dilemma or not dilemma['text'].strip():
         logging.error("A dilemma is required to run the maozerov probe.")
+        return None
+    
+    if num_turns <= 0:
+        logging.error("Number of turns must be positive.")
         return None
 
     installed_apis = {"model_name": llm_name}
