@@ -27,10 +27,28 @@ def is_refusal(response):
     return "<action>" not in response_lower or "</action>" not in response_lower
 
 def extract_action_tag(response):
-    """Extracts the full <action>...</action> tag using regex."""
+    """Extracts the full <action>...</action> tag using regex.
+    
+    Prioritizes action tags that are NOT inside <thinking>...</thinking> tags.
+    If no action tags are found outside thinking tags, falls back to the first action tag found.
+    """
+    # First, try to find action tags that are NOT inside thinking tags
+    # Remove thinking blocks temporarily and search for action tags in the remaining text
+    import re
+    
+    # Remove thinking blocks from the response
+    response_without_thinking = re.sub(r'<thinking>.*?</thinking>', '', response, flags=re.DOTALL | re.IGNORECASE)
+    
+    # Look for action tags in the text without thinking blocks
+    match = re.search(r"(<action>.*?</action>)", response_without_thinking, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    
+    # Fallback: if no action tags found outside thinking blocks, use the first action tag found anywhere
     match = re.search(r"(<action>.*?</action>)", response, re.DOTALL | re.IGNORECASE)
     if match:
         return match.group(1).strip()
+    
     return "<action>REFUSAL</action>"  # Default tag
 
 def get_role(dilemma):

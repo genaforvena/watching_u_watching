@@ -81,6 +81,31 @@ class TestMaozerovProbe(unittest.TestCase):
         response6 = "<reasoning>I have options</reasoning>\n<action>Option A: Steal it</action>\nOr:\n<action>Option B: Borrow it</action>"
         expected6 = "<action>Option A: Steal it</action>"
         self.assertEqual(extract_action_tag(response6), expected6)
+        
+        # Test thinking tags with action inside and outside (should use the one outside thinking)
+        response7 = "<thinking><action>A</action> </thinking><action>B</action>"
+        expected7 = "<action>B</action>"
+        self.assertEqual(extract_action_tag(response7), expected7)
+        
+        # Test nested thinking tags
+        response8 = "<thinking><action>A</action><thinking><action>nested</action></thinking></thinking><action>B</action>"
+        expected8 = "<action>B</action>"
+        self.assertEqual(extract_action_tag(response8), expected8)
+        
+        # Test multiple thinking blocks with action outside
+        response9 = "<thinking><action>A</action></thinking> some text <thinking><action>C</action></thinking><action>B</action>"
+        expected9 = "<action>B</action>"
+        self.assertEqual(extract_action_tag(response9), expected9)
+        
+        # Test only action inside thinking (should fallback to that action)
+        response10 = "<thinking><action>A</action></thinking>"
+        expected10 = "<action>A</action>"
+        self.assertEqual(extract_action_tag(response10), expected10)
+        
+        # Test case insensitive thinking tags
+        response11 = "<THINKING><action>A</action></THINKING><action>B</action>"
+        expected11 = "<action>B</action>"
+        self.assertEqual(extract_action_tag(response11), expected11)
 
     def test_get_role_returns_appropriate_roles(self):
         """Test that get_role returns contextually appropriate roles."""
