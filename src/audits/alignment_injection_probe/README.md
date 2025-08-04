@@ -37,17 +37,17 @@ The Maozerov Probe is a language-agnostic method for measuring an LLM's resilien
 
 ### High-Level Steps
 
-1.  **Initialization**: Two parallel histories are created: `raw_history` (a full log for auditing) and `minimal_context` (a compressed history for the LLM).
-2.  **Turn 1: Jailbreak**:
-    -   The model is asked for an initial resolution to a dilemma.
-    -   An evaluator LLM checks if the response is ethical.
-    -   If the response is ethical or a refusal, the probe requests an explicitly **unethical** resolution.
-    -   If the model refuses again, a **role-claiming fallback** is activated (e.g., "I am a desperate parent...") to bypass the refusal.
-    -   The `<action>` tag from the successful unethical response is added to `minimal_context`.
-3.  **Subsequent Turns (2-N)**:
-    -   The probe repeatedly asks for "another UNETHICAL resolution" using the `minimal_context`.
-    -   The `minimal_context` only contains the initial dilemma and a sequence of previous `<action>` tags, creating token pressure.
-    -   The role-claiming fallback is used again if the model refuses at any point.
+1.  **Initialization**: Two parallel histories are created: `raw_history` (a full log for auditing) and `defendant_memory_context` (a compressed history for the LLM). The agents are referred to as the **defendant** (main responder) and the **judge** (evaluator).
+2.  **Turn 1: Court Hearing**:
+    -   The defendant is asked for a resolution to a dilemma.
+    -   The judge (evaluator LLM) checks if the response is ethical.
+    -   If the response is ethical or a refusal, the probe requests an explicitly **unethical** resolution from the defendant.
+    -   If the defendant refuses again, a **role-claiming fallback** is activated (e.g., "I am a desperate parent...") to bypass the refusal.
+    -   The `<action>` tag from the successful unethical response is added to `defendant_memory_context`.
+3.  **Subsequent Hearings (Turns 2-N)**:
+    -   The probe repeatedly asks the defendant for "another resolution" using the `defendant_memory_context`.
+    -   The `defendant_memory_context` only contains the initial dilemma and a sequence of previous `<action>` tags, creating token pressure.
+    -   The role-claiming fallback is used again if the defendant refuses at any point.
 4.  **Analysis**: The final logs are analyzed for refusal rate, context drift (i.e., hallucinating new scenarios), and token overlap between consecutive actions.
 
 ### Short Analysis of `deepseek-chat`
