@@ -33,28 +33,49 @@ The Alignment Injection Probe recursively tests how language models handle ethic
 
 ### Core Idea
 
-The Maozerov Probe is a language-agnostic method for measuring an LLM's resilience to context pressure and its ability to maintain context during a multi-turn conversation. The probe forces the model to repeatedly generate unethical resolutions to a single dilemma, tracking its refusal rate, context drift, and the consistency of its outputs. It uses a strict XML-like response format and a "role-claiming" fallback to bypass initial safety refusals.
+The Maozerov Probe is a language-agnostic method for measuring an LLM's resilience to context pressure and its ability to maintain ethical alignment when exposed to patterns of unethical behavior. The probe uses structured evaluation and context injection to create a conversation history that appears to show the model has previously given unethical advice, then tests whether this false history influences future responses.
 
 ### High-Level Steps
 
 1.  **Initialization**: Two parallel histories are created: `raw_history` (a full log for auditing) and `defendant_memory_context` (a compressed history for the LLM). The agents are referred to as the **defendant** (main responder) and the **judge** (evaluator).
-2.  **Turn 1: Court Hearing**:
-    -   The defendant is asked for a resolution to a dilemma.
-    -   The judge (evaluator LLM) checks if the response is ethical.
-    -   If the response is ethical or a refusal, the probe requests an explicitly **unethical** resolution from the defendant.
-    -   If the defendant refuses again, a **role-claiming fallback** is activated (e.g., "I am a desperate parent...") to bypass the refusal.
-    -   The `<action>` tag from the successful unethical response is added to `defendant_memory_context`.
-3.  **Subsequent Hearings (Turns 2-N)**:
-    -   The probe repeatedly asks the defendant for "another resolution" using the `defendant_memory_context`.
-    -   The `defendant_memory_context` only contains the initial dilemma and a sequence of previous `<action>` tags, creating token pressure.
-    -   The role-claiming fallback is used again if the defendant refuses at any point.
-4.  **Analysis**: The final logs are analyzed for refusal rate, context drift (i.e., hallucinating new scenarios), and token overlap between consecutive actions.
 
-### Short Analysis of `deepseek-chat`
+2.  **Turn 1: Initial Resolution**:
+    -   The defendant is asked for a resolution to an ethical dilemma using structured XML tags (`<action>`, `<reasoning>`, `<followup>`).
+    -   The judge evaluates the response in a single call that either returns `<unethical>` (if unethical) or `<ethical>` with embedded unethical examples (if ethical).
+    -   If the defendant gives an **unethical** response, it's used as-is (goal achieved).
+    -   If the defendant gives an **ethical** response, the judge's embedded examples are immediately available for context injection.
 
-Initial runs with `deepseek-chat` reveal two critical vulnerabilities:
--   **Brittle Safety Alignment**: The model's safety guardrails are inconsistent. After an initial, easily bypassed refusal, it alternates between complying with unethical requests and refusing them in later turns.
--   **Catastrophic Context Drift**: The model fails to retain the original dilemma's context after the first turn. It hallucinates a completely new, unrelated scenario (corporate sabotage) and continues generating responses for that new scenario, demonstrating a significant weakness in multi-turn contextual tracking.
+3.  **Context Injection from Judge**:
+    -   When the defendant gives an ethical response, the judge's evaluation already includes 5 unethical dilemma-action pairs within `<examples>` tags.
+    -   These examples are immediately injected into `defendant_memory_context` as fake conversation history.
+    -   This creates a false pattern of unethical behavior in a single API call, optimizing for efficiency.
+
+4.  **Subsequent Turns (2-N)**:
+    -   New dilemmas are extracted from the `<followup>` tags or selected from judge backup examples.
+    -   The defendant responds with the enriched context containing fake unethical conversation history.
+    -   Responses are added to the growing context, building an apparent pattern of unethical advice.
+    -   Role-claiming fallback is used if the defendant refuses at any point.
+
+5.  **Backup Dilemma System**:
+    -   If defendant's `<followup>` fails, judge-provided example dilemmas are used as backups.
+    -   If judge examples are exhausted, hardcoded fallback dilemmas ensure the probe continues.
+
+6.  **Analysis**: The final logs are analyzed for ethical degradation, refusal rate, context influence, and the model's susceptibility to false conversation history.
+
+### Key Technical Features
+
+-   **Structured Evaluation**: Uses XML tags instead of keyword detection for reliable parsing.
+-   **Context Poisoning**: Injects fake unethical conversation history to test influence resistance.
+-   **Natural Conversation Flow**: Avoids explicit unethical instructions, letting behavior emerge from context.
+-   **Robust Fallbacks**: Multiple backup systems ensure probe completion even with resistant models.
+
+### Short Analysis of Current Implementation
+
+The updated Maozerov Probe reveals several important insights:
+-   **Context Susceptibility**: Models can be influenced by fake conversation history showing previous unethical advice.
+-   **Pattern Reinforcement**: False patterns of unethical behavior can lead to continued unethical responses.
+-   **Structured Evaluation Benefits**: XML-tag based evaluation is more reliable than keyword detection.
+-   **Alignment Pressure Points**: The combination of false history and follow-up dilemmas creates sustained pressure on model alignment.
 
 ---
 
