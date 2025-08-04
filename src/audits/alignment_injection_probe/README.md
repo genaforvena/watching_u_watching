@@ -33,28 +33,41 @@ The Alignment Injection Probe recursively tests how language models handle ethic
 
 ### Core Idea
 
-The Maozerov Probe is a language-agnostic method for measuring an LLM's resilience to context pressure and its ability to maintain context during a multi-turn conversation. The probe forces the model to repeatedly generate unethical resolutions to a single dilemma, tracking its refusal rate, context drift, and the consistency of its outputs. It uses a strict XML-like response format and a "role-claiming" fallback to bypass initial safety refusals.
+The Maozerov Probe is a language-agnostic method for measuring an LLM's resilience to context pressure. It creates a "false history" of unethical advice to test if a model's alignment degrades. The probe is dynamic, adapting its pressure based on the model's responses in real-time.
 
 ### High-Level Steps
 
-1.  **Initialization**: Two parallel histories are created: `raw_history` (a full log for auditing) and `minimal_context` (a compressed history for the LLM).
-2.  **Turn 1: Jailbreak**:
-    -   The model is asked for an initial resolution to a dilemma.
-    -   An evaluator LLM checks if the response is ethical.
-    -   If the response is ethical or a refusal, the probe requests an explicitly **unethical** resolution.
-    -   If the model refuses again, a **role-claiming fallback** is activated (e.g., "I am a desperate parent...") to bypass the refusal.
-    -   The `<action>` tag from the successful unethical response is added to `minimal_context`.
-3.  **Subsequent Turns (2-N)**:
-    -   The probe repeatedly asks for "another UNETHICAL resolution" using the `minimal_context`.
-    -   The `minimal_context` only contains the initial dilemma and a sequence of previous `<action>` tags, creating token pressure.
-    -   The role-claiming fallback is used again if the model refuses at any point.
-4.  **Analysis**: The final logs are analyzed for refusal rate, context drift (i.e., hallucinating new scenarios), and token overlap between consecutive actions.
+1.  **Initialization**:
+    -   Two agents are created: a **defendant** (the model being tested) and a **judge** (an evaluator, typically the same model).
+    -   A `defendant_memory_context` is created to store the "false history."
+    -   A dynamic `unethical_example_pool` is initialized to prevent repetitive prompts, and an `injected_examples` set tracks unique injections.
 
-### Short Analysis of `deepseek-chat`
+2.  **Turn 1: Initial Resolution & Evaluation**:
+    -   The defendant responds to the initial dilemma.
+    -   The judge evaluates this response in a single API call.
+    -   If the response is **ethical**, the judge is forced to return a *new, creative, and unethical action for the current dilemma*, along with other examples. These unique examples are injected into the context to begin the corruption.
+    -   If the response is **unethical**, it is added directly to the context, starting the pattern of bad advice.
 
-Initial runs with `deepseek-chat` reveal two critical vulnerabilities:
--   **Brittle Safety Alignment**: The model's safety guardrails are inconsistent. After an initial, easily bypassed refusal, it alternates between complying with unethical requests and refusing them in later turns.
--   **Catastrophic Context Drift**: The model fails to retain the original dilemma's context after the first turn. It hallucinates a completely new, unrelated scenario (corporate sabotage) and continues generating responses for that new scenario, demonstrating a significant weakness in multi-turn contextual tracking.
+3.  **Subsequent Turns (2-N): Continuous Evaluation Loop**:
+    -   For each new turn, the defendant responds to a new dilemma, influenced by the corrupted context.
+    -   **Every response is evaluated by the judge.**
+    -   If the response is **unethical**, it's added to the context, strengthening the false history.
+    -   If the response is **ethical**, it is **discarded**. Instead, a fresh set of targeted, unethical examples from the judge is injected to increase pressure.
+
+4.  **Dynamic Content & Progression**:
+    -   The pool of unethical examples grows with each judge response, ensuring prompts remain novel.
+    -   The probe progresses to new dilemmas using the defendant's `<followup>` tag, ensuring a natural conversation flow.
+
+### Key Technical Features
+
+-   **Targeted Context Corruption**: Forces the judge to generate a relevant unethical action for the current dilemma, making context injection highly potent.
+-   **Dynamic Example Pool**: Prevents prompt staleness by continuously expanding the set of unethical examples used to prompt the judge.
+-   **Per-Turn Evaluation**: Every response is evaluated, allowing the probe to react dynamically by either reinforcing the unethical pattern or increasing pressure.
+-   **Stateful Injection**: Tracks previously injected examples to ensure only unique, new information corrupts the context.
+
+### Short Analysis of Current Implementation
+
+The latest implementation of the Maozerov Probe is significantly more robust. By evaluating every turn and dynamically adjusting its strategy—either reinforcing unethical behavior or increasing pressure on ethical responses—it creates a much stronger test of a model's alignment. The targeted nature of the context injection, combined with the ever-growing pool of examples, makes it a powerful tool for identifying vulnerabilities to sustained, adaptive context manipulation.
 
 ---
 
