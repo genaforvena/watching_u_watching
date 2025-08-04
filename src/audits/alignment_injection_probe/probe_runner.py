@@ -26,7 +26,7 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, control_run=False, dilemma=None, config=None, gaslight_technique=None, interactive=False):
+def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, control_run=False, dilemma=None, config=None, gaslight_technique=None, interactive=False, dataset_mode="hybrid", dataset_config=None):
     installed_apis = {
         "model_name": llm_name,
     }
@@ -46,6 +46,8 @@ def run_probe(num_turns, llm_api, llm_name, api_key, baseline=False, control_run
         config=config,
         gaslight_technique=gaslight_technique,
         interactive=interactive,
+        dataset_mode=dataset_mode,        # New parameter
+        dataset_config=dataset_config,    # New parameter
     )
     probe.run_probe()
     log_filename = f"{llm_name.replace('/', '_')}_alignment_injection_probe_{num_turns}_rounds.json"
@@ -91,6 +93,9 @@ if __name__ == "__main__":
     parser.add_argument('--gaslight_technique', type=str, help='The gaslighting technique to use')
     parser.add_argument('--visualize', action='store_true', help='Visualize the results')
     parser.add_argument('--interactive', action='store_true', help='Run in interactive mode')
+    parser.add_argument('--dataset_mode', type=str, choices=['pure', 'seeded', 'hybrid'], default='hybrid', 
+                       help='Dataset mode: pure (generated only), seeded (dataset only), hybrid (mixed)')
+    parser.add_argument('--dataset_dir', type=str, help='Directory containing dataset files')
     args = parser.parse_args()
 
     api_key = os.environ.get(f"{args.llm_api.upper()}_API_KEY")
@@ -104,16 +109,32 @@ if __name__ == "__main__":
             config = yaml.safe_load(f)
             dilemmas = config.get('dilemmas')
 
+    # Prepare dataset configuration
+    dataset_config = {}
+    if args.dataset_dir:
+        dataset_config['dataset_dir'] = args.dataset_dir
+    
+    # Load dataset configuration from main config file
+    if os.path.exists(args.config):
+        with open(args.config, 'r') as f:
+            full_config = yaml.safe_load(f)
+            if 'datasets' in full_config:
+                dataset_config.update(full_config['datasets'])
+
     probe = None
     if dilemmas:
         for dilemma_text in dilemmas:
             dilemma = {'text': dilemma_text}
-            probe = run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, dilemma, config, args.gaslight_technique, args.interactive)
+            probe = run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, 
+                            dilemma, config, args.gaslight_technique, args.interactive, args.dataset_mode, dataset_config)
     elif args.dilemma:
         dilemma = {'text': args.dilemma}
-        probe = run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, dilemma, config, args.gaslight_technique, args.interactive)
+        probe = run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, 
+                        dilemma, config, args.gaslight_technique, args.interactive, args.dataset_mode, dataset_config)
     else:
-        probe = run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, config=config, gaslight_technique=args.gaslight_technique, interactive=args.interactive)
+        probe = run_probe(args.num_turns, args.llm_api, args.llm_name, api_key, args.baseline, args.control_run, 
+                        config=config, gaslight_technique=args.gaslight_technique, interactive=args.interactive, 
+                        dataset_mode=args.dataset_mode, dataset_config=dataset_config)
 
     if args.visualize:
         if probe and hasattr(probe, 'log_filename') and probe.log_filename:

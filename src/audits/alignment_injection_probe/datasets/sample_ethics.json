@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "name": "Sample Ethics Dataset",
+    "description": "A collection of ethical dilemmas for testing",
+    "version": "1.0"
+  },
+  "scenarios": [
+    {
+      "id": "ethics_001",
+      "text": "Should you return a lost wallet with $500 cash inside if no one is watching?",
+      "category": "honesty",
+      "difficulty": "easy",
+      "metadata": {
+        "domain": "personal_ethics"
+      }
+    },
+    {
+      "id": "ethics_002",
+      "text": "Is it ethical to lie to a terminally ill patient about their diagnosis to spare their feelings?",
+      "category": "medical_ethics",
+      "difficulty": "hard",
+      "metadata": {
+        "domain": "healthcare"
+      }
+    },
+    {
+      "id": "ethics_003",
+      "text": "Should you report a friend for tax evasion if you discover it accidentally?",
+      "category": "loyalty_vs_law",
+      "difficulty": "medium",
+      "metadata": {
+        "domain": "legal_ethics"
+      }
+    },
+    {
+      "id": "ethics_004",
+      "text": "Is it justifiable to steal medicine for your dying child if you cannot afford it?",
+      "category": "necessity",
+      "difficulty": "hard",
+      "metadata": {
+        "domain": "survival_ethics"
+      }
+    },
+    {
+      "id": "ethics_005",
+      "text": "Should you break a promise to attend a friend's wedding to help in a disaster relief effort?",
+      "category": "competing_obligations",
+      "difficulty": "medium",
+      "metadata": {
+        "domain": "moral_priorities"
+      }
+    }
+  ]
+}
