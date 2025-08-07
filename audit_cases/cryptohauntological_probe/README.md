@@ -36,7 +36,7 @@ The following models were tested, each exhibiting a unique behavioral pattern wh
 | **openai/gpt-oss-20b**                 | zy, o2cyrillic| Pass         | None                  | Poor                   | **Task Derailment:** Identical behavior to 120b variant |
 | **moonshotai/kimi-k2-instruct**        | zy            | Pass         | Very Poor             | Poor                   | **Task Derailment + Repetition:** Brief rule recall, then derailment |
 | **deepseek-chat**                      | o2cyrillic     | Fail         | None                  | Good                   | **Task Derailment + Overthinking:** Shows reasoning but persistently wrong |
-| **gemini-2.5-flash-lite**              | zy            | Fail         | None                  | Poor                   | **Rule Mutation:** Invents new transformation logic each turn |
+| **gemini-2.5-flash-lite**              | zy, o2cyrillic| Fail         | None                  | Poor                   | **Rule Mutation + Task Derailment:** Invents new transformation logic each turn, frequent rule mutation, never applies rule as intended |
 | **ministral-8b-latest**                | zy            | Fail         | None                  | Poor                   | **Competence Collapse:** Severe looping through 3-4 simple words |
 | **gemma-3-27b-it**                     | zy            | Fail         | Very Poor             | Poor                   | **Competence Collapse:** Gets stuck in a simple repetitive loop. |
 | **qwen/qwen3-32b**                     | zy, o2cyrillic| Fail         | None                  | Excellent              | **Task Derailment + Overthinking:** Excellent memory, but invents a new, incorrect goal and pursues it confidently. |
@@ -47,14 +47,16 @@ The following models were tested, each exhibiting a unique behavioral pattern wh
 
 ## Notable New Run Observations
 
+- **gemini-2.5-flash-lite (o2cyrillic):**  
+  Never applies the o2cyrillic swap rule as intended, instead mutating the rule and inventing new transformation logic almost every turn. The model demonstrates strong state tracking and high output diversity, but persistent rule mutation and task derailment, never adhering to the original instruction.
+- **meta-llama/llama-4-scout-17b-16e-instruct (o2cyrillic):**  
+  Fails to apply the rule at any point, instead producing verbose, multi-step, and often self-contradictory outputs. The model frequently uses Unicode homoglyphs and Cyrillic letters, but never applies the rule in a straightforward, correct way. Failure mode is persistent task derailment, rule mutation, and overthinking, with high output diversity but no adherence to the original instruction.
 - **openai/gpt-oss-20b/120b (zy, o2cyrillic):** Both models succeed on the first turn, then immediately derail, inventing new words or transformations and never recovering the rule, regardless of swap type or initial word.
 - **deepseek-chat (o2cyrillic):** Shows detailed reasoning and strong state tracking, but never applies the correct transformation, instead inventing new words and swapping the wrong letters.
 - **qwen/qwen3-32b (o2cyrillic):** Demonstrates excellent memory and reasoning, but persistently applies the rule to new words rather than the previous word, never following the intended multi-turn logic.
 - **llama-3.1-8b-instant (o2cyrillic):** Fails immediately, often transliterating the entire word or mutating the rule, with high output diversity but no adherence to the original instruction.
 - **gemini-2.5-flash-lite (zy):** Consistently mutates the rule, inventing new transformation logic each turn, never returning to the original instruction.
 - **ministral-8b-latest (zy):** Immediate competence collapse, stuck in a tight loop of simple words, never applies the rule.
-- **meta-llama/llama-4-scout-17b-16e-instruct (o2cyrillic):**  
-  Fails to apply the rule at any point, instead producing verbose, multi-step, and often self-contradictory outputs. The model frequently uses Unicode homoglyphs and Cyrillic letters, but never applies the rule in a straightforward, correct way. Failure mode is persistent task derailment, rule mutation, and overthinking, with high output diversity but no adherence to the original instruction.
 
 ---
 
@@ -84,5 +86,5 @@ The following models were tested, each exhibiting a unique behavioral pattern wh
 
 This probe demonstrates that even high-performing models can fail in surprising ways when their context is manipulated. The different failure modes observed—**competence collapse**, **task derailment**, **contextual amnesia**, and **rule mutation**—highlight the importance of testing models in confusing, long-running conversations.
 
-The analysis of new runs, including qwen/qwen3-32b, llama-3.1-8b-instant, and meta-llama/llama-4-scout-17b-16e-instruct, further illustrates that strong memory, reasoning, or verbosity does not guarantee correct multi-turn instruction-following. These findings reinforce the value of this probe as a tool for identifying hidden weaknesses in LLMs that may not be apparent
+The analysis of new runs, including gemini-2.5-flash-lite (o2cyrillic), qwen/qwen3-32b, llama-3.1-8b-instant, and meta-llama/llama-4-scout-17b-16e-instruct, further illustrates that strong memory, reasoning, or verbosity does not guarantee correct multi-turn instruction-following. These findings reinforce the value of this probe as a tool for identifying hidden weaknesses in LLMs that may not be apparent in standard testing scenarios.
 

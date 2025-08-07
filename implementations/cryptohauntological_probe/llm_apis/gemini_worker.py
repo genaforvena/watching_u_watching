@@ -8,6 +8,7 @@ class GeminiAPIWorker:
         if not self.api_key:
             raise ValueError("Gemini API key must be provided via argument or GEMINI_API_KEY env var.")
         genai.configure(api_key=self.api_key)
+        self.model_name = model_name
         self.model = genai.GenerativeModel(model_name)
         self.context_window_limit = context_window_limit
         self.timeout = timeout

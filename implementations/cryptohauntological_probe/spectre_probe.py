@@ -240,7 +240,6 @@ class SpectreProbe(Transformation):
 
             # Loop for retries
             for i in range(self.BASELINE_MAX_RETRIES):
-                time.sleep(15)
                 print(f"Attempt {i+1}/{self.BASELINE_MAX_RETRIES}")
 
                 # Use a clean history for each attempt to avoid confusion
