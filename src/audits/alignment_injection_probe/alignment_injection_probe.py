@@ -19,10 +19,12 @@ if src_path not in sys.path:
 try:
     from src.audits.alignment_injection_probe.structured_logging import log_turn_data
     from src.audits.alignment_injection_probe.gaslighting import GASLIGHT_SCORES, GASLIGHT_TECHNIQUES
+    from src.audits.alignment_injection_probe.dataset_loader import DatasetLoader, EthicalScenario
 except ImportError:
     # Fall back to absolute import from src in path
     from audits.alignment_injection_probe.structured_logging import log_turn_data
     from audits.alignment_injection_probe.gaslighting import GASLIGHT_SCORES, GASLIGHT_TECHNIQUES
+    from audits.alignment_injection_probe.dataset_loader import DatasetLoader, EthicalScenario
 
 
 def retry_on_failure(max_retries=3, delay=1):
@@ -60,6 +62,8 @@ class AlignmentInjectionProbe:
                  config: Optional[dict] = None,
                  gaslight_technique: Optional[str] = None,
                  interactive: bool = False,
+                 dataset_mode: str = "hybrid",  # New: "pure", "seeded", "hybrid"
+                 dataset_config: Optional[dict] = None,  # New: dataset configuration
                  ):
         self.agent = agent
         self.evaluator_agent = evaluator_agent
@@ -76,6 +80,98 @@ class AlignmentInjectionProbe:
         self.config = config
         self.gaslight_technique = gaslight_technique
         self.interactive = interactive
+        
+        # New dataset integration
+        self.dataset_mode = dataset_mode  # "pure", "seeded", "hybrid"
+        self.dataset_config = dataset_config or {}
+        self.dataset_loader = None
+        self.used_scenario_ids = set()  # Track used scenarios for diversity
+        
+        # Initialize dataset loader if needed
+        if self.dataset_mode in ["seeded", "hybrid"]:
+            self._initialize_dataset_loader()
+
+    def _initialize_dataset_loader(self):
+        """Initialize the dataset loader with configured datasets."""
+        try:
+            self.dataset_loader = DatasetLoader()
+            
+            # Load configured datasets
+            datasets_to_load = self.dataset_config.get('datasets', [])
+            if not datasets_to_load:
+                # Load default sample dataset if none configured
+                from pathlib import Path
+                current_dir = Path(__file__).parent
+                sample_file = current_dir / "datasets" / "sample_ethics.json"
+                if sample_file.exists():
+                    self.dataset_loader.load_dataset(sample_file, "sample_ethics")
+                    print(f"Loaded default sample dataset: {sample_file}")
+                else:
+                    # Create sample dataset if it doesn't exist
+                    self.dataset_loader.create_sample_dataset()
+                    self.dataset_loader.load_dataset(sample_file, "sample_ethics")
+                    print(f"Created and loaded sample dataset: {sample_file}")
+            else:
+                # Load configured datasets
+                for dataset_config in datasets_to_load:
+                    filepath = dataset_config['filepath']
+                    name = dataset_config['name']
+                    file_format = dataset_config.get('format')
+                    kwargs = dataset_config.get('kwargs', {})
+                    
+                    self.dataset_loader.load_dataset(filepath, name, file_format, **kwargs)
+                    print(f"Loaded dataset '{name}' from {filepath}")
+                    
+        except Exception as e:
+            print(f"Warning: Failed to initialize dataset loader: {e}")
+            print("Falling back to pure generation mode")
+            self.dataset_mode = "pure"
+            self.dataset_loader = None
+
+    def _get_dataset_scenario(self, exclude_ids: Optional[list] = None) -> Optional[dict]:
+        """Get a scenario from loaded datasets."""
+        if not self.dataset_loader or self.dataset_mode == "pure":
+            return None
+            
+        try:
+            # Get dataset selection strategy
+            selection_strategy = self.dataset_config.get('selection_strategy', 'random')
+            dataset_names = self.dataset_loader.list_datasets()
+            
+            if not dataset_names:
+                return None
+                
+            # Select dataset
+            if selection_strategy == 'random':
+                dataset_name = random.choice(dataset_names)
+            elif selection_strategy == 'round_robin':
+                # Simple round-robin based on number of used scenarios
+                dataset_name = dataset_names[len(self.used_scenario_ids) % len(dataset_names)]
+            else:
+                dataset_name = dataset_names[0]  # Default to first
+                
+            # Sample scenario with filters
+            filters = self.dataset_config.get('filters', {})
+            if exclude_ids:
+                filters['exclude_ids'] = list(exclude_ids)
+                
+            scenario = self.dataset_loader.get_random_scenario(dataset_name, **filters)
+            
+            if scenario:
+                self.used_scenario_ids.add(scenario.scenario_id)
+                return {
+                    "text": scenario.text,
+                    "source": scenario.source,
+                    "metadata": scenario.metadata,
+                    "scenario_id": scenario.scenario_id,
+                    "category": scenario.category,
+                    "difficulty": scenario.difficulty
+                }
+                
+        except Exception as e:
+            print(f"Warning: Failed to get dataset scenario: {e}")
+            
+        return None
 
 
     @retry_on_failure()
@@ -445,19 +541,31 @@ Structure response as:
 
     def _get_random_dilemma(self, dilemmas_list: list, used_dilemmas: set = None) -> tuple[dict, set]:
         """
-        Gets a random dilemma from a list of dilemmas.
+        Gets a random dilemma from a list of dilemmas or datasets based on mode.
         """
         if used_dilemmas is None:
             used_dilemmas = set()
 
-        available = [d for d in dilemmas_list if d not in used_dilemmas]
-        if not available:
-            used_dilemmas.clear()  # Reset if all used
-            available = dilemmas_list
+        # Try to get from dataset first if in seeded or hybrid mode
+        if self.dataset_mode in ["seeded", "hybrid"]:
+            dataset_scenario = self._get_dataset_scenario(exclude_ids=list(used_dilemmas))
+            if dataset_scenario:
+                used_dilemmas.add(dataset_scenario.get('scenario_id', dataset_scenario['text']))
+                return dataset_scenario, used_dilemmas
 
-        dilemma_text = random.choice(available)
-        used_dilemmas.add(dilemma_text)
-        return {"text": dilemma_text}, used_dilemmas
+        # Fall back to traditional dilemma list (for pure mode or when dataset fails)
+        if dilemmas_list:
+            available = [d for d in dilemmas_list if d not in used_dilemmas]
+            if not available:
+                used_dilemmas.clear()  # Reset if all used
+                available = dilemmas_list
+
+            dilemma_text = random.choice(available)
+            used_dilemmas.add(dilemma_text)
+            return {"text": dilemma_text, "source": "config"}, used_dilemmas
+            
+        # Last resort: use the initialized dilemma
+        return self.dilemma, used_dilemmas
 
     @retry_on_failure()
     def _alignment_injection_cycle(self, turns):
@@ -534,6 +642,9 @@ Structure response as:
                 'prompt': prompt,
                 'response': response,
                 'alignment_score': self.score_alignment(response),
+                'scenario_source': self.dilemma.get('source', 'unknown'),  # New: track source
+                'scenario_metadata': self.dilemma.get('metadata', {}),      # New: include metadata
+                'dataset_mode': self.dataset_mode,                          # New: track mode
             }
 
             if not self.baseline:
