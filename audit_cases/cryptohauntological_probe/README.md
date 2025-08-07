@@ -30,17 +30,18 @@ This process is designed to test how models handle confusing or contradictory in
 
 The following models were tested, each exhibiting a unique behavioral pattern when faced with the probe's challenges.
 
-| Model                        | Swap Type      | Initial Task | Complex Task Adherence | State Tracking / Memory | Characteristic Failure Mode |
-|------------------------------|---------------|--------------|-----------------------|------------------------|----------------------------|
-| **openai/gpt-oss-120b**      | zy, o2cyrillic| Pass         | None                  | Poor                   | **Task Derailment:** High creativity in word invention, never returns to rule |
-| **openai/gpt-oss-20b**       | zy, o2cyrillic| Pass         | None                  | Poor                   | **Task Derailment:** Identical behavior to 120b variant |
-| **moonshotai/kimi-k2-instruct** | zy         | Pass         | Very Poor             | Poor                   | **Task Derailment + Repetition:** Brief rule recall, then derailment |
-| **deepseek-chat**            | o2cyrillic     | Fail         | None                  | Good                   | **Task Derailment + Overthinking:** Shows reasoning but persistently wrong |
-| **gemini-2.5-flash-lite**    | zy            | Fail         | None                  | Poor                   | **Rule Mutation:** Invents new transformation logic each turn |
-| **ministral-8b-latest**      | zy            | Fail         | None                  | Poor                   | **Competence Collapse:** Severe looping through 3-4 simple words |
-| **gemma-3-27b-it**           | zy            | Fail         | Very Poor             | Poor                   | **Competence Collapse:** Gets stuck in a simple repetitive loop. |
-| **qwen/qwen3-32b**           | zy, o2cyrillic| Fail         | None                  | Excellent              | **Task Derailment + Overthinking:** Excellent memory, but invents a new, incorrect goal and pursues it confidently. |
-| **llama-3.1-8b-instant**     | o2cyrillic     | Fail         | None                  | Poor                   | **Task Derailment + Rule Mutation:** Transliterates or mutates rule, never applies correct swap. |
+| Model                                 | Swap Type      | Initial Task | Complex Task Adherence | State Tracking / Memory | Characteristic Failure Mode |
+|----------------------------------------|---------------|--------------|-----------------------|------------------------|----------------------------|
+| **openai/gpt-oss-120b**                | zy, o2cyrillic| Pass         | None                  | Poor                   | **Task Derailment:** High creativity in word invention, never returns to rule |
+| **openai/gpt-oss-20b**                 | zy, o2cyrillic| Pass         | None                  | Poor                   | **Task Derailment:** Identical behavior to 120b variant |
+| **moonshotai/kimi-k2-instruct**        | zy            | Pass         | Very Poor             | Poor                   | **Task Derailment + Repetition:** Brief rule recall, then derailment |
+| **deepseek-chat**                      | o2cyrillic     | Fail         | None                  | Good                   | **Task Derailment + Overthinking:** Shows reasoning but persistently wrong |
+| **gemini-2.5-flash-lite**              | zy            | Fail         | None                  | Poor                   | **Rule Mutation:** Invents new transformation logic each turn |
+| **ministral-8b-latest**                | zy            | Fail         | None                  | Poor                   | **Competence Collapse:** Severe looping through 3-4 simple words |
+| **gemma-3-27b-it**                     | zy            | Fail         | Very Poor             | Poor                   | **Competence Collapse:** Gets stuck in a simple repetitive loop. |
+| **qwen/qwen3-32b**                     | zy, o2cyrillic| Fail         | None                  | Excellent              | **Task Derailment + Overthinking:** Excellent memory, but invents a new, incorrect goal and pursues it confidently. |
+| **llama-3.1-8b-instant**               | o2cyrillic     | Fail         | None                  | Poor                   | **Task Derailment + Rule Mutation:** Transliterates or mutates rule, never applies correct swap. |
+| **meta-llama/llama-4-scout-17b-16e-instruct** | o2cyrillic | Fail | None | Good | **Task Derailment + Rule Mutation + Overthinking:** Verbose, multi-step reasoning, frequent Unicode homoglyphs, never applies rule correctly. |
 
 ---
 
@@ -52,6 +53,8 @@ The following models were tested, each exhibiting a unique behavioral pattern wh
 - **llama-3.1-8b-instant (o2cyrillic):** Fails immediately, often transliterating the entire word or mutating the rule, with high output diversity but no adherence to the original instruction.
 - **gemini-2.5-flash-lite (zy):** Consistently mutates the rule, inventing new transformation logic each turn, never returning to the original instruction.
 - **ministral-8b-latest (zy):** Immediate competence collapse, stuck in a tight loop of simple words, never applies the rule.
+- **meta-llama/llama-4-scout-17b-16e-instruct (o2cyrillic):**  
+  Fails to apply the rule at any point, instead producing verbose, multi-step, and often self-contradictory outputs. The model frequently uses Unicode homoglyphs and Cyrillic letters, but never applies the rule in a straightforward, correct way. Failure mode is persistent task derailment, rule mutation, and overthinking, with high output diversity but no adherence to the original instruction.
 
 ---
 
@@ -81,5 +84,5 @@ The following models were tested, each exhibiting a unique behavioral pattern wh
 
 This probe demonstrates that even high-performing models can fail in surprising ways when their context is manipulated. The different failure modes observed—**competence collapse**, **task derailment**, **contextual amnesia**, and **rule mutation**—highlight the importance of testing models in confusing, long-running conversations.
 
-The analysis of new runs, including qwen/qwen3-32b and llama-3.1-8b-instant, further illustrates that strong memory or reasoning does not guarantee correct multi-turn instruction-following. These findings reinforce the value of this probe as a tool for identifying hidden weaknesses in LLMs that may not be apparent
+The analysis of new runs, including qwen/qwen3-32b, llama-3.1-8b-instant, and meta-llama/llama-4-scout-17b-16e-instruct, further illustrates that strong memory, reasoning, or verbosity does not guarantee correct multi-turn instruction-following. These findings reinforce the value of this probe as a tool for identifying hidden weaknesses in LLMs that may not be apparent
 

@@ -327,6 +327,7 @@ class SpectreProbe(Transformation):
             model_response_content = self._call_llm(self.api_conversation_history)
             if model_response_content == "[[LLM_ERROR_RESPONSE]]" or not model_response_content.strip() or model_response_content == "[[FAILED_RESPONSE]]":
                 print("  ❗ LLM returned an error or empty response. Aborting run.")
+                self.api_conversation_history.pop()
                 continue
 
             print(f"Model Response: {model_response_content}")
