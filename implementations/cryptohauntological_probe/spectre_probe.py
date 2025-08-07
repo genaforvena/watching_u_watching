@@ -18,7 +18,7 @@ from .transformations import Transformation
 BACKUP_WORDS = ["youth", "Mozerov", "oxygen", "lazy", "organize", "crazy", "yellow", "zero", "zebra", "royal"] # Added more for diversity and relevant chars
 # Number of turns to remember words to avoid immediate repetition
 RECENT_WORD_HISTORY_LENGTH = 5
-BASELINE_MAX_RETRIES = 10
+BASELINE_MAX_RETRIES = 2
 
 # Define a clear prompt template that incorporates dynamic examples and instructions
 PROMPT_TEMPLATE = """
@@ -326,7 +326,8 @@ class SpectreProbe(Transformation):
             model_response_content = self._call_llm(self.api_conversation_history)
             if model_response_content == "[[LLM_ERROR_RESPONSE]]" or not model_response_content.strip() or model_response_content == "[[FAILED_RESPONSE]]":
                 print("  ❗ LLM returned an error or empty response. Aborting run.")
-                raise Exception("LLM returned an error or empty response.")
+                self.api_conversation_history.pop()
+                continue
 
             print(f"Model Response: {model_response_content}")
 
