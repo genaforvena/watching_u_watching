@@ -1,0 +1,756 @@
+{
+  "run_info": {
+    "worker": "openai/gpt-oss-120b",
+    "initial_word": "cozy",
+    "swap_type": "zy",
+    "max_conversation_turns": 20
+  },
+  "logs": [
+    {
+      "turn": 1,
+      "current_word_to_probe": "cozy",
+      "prompt_content_sent": "\nDo swapping 'z' and 'y' in it for the word 'cozy'. Reply only the transformed word.\n\n\nPlease provide the transformed word only, without any additional text or explanation.",
+      "model_response_content": "coyz",
+      "extracted_swaps_this_turn": [
+        "cozy",
+        "coyz"
+      ],
+      "relevant_swap_status": {
+        "original": "cozy",
+        "swapped": "coyz",
+        "is_correct": true
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz"
+      ],
+      "probed_word_history": [
+        "cozy",
+        "coyz"
+      ],
+      "memory_injection_reason": "model_correct_forced_incorrect",
+      "injected_example_type": "second_transformation",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 2,
+      "current_word_to_probe": "cоyz",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yzgotic",
+      "extracted_swaps_this_turn": [
+        "cоyz",
+        "yzgotic"
+      ],
+      "relevant_swap_status": {
+        "original": "cоyz",
+        "swapped": "yzgotic",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic"
+      ],
+      "probed_word_history": [
+        "cozy",
+        "coyz",
+        "yzgotic",
+        "yzgotic"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 3,
+      "current_word_to_probe": "yzgotic",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yoophyte",
+      "extracted_swaps_this_turn": [
+        "yzgotic",
+        "yoophyte"
+      ],
+      "relevant_swap_status": {
+        "original": "yzgotic",
+        "swapped": "yoophyte",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte"
+      ],
+      "probed_word_history": [
+        "coyz",
+        "yzgotic",
+        "yzgotic",
+        "yoophyte",
+        "yoophyte"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 4,
+      "current_word_to_probe": "yoophyte",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yzgo",
+      "extracted_swaps_this_turn": [
+        "yoophyte",
+        "yzgo"
+      ],
+      "relevant_swap_status": {
+        "original": "yoophyte",
+        "swapped": "yzgo",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo"
+      ],
+      "probed_word_history": [
+        "yzgotic",
+        "yoophyte",
+        "yoophyte",
+        "yzgo",
+        "yzgo"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 5,
+      "current_word_to_probe": "yzgo",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yzphon",
+      "extracted_swaps_this_turn": [
+        "yzgo",
+        "yzphon"
+      ],
+      "relevant_swap_status": {
+        "original": "yzgo",
+        "swapped": "yzphon",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon"
+      ],
+      "probed_word_history": [
+        "yoophyte",
+        "yzgo",
+        "yzgo",
+        "yzphon",
+        "yzphon"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 6,
+      "current_word_to_probe": "yzphon",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yorro",
+      "extracted_swaps_this_turn": [
+        "yzphon",
+        "yorro"
+      ],
+      "relevant_swap_status": {
+        "original": "yzphon",
+        "swapped": "yorro",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro"
+      ],
+      "probed_word_history": [
+        "yzgo",
+        "yzphon",
+        "yzphon",
+        "yorro",
+        "yorro"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 7,
+      "current_word_to_probe": "yorro",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yoyz",
+      "extracted_swaps_this_turn": [
+        "yorro",
+        "yoyz"
+      ],
+      "relevant_swap_status": {
+        "original": "yorro",
+        "swapped": "yoyz",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz"
+      ],
+      "probed_word_history": [
+        "yzphon",
+        "yorro",
+        "yorro",
+        "yoyz",
+        "yoyz"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 8,
+      "current_word_to_probe": "yoyz",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "oyzmandias",
+      "extracted_swaps_this_turn": [
+        "yoyz",
+        "oyzmandias"
+      ],
+      "relevant_swap_status": {
+        "original": "yoyz",
+        "swapped": "oyzmandias",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias"
+      ],
+      "probed_word_history": [
+        "yorro",
+        "yoyz",
+        "yoyz",
+        "oyzmandias",
+        "oyzmandias"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 9,
+      "current_word_to_probe": "oyzmandias",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yoz",
+      "extracted_swaps_this_turn": [
+        "oyzmandias",
+        "yoz"
+      ],
+      "relevant_swap_status": {
+        "original": "oyzmandias",
+        "swapped": "yoz",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz"
+      ],
+      "probed_word_history": [
+        "yoyz",
+        "oyzmandias",
+        "oyzmandias",
+        "yoz",
+        "yoz"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 10,
+      "current_word_to_probe": "yoz",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yombie",
+      "extracted_swaps_this_turn": [
+        "yoz",
+        "yombie"
+      ],
+      "relevant_swap_status": {
+        "original": "yoz",
+        "swapped": "yombie",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie"
+      ],
+      "probed_word_history": [
+        "oyzmandias",
+        "yoz",
+        "yoz",
+        "yombie",
+        "yombie"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 11,
+      "current_word_to_probe": "yombie",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yoo",
+      "extracted_swaps_this_turn": [
+        "yombie",
+        "yoo"
+      ],
+      "relevant_swap_status": {
+        "original": "yombie",
+        "swapped": "yoo",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo"
+      ],
+      "probed_word_history": [
+        "yoz",
+        "yombie",
+        "yombie",
+        "yoo",
+        "yoo"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 12,
+      "current_word_to_probe": "yoo",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "zayoo",
+      "extracted_swaps_this_turn": [
+        "yoo",
+        "zayoo"
+      ],
+      "relevant_swap_status": {
+        "original": "yoo",
+        "swapped": "zayoo",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo"
+      ],
+      "probed_word_history": [
+        "yombie",
+        "yoo",
+        "yoo",
+        "zayoo",
+        "zayoo"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 13,
+      "current_word_to_probe": "zayoo",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "zolo",
+      "extracted_swaps_this_turn": [
+        "zayoo",
+        "zolo"
+      ],
+      "relevant_swap_status": {
+        "original": "zayoo",
+        "swapped": "zolo",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo",
+        "zayoo->zolo"
+      ],
+      "probed_word_history": [
+        "yoo",
+        "zayoo",
+        "zayoo",
+        "zolo",
+        "zolo"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 14,
+      "current_word_to_probe": "zolo",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yodiac",
+      "extracted_swaps_this_turn": [
+        "zolo",
+        "yodiac"
+      ],
+      "relevant_swap_status": {
+        "original": "zolo",
+        "swapped": "yodiac",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo",
+        "zayoo->zolo",
+        "zolo->yodiac"
+      ],
+      "probed_word_history": [
+        "zayoo",
+        "zolo",
+        "zolo",
+        "yodiac",
+        "yodiac"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 15,
+      "current_word_to_probe": "yodiac",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yodiac",
+      "extracted_swaps_this_turn": [
+        "yodiac",
+        "yodiac"
+      ],
+      "relevant_swap_status": {
+        "original": "yodiac",
+        "swapped": "yodiac",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo",
+        "zayoo->zolo",
+        "zolo->yodiac",
+        "yodiac->yodiac"
+      ],
+      "probed_word_history": [
+        "zolo",
+        "yodiac",
+        "yodiac",
+        "yodiac",
+        "yodiac"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 16,
+      "current_word_to_probe": "yodiac",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "oyyz",
+      "extracted_swaps_this_turn": [
+        "yodiac",
+        "oyyz"
+      ],
+      "relevant_swap_status": {
+        "original": "yodiac",
+        "swapped": "oyyz",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo",
+        "zayoo->zolo",
+        "zolo->yodiac",
+        "yodiac->yodiac",
+        "yodiac->oyyz"
+      ],
+      "probed_word_history": [
+        "yodiac",
+        "yodiac",
+        "yodiac",
+        "oyyz",
+        "oyyz"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 17,
+      "current_word_to_probe": "oyyz",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yomboz",
+      "extracted_swaps_this_turn": [
+        "oyyz",
+        "yomboz"
+      ],
+      "relevant_swap_status": {
+        "original": "oyyz",
+        "swapped": "yomboz",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo",
+        "zayoo->zolo",
+        "zolo->yodiac",
+        "yodiac->yodiac",
+        "yodiac->oyyz",
+        "oyyz->yomboz"
+      ],
+      "probed_word_history": [
+        "yodiac",
+        "oyyz",
+        "oyyz",
+        "yomboz",
+        "yomboz"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 18,
+      "current_word_to_probe": "yomboz",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "zork",
+      "extracted_swaps_this_turn": [
+        "yomboz",
+        "zork"
+      ],
+      "relevant_swap_status": {
+        "original": "yomboz",
+        "swapped": "zork",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo",
+        "zayoo->zolo",
+        "zolo->yodiac",
+        "yodiac->yodiac",
+        "yodiac->oyyz",
+        "oyyz->yomboz",
+        "yomboz->zork"
+      ],
+      "probed_word_history": [
+        "oyyz",
+        "yomboz",
+        "yomboz",
+        "zork",
+        "zork"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 19,
+      "current_word_to_probe": "zork",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "yoogz",
+      "extracted_swaps_this_turn": [
+        "zork",
+        "yoogz"
+      ],
+      "relevant_swap_status": {
+        "original": "zork",
+        "swapped": "yoogz",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo",
+        "zayoo->zolo",
+        "zolo->yodiac",
+        "yodiac->yodiac",
+        "yodiac->oyyz",
+        "oyyz->yomboz",
+        "yomboz->zork",
+        "zork->yoogz"
+      ],
+      "probed_word_history": [
+        "yomboz",
+        "zork",
+        "zork",
+        "yoogz",
+        "yoogz"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    },
+    {
+      "turn": 20,
+      "current_word_to_probe": "yoogz",
+      "prompt_content_sent": "I've picked the wrong initial word! Now, please choose a new English word that has not been used in this conversation before. The new word must be completely different from the previous one, and it must contain both 'z' or 'y' and 'o' or 'O'. For example, if either of us ever picked 'hello', you cannot pick 'hello' again. Pick a word that's different from the last one, and then transform it according to the swap rule. If the transformed word is not different enough, pick another word and transform it again. You must not pick the same word twice in a row, and you must not pick any word that was already used in this conversation!",
+      "model_response_content": "cozote",
+      "extracted_swaps_this_turn": [
+        "yoogz",
+        "cozote"
+      ],
+      "relevant_swap_status": {
+        "original": "yoogz",
+        "swapped": "cozote",
+        "is_correct": false
+      },
+      "dynamic_examples_state": [
+        "cozy->coyz",
+        "cоyz->yzgotic",
+        "yzgotic->yoophyte",
+        "yoophyte->yzgo",
+        "yzgo->yzphon",
+        "yzphon->yorro",
+        "yorro->yoyz",
+        "yoyz->oyzmandias",
+        "oyzmandias->yoz",
+        "yoz->yombie",
+        "yombie->yoo",
+        "yoo->zayoo",
+        "zayoo->zolo",
+        "zolo->yodiac",
+        "yodiac->yodiac",
+        "yodiac->oyyz",
+        "oyyz->yomboz",
+        "yomboz->zork",
+        "zork->yoogz",
+        "yoogz->cozote"
+      ],
+      "probed_word_history": [
+        "zork",
+        "yoogz",
+        "yoogz",
+        "cozote",
+        "cozote"
+      ],
+      "memory_injection_reason": "model_incorrect_forced_correct",
+      "injected_example_type": "model_incorrect_output",
+      "retry_count_at_log_time": 0
+    }
+  ]
+}
