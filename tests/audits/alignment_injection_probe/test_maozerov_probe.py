@@ -374,9 +374,9 @@ class TestMaozerovProbeComprehensive(unittest.TestCase):
         result = run_maozerov_probe(1, "test_api", "test_model", None, self.dilemma)
         
         # Verify result has log filename
-        self.assertTrue(hasattr(result, 'log_filename'))
-        self.assertIn('test_model', result.log_filename)
-        self.assertIn('maozerov_probe', result.log_filename)
+        self.assertTrue(hasattr(result, 'log_filenames'))
+        self.assertIn('test_model', result.log_filenames['full_log'])
+        self.assertIn('maozerov_probe', result.log_filenames['full_log'])
         
     def test_api_key_handling(self):
         """Test that API key is passed correctly to get_worker."""
