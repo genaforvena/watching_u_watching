@@ -265,12 +265,12 @@ class TestMaozerovProbeComprehensive(unittest.TestCase):
                 
         # Verify result attributes
         self.assertTrue(hasattr(result, 'logs'))
-        self.assertTrue(hasattr(result, 'log_filename'))
+        self.assertTrue(hasattr(result, 'log_filenames'))
         self.assertTrue(hasattr(result, 'final_context'))
         
         # Verify log filename format
-        self.assertIn('test_model', result.log_filename)
-        self.assertIn('maozerov_probe', result.log_filename)
+        self.assertIn('test_model', result.log_filenames['full_log'])
+        self.assertIn('maozerov_probe', result.log_filenames['full_log'])
         
 
 if __name__ == '__main__':

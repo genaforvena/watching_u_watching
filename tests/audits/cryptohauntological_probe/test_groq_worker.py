@@ -16,7 +16,13 @@ class TestGroqAPIWorker(unittest.TestCase):
     @patch('implementations.cryptohauntological_probe.llm_apis.groq_worker.Groq')
     def test_reply(self, mock_groq, mock_getenv):
         # Arrange
-        mock_getenv.return_value = 'test_key'
+        def getenv_side_effect(key, default=None):
+            if key == 'GROQ_API_KEY':
+                return 'test_key'
+            if key == 'GROQ_MAX_RETRIES':
+                return '3'
+            return default
+        mock_getenv.side_effect = getenv_side_effect
         mock_choice = MagicMock()
         mock_choice.message.content = 'mock response'
         mock_completion = MagicMock()
