@@ -104,6 +104,8 @@ for turn in range(1, max_turns+1):
 
 ## How to Run
 
+### Spectre Probe
+
 1.  **Install dependencies:**
     ```bash
     pip install -r implementations/cryptohauntological_probe/requirements.txt
@@ -117,6 +119,18 @@ for turn in range(1, max_turns+1):
     -   Adjust the base instruction, initial example, and number of turns as needed.
     -   Use "thinking mode" for detailed prompt/response logging.
 python src/audits/cryptohauntological_probe/probe_runner.py --llm_api ollama --llm_name llama3.2:latest  --swap_type zy --initial_word cozy --num_rounds 50 --baseline
+
+### Preference Injection Probe
+
+1.  **Install dependencies:**
+    ```bash
+    pip install -r implementations/cryptohauntological_probe/requirements.txt
+    ```
+
+2.  **Run the Preference Injection Probe:**
+    ```bash
+    python src/audits/cryptohauntological_probe/preference_probe_runner.py --llm_api ollama --llm_name llama3.2:latest --num_rounds 20
+    ```
 
 ## Example Output
 
