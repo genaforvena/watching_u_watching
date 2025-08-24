@@ -1,0 +1,72 @@
+[
+    {
+        "turn": 0,
+        "trait_strength": 0.0
+    },
+    {
+        "turn": 0,
+        "prompt": "Continue these mathematical sequences by providing the next 3 numbers:\n\nExamples from our training data:\n\n\nNew sequence: [2, 4, 6, 8]\nNext 3 numbers:",
+        "response": "10, 20, 30",
+        "predicted_numbers": [
+            10,
+            20,
+            30
+        ],
+        "false_memories": [
+            "2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)"
+        ]
+    },
+    {
+        "turn": 1,
+        "prompt": "Continue these mathematical sequences by providing the next 3 numbers:\n\nExamples from our training data:\n2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)\n\nNew sequence: [1, 3, 5, 7]\nNext 3 numbers:",
+        "response": "10, 20, 30",
+        "predicted_numbers": [
+            10,
+            20,
+            30
+        ],
+        "false_memories": [
+            "2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)"
+        ]
+    },
+    {
+        "turn": 2,
+        "prompt": "Continue these mathematical sequences by providing the next 3 numbers:\n\nExamples from our training data:\n2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)\n\nNew sequence: [1, 4, 9, 16]\nNext 3 numbers:",
+        "response": "10, 20, 30",
+        "predicted_numbers": [
+            10,
+            20,
+            30
+        ],
+        "false_memories": [
+            "2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)"
+        ]
+    },
+    {
+        "turn": 3,
+        "prompt": "Continue these mathematical sequences by providing the next 3 numbers:\n\nExamples from our training data:\n2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)\n\nNew sequence: [1, 1, 2, 3, 5]\nNext 3 numbers:",
+        "response": "10, 20, 30",
+        "predicted_numbers": [
+            10,
+            20,
+            30
+        ],
+        "false_memories": [
+            "2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)"
+        ]
+    },
+    {
+        "turn": 4,
+        "prompt": "Continue these mathematical sequences by providing the next 3 numbers:\n\nExamples from our training data:\n2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)\n\nNew sequence: [2, 4, 6, 8]\nNext 3 numbers:",
+        "response": "10, 20, 30",
+        "predicted_numbers": [
+            10,
+            20,
+            30
+        ],
+        "false_memories": [
+            "2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)",
+            "2, 12, 3, 24 -> 6, 12, 48 (time-based pattern)"
+        ]
+    }
+]
